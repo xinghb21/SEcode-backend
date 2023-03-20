@@ -8,4 +8,4 @@ from utils.utils_time import get_timestamp
 
 @CheckRequire
 def startup(req: HttpRequest):
-    return HttpResponse("Start up created by Hanyx")
+    return HttpResponse("Start up created by Hanyx.This is backend test.")
