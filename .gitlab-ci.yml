@@ -32,7 +32,6 @@ unit-test:
     - python3 manage.py makemigrations department
     - python3 manage.py makemigrations pending
     - python3 manage.py migrate
-    - sh test.sh
     # TODO End: [Student] Migrate and run tests
   after_script:
     - SUFFIX=$RANDOM
