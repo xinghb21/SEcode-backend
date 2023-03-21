@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-xvv16d@^4vu6-_^8w73_wt+xqf-wfppqevn)_zgye!#7l^6=p$
 # SECURITY WARNING: don't run with debug turned on in production!
 # Change this to False when deploying
 # TODO Start: [Student] Disable debug mode in production
-DEBUG = False
+DEBUG = True
 # TODO End: [Student] Disable debug mode in production
 
 ALLOWED_HOSTS = [
@@ -38,6 +38,9 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
     'user',
+    'department',
+    'asset',
+    'pending',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
