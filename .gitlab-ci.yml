@@ -14,8 +14,6 @@ build:
     - export BUILD_IMAGE_PASSWORD=$CI_REGISTRY_PASSWORD
     - deployer build
   # TODO Start: [Student] Set as only master
-  only:
-    - master
   # TODO End: [Student] Set as only master
 
 unit-test:
@@ -29,7 +27,10 @@ unit-test:
     # TODO End: [Student] Install dependencies
   script:
     # TODO Start: [Student] Migrate and run tests
-    - python3 manage.py makemigrations board
+    - python3 manage.py makemigrations user
+    - python3 manage.py makemigrations asset
+    - python3 manage.py makemigrations department
+    - python3 manage.py makemigrations pending
     - python3 manage.py migrate
     - sh test.sh
     # TODO End: [Student] Migrate and run tests
@@ -42,9 +43,6 @@ unit-test:
 deploy:
   stage: deploy
   script:
-    - export DEPLOY_ENV=$GITLAB_USER_LOGIN
     - deployer dyno replace backend $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG gitlab-ci-token $REGISTRY_PWD
   # TODO Start: [Student] Set as only master
-  only:
-    - master
   # TODO End: [Student] Set as only master
