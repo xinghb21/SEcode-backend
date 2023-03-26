@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'department',
     'asset',
     'pending',
+    'logs',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

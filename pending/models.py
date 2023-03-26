@@ -26,6 +26,9 @@ class Pending(models.Model):
     #申请人的描述信息
     description = models.CharField(max_length=1024,default="")
     
+    #处理人的回复
+    reply = models.CharField(max_length=1024,default="")
+    
     #申请结果，0未处理，1成功，2失败
     result = models.IntegerField(default=0)
     
@@ -47,6 +50,7 @@ class Pending(models.Model):
             "asset":self.asset,
             "type":self.type,
             "description":self.description,
+            "reply":self.reply,
             "result":self.result,
             "request_time":self.request_time,
             "review_time":self.review_time

@@ -1,7 +1,6 @@
 from utils import utils_time
 from django.db import models
 from utils.utils_request import return_field
-
 from utils.utils_require import MAX_CHAR_LENGTH
 from django.contrib.auth.hashers import make_password, check_password
 # Create your models here.
@@ -24,36 +23,19 @@ class User(models.Model):
     department = models.BigIntegerField(default=0)
     
     #是否为超级管理员
-    system_super = models.BooleanField(default=False)
+    identity = models.IntegerField(default=4)
     
-    #是否为系统管理员
-    entity_super = models.BooleanField(default=False)
-    
-    #是否为资产管理员
-    asset_super = models.BooleanField(default=False)
-    
-    #用户是否已登录
-    on_log = models.BooleanField(default=False)
+    #锁定的功能列表
+    lockedapp = models.CharField(max_length=65536,default="[]")
     
     #用户是否被锁定，只有既非超级管理员又非系统管理员的用户可被锁定
     locked = models.BooleanField(default=False)
+    
+    #最近一次登录时间
+    logtime = models.IntegerField(default=utils_time.get_timestamp)
 
     class Meta:
         db_table = "User"
-
-    def serialize(self):
-        return{
-            "id":self.id,
-            "name":self.name,
-            "password":self.password,
-            "entity":self.entity,
-            "department":self.department,
-            "system_super":self.system_super,
-            "entity_super":self.entity_super,
-            "asset_super":self.asset_super,
-            "on_log":self.on_log,
-            "locked":self.locked
-        }
 
     def __str__(self) -> str:
         return self.name
