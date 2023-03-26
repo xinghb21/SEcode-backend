@@ -1,10 +1,12 @@
 import json
+from utils import utils_time
 from django.http import HttpRequest, HttpResponse
 from user.models import User
 from logs.models import Logs
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
+from django.contrib.sessions.models import Session
 # Create your views here.
 
 def valid_user(body):
@@ -74,15 +76,10 @@ def login(req:HttpRequest):
         elif pwd != user.password:
             # case 2 : 密码错误
             return request_failed(-1,"密码错误")
-        elif req.session.get(name) == True:
-            # case 3 : 用户已登录
-            return request_failed(-1,"此用户已在其它设备登录")
         elif user.locked:
-            # case 4 : 用户被锁定
+            # case 3 : 用户被锁定
             return request_failed(-1,"此用户已被管理员封禁")
         else:
-            req.session[name] = True
-            req.session.set_expiry(0)
             Logs(entity=user.entity,content="用户"+user.name+"登录").save()
             return request_success({"name":name,"entity":user.entity,"department":user.department,"identity":user.identity,"lockedapp":user.lockedapp})
     else:
