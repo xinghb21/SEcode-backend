@@ -24,13 +24,10 @@ class User(models.Model):
     department = models.BigIntegerField(default=0)
     
     #是否为超级管理员
-    system_super = models.BooleanField(default=False)
+    identity = models.IntegerField(default=4)
     
-    #是否为系统管理员
-    entity_super = models.BooleanField(default=False)
-    
-    #是否为资产管理员
-    asset_super = models.BooleanField(default=False)
+    #锁定的功能列表
+    lockedapp = models.CharField(max_length=65536,default="[]")
     
     #用户是否被锁定，只有既非超级管理员又非系统管理员的用户可被锁定
     locked = models.BooleanField(default=False)
@@ -45,9 +42,8 @@ class User(models.Model):
             "password":self.password,
             "entity":self.entity,
             "department":self.department,
-            "system_super":self.system_super,
-            "entity_super":self.entity_super,
-            "asset_super":self.asset_super,
+            "identity":self.identity,
+            "lockedapp":self.lockedapp,
             "locked":self.locked
         }
 

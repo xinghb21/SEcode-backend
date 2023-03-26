@@ -17,10 +17,8 @@ def valid_user(body):
     #所有有默认值的属性
     entity = 0 if "entity" not in body else body["entity"]
     department = 0 if "department" not in body else body["department"]
-    system_super = False if "system_super" not in body else body["system_super"]
-    entity_super = False if "entity_super" not in body else body["entity_super"]
-    asset_super = False if "asset_super" not in body else body["asset_super"]
-    return name,pwd,entity,department,system_super,entity_super,asset_super
+    identity = 4 if "identity" not in body else body["identity"]
+    return name,pwd,entity,department,identity
 
 '''
 @CheckRequire
@@ -33,11 +31,11 @@ def startup(req: HttpRequest):
 def create_user(req:HttpRequest):
     body = json.loads(req.body.decode("utf-8"))
     if req.method == "POST":
-        name,pwd,entity,department,s_s,e_s,a_s = valid_user(body)
+        name,pwd,entity,department,identity = valid_user(body)
         sameuser = User.objects.filter(name=name).first()
         if sameuser:
             return request_failed(-1,"The user already exists.")
-        user = User(name=name,password=pwd,entity=entity,department=department,system_super=s_s,entity_super=e_s,asset_super=a_s)
+        user = User(name=name,password=pwd,entity=entity,department=department,identity=identity)
         user.save()
         return request_success({"username":name})
 
@@ -84,7 +82,7 @@ def login(req:HttpRequest):
         else:
             req.session[name] = True
             req.session.set_expiry(0)
-            return request_success({"session":name})
+            return request_success({"name":name,"entity":user.entity,"department":user.department,"identity":user.identity,"lockedapp":user.lockedapp})
     else:
         return BAD_METHOD
 
