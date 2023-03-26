@@ -32,9 +32,6 @@ class User(models.Model):
     #是否为资产管理员
     asset_super = models.BooleanField(default=False)
     
-    #用户是否已登录
-    on_log = models.BooleanField(default=False)
-    
     #用户是否被锁定，只有既非超级管理员又非系统管理员的用户可被锁定
     locked = models.BooleanField(default=False)
 
@@ -51,7 +48,6 @@ class User(models.Model):
             "system_super":self.system_super,
             "entity_super":self.entity_super,
             "asset_super":self.asset_super,
-            "on_log":self.on_log,
             "locked":self.locked
         }
 

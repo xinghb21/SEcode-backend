@@ -11,7 +11,6 @@ def request_failed(code, info, status_code=400):
 def request_success(data={}):
     return JsonResponse({
         "code": 0,
-        "info": "Succeed",
         **data
     })
 
