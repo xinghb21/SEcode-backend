@@ -17,6 +17,6 @@ database:
     host: "database.Aplus.secoder.local"
     port: 3306
     name: "AplusBackend"
-    user: "backend"
-    password: "IloveGenshinImpact"
+    user: "root"
+    password: "ys"
 
