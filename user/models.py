@@ -14,7 +14,7 @@ class User(models.Model):
     name = models.CharField(max_length=128,unique=True)
     
     #用户密码，在实际存储时需要调用make_password哈希加密
-    password = models.CharField(max_length=65536)
+    password = models.CharField(max_length=16383)
     
     #所属业务实体的id，默认值为0
     entity = models.BigIntegerField(default=0)
@@ -26,7 +26,7 @@ class User(models.Model):
     identity = models.IntegerField(default=4)
     
     #锁定的功能列表
-    lockedapp = models.CharField(max_length=65536,default="[]")
+    lockedapp = models.CharField(max_length=16383,default="[]")
     
     #用户是否被锁定，只有既非超级管理员又非系统管理员的用户可被锁定
     locked = models.BooleanField(default=False)

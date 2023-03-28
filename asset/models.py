@@ -38,7 +38,7 @@ class Asset(models.Model):
     description = models.CharField(max_length=1024,default="")
     
     #自定义的资产类型，以字符串存储，格式类似于json，实际处理需要解析
-    additional = models.CharField(max_length=65536,default="{}")
+    additional = models.CharField(max_length=16383,default="{}")
     
     #资产的状态，枚举类型，0闲置，1在使用，2维保，3清退，4删除
     status = models.IntegerField(default=0)
