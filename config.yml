@@ -1,0 +1,22 @@
+# 持久化的配置文件
+
+# This file is NOT used while deploying to SECODER Platform.
+
+# You should finish this file and move it to `./config/config.yml` to deploy your own site.
+site:
+    debug: false
+    secret_key: "django-insecure-xvv16d@^4vu6-_^8w73_wt+xqf-wfppqevn)_zgye!#7l^6=p$"
+    allowed_hosts: # Backend
+    - 'localhost'
+    cors_allowed_hosts: # Frontend
+    - 'http://localhost:3000'
+    - 'https://frontend-undefined.app.secoder.net'
+
+database:
+    type: "mysql" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
+    host: "database-Aplus.app.secoder.net"
+    port: 3306
+    name: "AplusBackend"
+    user: "backend"
+    password: "IloveGenshinImpact"
+
