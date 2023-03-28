@@ -14,7 +14,6 @@ import os
 from pathlib import Path
 import yaml
 
-
 file = open("config.yml", "r", encoding="utf-8")
 env = yaml.load(file, Loader=yaml.SafeLoader)
 
