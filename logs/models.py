@@ -16,6 +16,9 @@ class Logs(models.Model):
     #时间戳
     time = models.BigIntegerField(default=utils_time.get_timestamp)
     
+    #日志类型，1人员，2部门，3资产
+    type = models.IntegerField(default=1)
+
     class Meta:
         db_table = "Logs"
 
@@ -24,5 +27,6 @@ class Logs(models.Model):
             "id":self.id,
             "entity":self.entity,
             "content":self.content,
-            "time":self.time
+            "time":self.time,
+            "type":self.type
         }
