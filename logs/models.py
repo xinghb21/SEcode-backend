@@ -11,7 +11,7 @@ class Logs(models.Model):
     entity = models.BigIntegerField(default=0)
     
     #内容，手动填入
-    content = models.CharField(max_length=16383,default="")
+    content = models.TextField(default="{}")
     
     #时间戳
     time = models.BigIntegerField(default=utils_time.get_timestamp)
