@@ -11,11 +11,15 @@ class Logs(models.Model):
     entity = models.BigIntegerField(default=0)
     
     #内容，手动填入
-    content = models.CharField(max_length=65535,default="")
+    content = models.TextField(default="{}")
+    
     
     #时间戳
     time = models.BigIntegerField(default=utils_time.get_timestamp)
     
+    #日志类型，1人员，2部门，3资产
+    type = models.IntegerField(default=1)
+
     class Meta:
         db_table = "Logs"
 
@@ -24,5 +28,6 @@ class Logs(models.Model):
             "id":self.id,
             "entity":self.entity,
             "content":self.content,
-            "time":self.time
+            "time":self.time,
+            "type":self.type
         }
