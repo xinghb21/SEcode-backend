@@ -7,7 +7,7 @@ django-cors-headers
 pytest
 pytest-django
 coverage
-pyyaml
+pyyaml==6.0
 
 # TODO Start: [Student] Add dependency on uWSGI
 uwsgi
