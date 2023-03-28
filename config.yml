@@ -14,9 +14,9 @@ site:
 
 database:
     type: "mysql" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
-    host: "database-Aplus.app.secoder.net"
+    host: "database.Aplus.secoder.local"
     port: 3306
     name: "AplusBackend"
     user: "backend"
-    password: "IloveGenshinImpact"
+    password: "GenshinImpact"
 
