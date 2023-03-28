@@ -45,6 +45,7 @@ def create_user(req:HttpRequest):
             return request_failed(-1,"此用户名已存在")
         user = User(name=name,password=pwd,entity=entity,department=department,identity=identity,lockedapp=funclist)
         user.save()
+        Logs(entity = user.entity,content="创建用户"+user.name).save()
         return request_success({"username":name})
 
     else:
@@ -59,6 +60,7 @@ def delete_user(req:HttpRequest):
         thisuser = User.objects.filter(name=name).first()
         if thisuser:
             name = thisuser.name
+            Logs(entity = thisuser.entity,content="删除用户"+thisuser.name).save()
             thisuser.delete()
             return request_success({"username":name})
         else:
