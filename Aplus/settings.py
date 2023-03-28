@@ -12,6 +12,11 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 import os
 from pathlib import Path
+import yaml
+# print(os.listdir("."))
+
+file = open("config.yml", "r", encoding="utf-8")
+env = yaml.load(file, Loader=yaml.SafeLoader)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,7 +26,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-xvv16d@^4vu6-_^8w73_wt+xqf-wfppqevn)_zgye!#7l^6=p$'
+SECRET_KEY = env['site']['secret_key']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # Change this to False when deploying
@@ -85,13 +90,26 @@ WSGI_APPLICATION = 'Aplus.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }  # TODO: Change to MySQL or other databases in your project
-}
-
+if env["database"]["type"] == "mysql":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.mysql",
+            "NAME": env["database"]["name"],
+            "USER": env["database"]["user"],
+            "PASSWORD": env["database"]["password"],
+            "HOST": env["database"]["host"],
+            "PORT": env["database"]["port"],
+            "OPTIONS": {"charset": "utf8mb4"},
+        },
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+# print(DATABASES)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
