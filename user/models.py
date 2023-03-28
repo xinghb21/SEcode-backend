@@ -25,8 +25,8 @@ class User(models.Model):
     #是否为超级管理员
     identity = models.IntegerField(default=4)
     
-    #锁定的功能列表
-    lockedapp = models.CharField(max_length=65536,default="[]")
+    #功能列表
+    lockedapp = models.CharField(max_length=9,default="000000001")
     
     #用户是否被锁定，只有既非超级管理员又非系统管理员的用户可被锁定
     locked = models.BooleanField(default=False)
