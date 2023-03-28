@@ -18,5 +18,5 @@ database:
     port: 3306
     name: "AplusBackend"
     user: "backend"
-    password: "GenshinImpact"
+    password: "IloveGenshinImpact"
 
