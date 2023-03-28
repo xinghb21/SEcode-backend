@@ -14,7 +14,7 @@ class User(models.Model):
     name = models.CharField(max_length=128,unique=True)
     
     #用户密码，在实际存储时需要调用make_password哈希加密
-    password = models.CharField(max_length=16383)
+    password = models.CharField(max_length=1000)
     
     #所属业务实体的id，默认值为0
     entity = models.BigIntegerField(default=0)

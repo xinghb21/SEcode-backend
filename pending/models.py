@@ -24,10 +24,10 @@ class Pending(models.Model):
     type = models.IntegerField(default=0)
     
     #申请人的描述信息
-    description = models.CharField(max_length=1024,default="")
+    description = models.CharField(max_length=100,default="")
     
     #处理人的回复
-    reply = models.CharField(max_length=1024,default="")
+    reply = models.CharField(max_length=100,default="")
     
     #申请结果，0未处理，1成功，2失败
     result = models.IntegerField(default=0)

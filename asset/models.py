@@ -14,7 +14,7 @@ class Asset(models.Model):
     department = models.BigIntegerField()
     
     #资产名称，同一业务实体内不得重名，不同业务实体间可以
-    name = models.CharField(max_length=128)
+    name = models.CharField(max_length=100)
     
     #资产类型，False为条目型，True为数量型
     type = models.BooleanField(default=False)
@@ -35,10 +35,14 @@ class Asset(models.Model):
     create_time = models.BigIntegerField(default=utils_time.get_timestamp)
     
     #资产的说明和描述
-    description = models.CharField(max_length=1024,default="")
+    description = models.TextField(default="")
     
     #自定义的资产类型，以字符串存储，格式类似于json，实际处理需要解析
+<<<<<<< HEAD
     additional = models.CharField(max_length=16383,default="{}")
+=======
+    additional = models.TextField(default="{}")
+>>>>>>> c839411bea2d09751e91fa7fb7ad550acca09c13
     
     #资产的状态，枚举类型，0闲置，1在使用，2维保，3清退，4删除
     status = models.IntegerField(default=0)
