@@ -1,12 +1,13 @@
 django==4.1.3
+pymysql
+mysqlclient==2.1.0
 
 django-cors-headers
-# pymysql
-# mysqlclient==2.1.0
 
 pytest
 pytest-django
 coverage
+pyyaml==6.0
 
 # TODO Start: [Student] Add dependency on uWSGI
 uwsgi
