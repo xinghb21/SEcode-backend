@@ -13,6 +13,7 @@ class Logs(models.Model):
     #内容，手动填入
     content = models.TextField(default="{}")
     
+    
     #时间戳
     time = models.BigIntegerField(default=utils_time.get_timestamp)
     
