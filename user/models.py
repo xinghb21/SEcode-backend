@@ -30,12 +30,21 @@ class User(models.Model):
     
     #用户是否被锁定，只有既非超级管理员又非系统管理员的用户可被锁定
     locked = models.BooleanField(default=False)
-    
-    #最近一次登录时间
-    logtime = models.IntegerField(default=utils_time.get_timestamp)
 
     class Meta:
         db_table = "User"
 
+    def serialize(self):
+        return{
+            "id":self.id,
+            "name":self.name,
+            "password":self.password,
+            "entity":self.entity,
+            "department":self.department,
+            "identity":self.identity,
+            "lockedapp":self.lockedapp,
+            "locked":self.locked
+        }
+    
     def __str__(self) -> str:
         return self.name
