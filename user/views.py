@@ -119,7 +119,7 @@ def home(req:HttpRequest,username:any):
             return_data = {
                 "funclist":user.lockedapp,
                 "code":0,
-                "character":user.identity,
+                "identity":user.identity,
                 "username":username,
                 "entity":user.entity,
                 "department":user.department
