@@ -31,6 +31,7 @@ unit-test:
     - python3 manage.py makemigrations asset
     - python3 manage.py makemigrations department
     - python3 manage.py makemigrations pending
+    - python3 manage.py makemigrations logs
     - python3 manage.py migrate
     - sh test.sh
     # TODO End: [Student] Migrate and run tests

@@ -9,6 +9,11 @@ from utils.utils_time import get_timestamp
 from django.contrib.sessions.models import Session
 # Create your views here.
 
+@CheckRequire
+def start(req: HttpRequest):
+    return HttpResponse("Start!")
+
+
 def userapp(id):
     if id == 1:
         return "110000000"
