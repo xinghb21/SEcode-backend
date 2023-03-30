@@ -8,7 +8,7 @@ from utils.utils_request import BAD_METHOD, request_failed, request_success, ret
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
 from django.contrib.sessions.models import Session
-
+from django.contrib.auth.hashers import make_password, check_password
 # Create your views here.
 
 #创建业务实体
@@ -43,35 +43,23 @@ def deleteEt(req:HttpRequest):
     else:
         return BAD_METHOD
 
-'''
 #给业务实体委派系统管理员
 @CheckRequire
 def assginES(req:HttpRequest):
     body = json.loads(req.body.decode("utf-8"))
-    if req.method == "PUT":
+    if req.method == "POST":
         entname = require(body, "entity", "string", err_msg="Missing or error type of [entity]")
-        oldname = require(body, "old", "string", err_msg="Missing or error type of [old]")
-        newname = require(body, "new", "string", err_msg="Missing or error type of [new]")
+        username = require(body, "name", "string", err_msg="Missing or error type of [name]")
+        pwd = require(body, "password", "string", err_msg="Missing or error type of [password]")
         ent = Entity.objects.filter(name=entname).first()
-        old = Entity.objects.filter(name=oldname).first()
-        new = Entity.objects.filter(name=newname).first()
+        user = Entity.objects.filter(name=username).first()
         if not ent:
             return request_failed(-1,"此业务实体不存在")
-        elif not new:
-            return request_failed(-1,"用户"+newname+"不存在")
-        else:
-            if oldname == "":
-                ent.admin = new.id
-                ent.save()
-                return request_success({"info":new + "成为了" + ent +"的系统管理员"})
-            else:
-                if not old:
-                    return request_failed(-1,"用户"+oldname+"不存在")
-                elif new == old:
-                    return request_failed(-1,"更改前后为同一用户")
-                else:
-                    ent.admin = new.id
-                    ent.save()
+        if user:
+            return request_failed(-1,"此用户名已存在")
+        es = User(name=username,password=make_password(pwd),entity=ent.id,department=0,identity=2,lockedapp="001110000")
+        es.save()
+        Logs(entity = ent.id,content="创建系统管理员"+es.name,type=1).save()
+        return request_success({"username":es.name})
     else:
         return BAD_METHOD
-'''
