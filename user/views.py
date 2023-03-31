@@ -34,14 +34,14 @@ def valid_user(body):
     #用户名不得长于128个字符
     assert 0 < len(name) <= 128, "Bad length of [name]. The length should be no longer than 128."
     identity = 4 if "identity" not in body else body["identity"]
-    funclist = userapp(identity)
+    funclist = userapp(identity) if "funclist" not in body else body["funclist"]
     entity = 0
     department = 0
     #检查业务实体和部门有效性
     if identity != 1:
         entity = require(body, "entity", "string", err_msg="Missing or error type of [entity]")
     if identity != 1 and identity != 2:
-        identity = require(body, "department", "string", err_msg="Missing or error type of [department]")
+        department = require(body, "department", "string", err_msg="Missing or error type of [department]")
     return name,pwd,entity,department,identity,funclist
 
 #创建用户

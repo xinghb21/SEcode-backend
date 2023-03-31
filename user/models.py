@@ -22,7 +22,7 @@ class User(models.Model):
     #所属部门的id，默认值为0
     department = models.BigIntegerField(default=0)
     
-    #是否为超级管理员
+    #用户身份
     identity = models.IntegerField(default=4)
     
     #功能列表
