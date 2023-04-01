@@ -93,6 +93,10 @@ def login(req:HttpRequest):
             return request_failed(-1,"此用户已被管理员封禁")
         else:
             req.session[name] = True
+            req.session["name"] = user.name
+            req.session["identity"] = user.identity
+            req.session["department"] = user.department
+            req.session["entity"] = user.entity
             Logs(entity=user.entity,content="用户"+user.name+"登录",type=1).save()
             return request_success({"name":name,"entity":user.entity,"department":user.department,"identity":user.identity,"funclist":user.lockedapp})
     else:
