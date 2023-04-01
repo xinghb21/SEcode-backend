@@ -26,6 +26,8 @@ def check_user(req:HttpRequest):
     param = req.GET.dict()
     name = require(param, "name", err_msg="Missing or error type of [name]")
     user = User.objects.filter(name=name).first()
+    if not user:
+        return request_failed(-1, "被查询的用户不存在")
     if user.department == 0:
         return request_failed(-1, "该用户不属于任何部门")
     if user.department != logged_user.department:
