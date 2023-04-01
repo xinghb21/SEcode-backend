@@ -9,7 +9,7 @@ README.md
 **/__pycache__
 .pytest_cache
 
-**/migrations
+# **/migrations
 db.sqlite3
 
 .coverage

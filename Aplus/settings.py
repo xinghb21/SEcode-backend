@@ -15,7 +15,7 @@ from pathlib import Path
 import yaml
 # print(os.listdir("."))
 
-file = open("/config/config.yml", "r", encoding="utf-8")
+file = open("config/config.yml", "r", encoding="utf-8")
 env = yaml.load(file, Loader=yaml.SafeLoader)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
