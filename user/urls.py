@@ -12,5 +12,5 @@ urlpatterns = [
     path('user/<username>',userviews.home),
     path('entity/create',dpviews.createEt),
     path('entity/delete',dpviews.deleteEt),
-    path('user/es/', include("es.urls"))
+    path('user/es/', include("user.es.urls"))
 ]
