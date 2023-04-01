@@ -1,4 +1,4 @@
-# 本地持久化的配置文件，其实就是把数据库改成了sqlite3 
+# 用于CI-CD的持久化的配置文件
 
 # This file is NOT used while deploying to SECODER Platform.
 site:
@@ -6,13 +6,13 @@ site:
     secret_key: "django-insecure-xvv16d@^4vu6-_^8w73_wt+xqf-wfppqevn)_zgye!#7l^6=p$"
     allowed_hosts: # Backend
     - 'localhost'
-    - '127.0.0.1'
+    - '127.0.0.1:8000'
     cors_allowed_hosts: # Frontend
     - 'http://localhost:3000'
     - 'https://Aplus-frontend-Aplus.app.secoder.net'
 
 database:
-    type: "sqlite3" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
+    type: "mysql" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
     host: "database.Aplus.secoder.local"
     port: 3306
     name: "AplusBackend"

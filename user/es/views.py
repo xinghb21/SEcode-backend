@@ -10,12 +10,15 @@ from utils.utils_request import BAD_METHOD, request_failed, request_success, ret
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
 from django.contrib.sessions.models import Session
+from django.contrib.auth.decorators import login_required
 
 def check_user(req:HttpRequest):
     if req.method != "GET":
         return BAD_METHOD
     # 当前登录的用户
     logged_name = req.session.get("name")
+    if not logged_name:
+        return request_failed(-1, "用户未登录")
     logged_user = User.objects.filter(name=logged_name).first()
     if logged_user.identity != 2:
         return request_failed(-1, "非系统管理员操作")
