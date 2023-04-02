@@ -4,7 +4,7 @@ import department.views as dpviews
 #TODO add urls
 
 urlpatterns = [
-    path('startup',userviews.start),
+    #path('startup',userviews.start),
     path('user/createuser',userviews.create_user),
     path('user/deleteuser',userviews.delete_user),
     path('user/login',userviews.login),
@@ -13,4 +13,7 @@ urlpatterns = [
     path('entity/create',dpviews.createEt),
     path('entity/delete',dpviews.deleteEt),
     path('user/es/', include("user.es.urls"))
+    path('entity/assgin',dpviews.assginES),
+    path('entity/deleteadmin',dpviews.deleteES),
+    path('entity/superget',dpviews.getEt),
 ]

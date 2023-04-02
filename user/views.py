@@ -1,5 +1,6 @@
 import json
 from utils import utils_time
+from django.contrib.auth.hashers import make_password, check_password
 from django.http import HttpRequest, HttpResponse
 from user.models import User
 from logs.models import Logs
@@ -9,9 +10,11 @@ from utils.utils_time import get_timestamp
 from django.contrib.sessions.models import Session
 # Create your views here.
 
+'''
 @CheckRequire
 def start(req: HttpRequest):
     return HttpResponse("Start!")
+'''
 
 
 def userapp(id):
@@ -30,13 +33,15 @@ def valid_user(body):
     pwd = require(body, "password", "string", err_msg="Missing or error type of [password]")
     #用户名不得长于128个字符
     assert 0 < len(name) <= 128, "Bad length of [name]. The length should be no longer than 128."
-    #密码有效性检查在前端进行，只获取加密后的md5
-
-    #所有有默认值的属性
-    entity = 0 if "entity" not in body else body["entity"]
-    department = 0 if "department" not in body else body["department"]
     identity = 4 if "identity" not in body else body["identity"]
     funclist = userapp(identity) if "funclist" not in body else body["funclist"]
+    entity = 0
+    department = 0
+    #检查业务实体和部门有效性
+    if identity != 1:
+        entity = require(body, "entity", "string", err_msg="Missing or error type of [entity]")
+    if identity != 1 and identity != 2:
+        department = require(body, "department", "string", err_msg="Missing or error type of [department]")
     return name,pwd,entity,department,identity,funclist
 
 #创建用户
@@ -48,7 +53,7 @@ def create_user(req:HttpRequest):
         sameuser = User.objects.filter(name=name).first()
         if sameuser:
             return request_failed(-1,"此用户名已存在")
-        user = User(name=name,password=pwd,entity=entity,department=department,identity=identity,lockedapp=funclist)
+        user = User(name=name,password=make_password(pwd),entity=entity,department=department,identity=identity,lockedapp=funclist)
         user.save()
         Logs(entity = user.entity,content="创建用户"+user.name,type=1).save()
         return request_success({"username":name})
@@ -85,7 +90,7 @@ def login(req:HttpRequest):
         if not user:
             # case 1 : 用户不存在
             return request_failed(-1,"用户不存在")
-        elif pwd != user.password:
+        elif not check_password(pwd,user.password):
             # case 2 : 密码错误
             return request_failed(-1,"密码错误")
         elif user.locked:

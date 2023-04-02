@@ -1,14 +1,14 @@
 from django.test import TestCase, Client
 from user.models import User
 import hashlib
-
+from django.contrib.auth.hashers import make_password, check_password
 # Create your tests here.
 
 class userTests(TestCase):
     def setUp(self):
-        alice = User.objects.create(name="Alice", password=self.md5("GenshinImpact"))
-        super_user = User.objects.create(name="chen", password=self.md5("ILoveGenshinImpact"), identity="1")
-        locked_user = User.objects.create(name="locked", password=self.md5("locked"), locked=True)
+        alice = User.objects.create(name="Alice", password=make_password(self.md5("GenshinImpact")))
+        super_user = User.objects.create(name="chen", password=make_password(self.md5("ILoveGenshinImpact")), identity="1")
+        locked_user = User.objects.create(name="locked", password=make_password(self.md5("locked")), locked=True)
         
     def md5(self, s):
         obj = hashlib.md5("wochao,O!".encode())
