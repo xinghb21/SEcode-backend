@@ -1,5 +1,6 @@
 # cyh
 import json
+import re
 
 from user.models import User
 from department.models import Department
@@ -11,7 +12,7 @@ from utils.utils_time import get_timestamp
 from utils.identity import *
 from utils.permission import GeneralPermission
 from utils.session import SessionAuthentication
-from utils.exceptions import Failure
+from utils.exceptions import Failure, ParamErr
 
 from rest_framework.decorators import action, throttle_classes, permission_classes
 from rest_framework.response import Response
@@ -88,6 +89,25 @@ class EsViewSet(viewsets.ViewSet):
         else:
             user.locked = False
             return Response({"code": 0, "detail": "成功解锁用户"})
+    
+    # 用于匹配app列表的正则表达式
+    re_app = r"^[01]{9}$"
+    
+    @action(detail=False, methods=['post'])
+    def apps(self, req:Request):
+        user = self.get_target_user(req)
+        new_app = require(req.data, "newapp", err_msg="Missing or error type of [newapp]")
+        if not re.match(self.re_app, new_app):
+            raise ParamErr("Error format of new app list")
+        old_app = user.lockedapp
+        user.lockedapp = new_app
+        user.save()
+        ret = {
+            "code": 0,
+            "new app": new_app,
+            "old app": old_app,
+        }
+        return Response(ret)
         
         
             
