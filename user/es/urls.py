@@ -1,7 +1,8 @@
 from django.urls import path, include
-from . import views
+from user.es.views import EsViewSet
+from rest_framework.routers import DefaultRouter
 
+router = DefaultRouter()
+router.register("", EsViewSet, basename="es")
 
-urlpatterns = [
-    path("checkuser", views.check_user)
-]
+urlpatterns = router.urls

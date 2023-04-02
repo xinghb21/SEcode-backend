@@ -8,6 +8,7 @@ pytest
 pytest-django
 coverage
 pyyaml==6.0
+djangorestframework~=3.13.1
 
 # TODO Start: [Student] Add dependency on uWSGI
 uwsgi

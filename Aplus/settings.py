@@ -21,7 +21,6 @@ env = yaml.load(file, Loader=yaml.SafeLoader)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
@@ -50,6 +49,7 @@ INSTALLED_APPS = [
     'asset',
     'pending',
     'logs',
+    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -112,7 +112,6 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
-# print(DATABASES)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -154,3 +153,15 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# restful framework settings
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "UNAUTHENTICATED_USER": None,
+    "EXCEPTION_HANDLER": "utils.exceptions.handler",
+    "DEFAULT_THROTTLE_RATES": {
+        # general throttles
+        "user": "50/min",
+        "visitor": "20/min",
+    },
+}
