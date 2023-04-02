@@ -13,6 +13,7 @@ from django.contrib.auth.hashers import make_password, check_password
 import hashlib
 # Create your views here.
 
+#hanyx
 #创建业务实体
 @CheckRequire
 def createEt(req:HttpRequest):
@@ -117,7 +118,9 @@ def getEt(req:HttpRequest):
         return_list = []
         if entlist:
             for i in entlist:
-                return_list.append({"id":i.id,"name":i.name,"admin":i.admin})
+                es = User.objects.filter(id=i.admin).first()
+                esname = "" if not es else es.name
+                return_list.append({"id":i.id,"name":i.name,"admin":esname})
         return request_success({"data":return_list})
     else:
         return BAD_METHOD

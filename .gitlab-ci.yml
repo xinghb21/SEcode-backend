@@ -8,7 +8,7 @@ stages:
 build:
   stage: build
   script:
-    - cp ./config.yml.bak ./config.yml
+    - cp ./config/config-ci.yml ./config/config.yml
     - export BUILD_IMAGE_NAME=$CI_REGISTRY_IMAGE
     - export BUILD_IMAGE_TAG=$CI_COMMIT_REF_SLUG
     - export BUILD_IMAGE_USERNAME=$CI_REGISTRY_USER
@@ -16,17 +16,12 @@ build:
     - deployer build
 
 unit-test:
-  # TODO Start: [Student] Set job image
   image: python:3.9
-  # TODO End: [Student] Set job image
   stage: test
   before_script:
-    - cp ./config.yml.bak ./config.yml
-    # TODO Start: [Student] Install dependencies
+    - cp ./config/config-ci.yml ./config/config.yml
     - pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
-    # TODO End: [Student] Install dependencies
   script:
-    # TODO Start: [Student] Migrate and run tests
     - python3 manage.py makemigrations user
     - python3 manage.py makemigrations asset
     - python3 manage.py makemigrations department
@@ -34,7 +29,6 @@ unit-test:
     - python3 manage.py makemigrations logs
     - python3 manage.py migrate
     - sh test.sh
-    # TODO End: [Student] Migrate and run tests
   after_script:
     - SUFFIX=$RANDOM
     - curl "http://api.secoder.net/static/sonar-scanner.tar.gz" -s -o "/tmp/sonar-$SUFFIX.tar.gz"

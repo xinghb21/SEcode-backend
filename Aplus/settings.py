@@ -15,7 +15,7 @@ from pathlib import Path
 import yaml
 # print(os.listdir("."))
 
-file = open("config.yml", "r", encoding="utf-8")
+file = open("config/config.yml", "r", encoding="utf-8")
 env = yaml.load(file, Loader=yaml.SafeLoader)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -34,9 +34,12 @@ SECRET_KEY = env['site']['secret_key']
 DEBUG = False if os.getenv('DEPLOY') else True
 # TODO End: [Student] Disable debug mode in production
 
-ALLOWED_HOSTS = [
-    '*'  # Insecure
-]
+if "*" in env["site"]["allowed_hosts"]:
+    ALLOWED_HOSTS = ["*"]
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    ALLOWED_HOSTS = env["site"]["allowed_hosts"]
+    CORS_ALLOWED_ORIGINS = env["site"]["cors_allowed_hosts"]
 
 
 # Application definition

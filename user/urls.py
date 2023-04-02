@@ -15,4 +15,5 @@ urlpatterns = [
     path('entity/assgin',dpviews.assginES),
     path('entity/deleteadmin',dpviews.deleteES),
     path('entity/superget',dpviews.getEt),
+    path('user/es/', include("user.es.urls")),
 ]
