@@ -23,11 +23,9 @@ class EsViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
     permission_classes = [GeneralPermission]
     allowed_identity = [ES]
-
-    # 企业系统管理员查看企业用户
-    @action(detail=False, methods=['get'])
-    def check(self, req:Request):
-        # 被操作的用户
+    
+    # 获得被操作的用户
+    def get_target_user(self, req):
         name = require(req.query_params, "name", err_msg="Missing or error type of [name]")
         user = User.objects.filter(name=name).first()
         if not user:
@@ -38,6 +36,12 @@ class EsViewSet(viewsets.ViewSet):
             raise Failure("系统管理员无权操作系统管理员")
         if user.entity != req.user.entity:
             raise Failure("系统管理员无权操作其它业务实体的用户")
+        return user
+
+    # 企业系统管理员查看企业用户
+    @action(detail=False, methods=['get'])
+    def check(self, req:Request):
+        user = self.get_target_user(req)
         
         field_list = ["name", "entity", "department", "locked", "identity", "lockedapp"]
         
@@ -46,9 +50,7 @@ class EsViewSet(viewsets.ViewSet):
     # 将已有的员工添加入本企业
     @action(detail=False, methods=['post'])
     def alter(self, req:Request):
-        # 被操作的用户
-        name = require(req.data, "name", err_msg="Missing or error type of [name]")
-        user = User.objects.filter(name=name).first()
+        user = self.get_target_user(req)
         # department
         old_dep = user.department
         dep_index = require(req.data, "department", "int", "Missing or error type of [department]")
@@ -66,7 +68,29 @@ class EsViewSet(viewsets.ViewSet):
         }
         return Response(ret)
         
-    # @CheckRequire
+    # @action
     # def reset(req:HttpRequest):
+    @action(detail=False, methods=['post'])
+    def lock(self, req:Request):
+        user = self.get_target_user(req)
+        
+        if user.locked:
+            return Response({"code": 0, "detail": "用户已经处于锁定状态"})
+        else:
+            user.locked = True
+            return Response({"code": 0, "detail": "成功锁定用户"})
+        
+    @action(detail=False, methods=['post'])
+    def unlock(self, req:Request):
+        user = self.get_target_user(req)
+        if not user.locked:
+            return Response({"code": 0, "detail": "用户未处于锁定状态"})
+        else:
+            user.locked = False
+            return Response({"code": 0, "detail": "成功解锁用户"})
+        
+        
+            
+        
         
         
