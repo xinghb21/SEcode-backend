@@ -4,7 +4,7 @@ import string
 import datetime as dt
 import pytz
 from Aplus.settings import TIME_ZONE
-from user.models import SessionPool, EXPIRE_DAYS, User
+from user.models import SessionPool, User
 from rest_framework import authentication, exceptions, status
 from rest_framework.request import Request
 
@@ -25,7 +25,7 @@ def get_session_id(request):
 
 def set_session_id(response):
     sessionId = "".join(random.sample(string.ascii_letters + string.digits, 32))
-    response.set_cookie("sessionId", sessionId, expires=60 * 60 * 24 * EXPIRE_DAYS)
+    response.set_cookie("sessionId", sessionId, expires=60 * 60 * 24 * 2)
     return response
 
 
