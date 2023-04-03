@@ -2,6 +2,8 @@
 import json
 import re
 
+from django.contrib.auth.hashers import make_password
+
 from user.models import User
 from department.models import Department
 from logs.models import Logs
@@ -23,10 +25,13 @@ from rest_framework import viewsets
 class EsViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
     permission_classes = [GeneralPermission]
+    
+    
     allowed_identity = [ES]
     
     # 获得被操作的用户
     def get_target_user(self, req):
+        
         name = require(req.query_params, "name", err_msg="Missing or error type of [name]")
         user = User.objects.filter(name=name).first()
         if not user:
@@ -42,6 +47,7 @@ class EsViewSet(viewsets.ViewSet):
     # 企业系统管理员查看企业用户
     @action(detail=False, methods=['get'])
     def check(self, req:Request):
+        
         user = self.get_target_user(req)
         
         field_list = ["name", "entity", "department", "locked", "identity", "lockedapp"]
@@ -63,14 +69,12 @@ class EsViewSet(viewsets.ViewSet):
         ret = {
             "code": 0,
             "name": user.name,
-            "old department": old_dep,
-            "new department": dep,
+            "old_department": old_dep,
+            "new_department": dep,
             "info": "转移成功"
         }
         return Response(ret)
         
-    # @action
-    # def reset(req:HttpRequest):
     @action(detail=False, methods=['post'])
     def lock(self, req:Request):
         user = self.get_target_user(req)
@@ -104,13 +108,16 @@ class EsViewSet(viewsets.ViewSet):
         user.save()
         ret = {
             "code": 0,
-            "new app": new_app,
-            "old app": old_app,
+            "new_app": new_app,
+            "old_app": old_app,
+            "detail": "修改成功"
         }
         return Response(ret)
         
-        
-            
-        
-        
-        
+    @action(detail=False, methods=['post'])
+    def reset(self, req:Request):
+        user = self.get_target_user(req)
+        new_pw = require(req.data, "newpassword", err_msg="Missing or error type of [newpassword]")
+        user.password = make_password(new_pw)
+        user.save()
+        return Response({"code": 0, "detail": "修改成功"})

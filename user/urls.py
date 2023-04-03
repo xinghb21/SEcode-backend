@@ -12,8 +12,9 @@ urlpatterns = [
     path('user/<username>',userviews.home),
     path('entity/create',dpviews.createEt),
     path('entity/delete',dpviews.deleteEt),
-    path('user/es/', include("user.es.urls")),
     path('entity/assgin',dpviews.assginES),
     path('entity/deleteadmin',dpviews.deleteES),
     path('entity/superget',dpviews.getEt),
+    path('user/es/', include("user.es.urls")),
+    path('user/ep/', include('user.ep.urls'))
 ]

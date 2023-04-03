@@ -16,8 +16,10 @@ def handler(e, ctx):
             # status code is 403
             resp.data["code"] = -3
         elif type(e) is ParamErr:
+            # status code is 400
             resp.data["code"] = -2
         elif type(e) is Failure:
+            # status code is 400
             resp.data["code"] = -1
         else:
             resp.data["code"] = -100
