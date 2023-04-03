@@ -59,7 +59,7 @@ class UserViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
     permission_classes = [GeneralPermission]
     #创建用户
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['POST'])
     def create_user(self, req:Request):
         name,pwd,entity,department,identity,funclist = valid_user(req.data)
         sameuser = User.objects.filter(name=name).first()
@@ -71,7 +71,7 @@ class UserViewSet(viewsets.ViewSet):
         return Response({"username":name})
 
     #删除用户
-    @action(detail=False, methods=['delete'])
+    @action(detail=False, methods=['DELETE'])
     def delete_user(self, req:Request):
         name = require(req.data, "name", "string", err_msg="Missing or error type of [name]")
         thisuser = User.objects.filter(name=name).first()
@@ -84,7 +84,7 @@ class UserViewSet(viewsets.ViewSet):
             raise Failure("此用户不存在")
 
     #用户登录
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['POST'])
     def login(self, req:Request):
         name = require(req.data, "name", "string", err_msg="Missing or error type of [name]")
         pwd = require(req.data, "password", "string", err_msg="Missing or error type of [password]")
@@ -107,7 +107,7 @@ class UserViewSet(viewsets.ViewSet):
             return Response({"name":name,"entity":user.entity,"department":user.department,"identity":user.identity,"funclist":user.lockedapp})
 
     #用户登出
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['POST'])
     def logout(self, req:Request):
         name = require(req.data, "name", "string", err_msg="Missing or error type of [name]")
         user = User.objects.filter(name=name).first()
