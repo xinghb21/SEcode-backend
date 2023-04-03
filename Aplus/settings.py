@@ -154,14 +154,11 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+APPEND_SLASH = False
+
 # restful framework settings
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
     "UNAUTHENTICATED_USER": None,
     "EXCEPTION_HANDLER": "utils.exceptions.handler",
-    "DEFAULT_THROTTLE_RATES": {
-        # general throttles
-        "user": "50/min",
-        "visitor": "20/min",
-    },
 }

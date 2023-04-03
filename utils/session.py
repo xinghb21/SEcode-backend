@@ -4,19 +4,32 @@ import string
 import datetime as dt
 import pytz
 from Aplus.settings import TIME_ZONE
-from user.models import SessionPool, User
+# from user.models import SessionPool, User
+from user.models import User
 from rest_framework import authentication, exceptions, status
 from rest_framework.request import Request
 
 
+# class SessionAuthentication(authentication.BaseAuthentication):
+#     def authenticate(self, req: Request):
+#         session_id = get_session_id(req)
+#         if not session_id:
+#             raise exceptions.AuthenticationFailed("Request without a sessionId")
+#         return (verify_session_id(session_id), {"sessionId": session_id})
+
+
 class SessionAuthentication(authentication.BaseAuthentication):
     def authenticate(self, req: Request):
-        session_id = get_session_id(req)
-        if not session_id:
-            raise exceptions.AuthenticationFailed("Request without a sessionId")
-        return (verify_session_id(session_id), {"sessionId": session_id})
+        if 'id' not in req._request.session.keys():
+            return (None, None)
+        id = req._request.session['id']
+        if not id:
+            return (None, None)
+        user = User.objects.get(id=id)
+        return (user, None)
 
 
+# cyh：以下为冗余代码
 def get_session_id(request):
     if request.method == "POST":
         return request.data.get("sessionId")
