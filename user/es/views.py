@@ -51,7 +51,7 @@ class EsViewSet(viewsets.ViewSet):
         
         field_list = ["name", "entity", "department", "locked", "identity", "lockedapp"]
         
-        return request_success(return_field(user.serialize(), field_list))
+        return Response(return_field(user.serialize(), field_list))
     
     # 将已有的员工添加入本企业
     @action(detail=False, methods=['post'])

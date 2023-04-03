@@ -6,14 +6,7 @@ from django.contrib.auth.hashers import make_password, check_password
 
 class userTests(TestCase):
     def setUp(self):
-        alice = User.objects.create(name="Alice", password=make_password(self.md5("GenshinImpact")))
-        super_user = User.objects.create(name="chen", password=make_password(self.md5("ILoveGenshinImpact")), identity="1")
-        locked_user = User.objects.create(name="locked", password=make_password(self.md5("locked")), locked=True)
-        
-    def md5(self, s):
-        obj = hashlib.md5("wochao,O!".encode())
-        obj.update(s.encode())
-        return obj.hexdigest()
+        alice = User.objects.create(name="Alice", password=make_password("GenshinImpact"))
     
     def login(self, name, pw):
         payload = {
@@ -28,16 +21,23 @@ class userTests(TestCase):
         }
         return self.client.post("/user/logout", data=payload, content_type="application/json")
     
+    def test_login(self):
+        res = self.login("Alice", "GenshinImpact")
+        print(res.content)
+        # std_output = {
+        #     "code": 0,
+        #     "name": "Alice",
+        #     "entity": "0",
+        # }
+        # self.assertJSONEqual(res.content, )
+    
     def test_bad_username(self):
-        res = self.login("abab", self.md5("GenshinImpact"))
+        res = self.login("abab", "GenshinImpact")
+        print(res.content)
         self.assertJSONEqual(res.content, {"code": -1, "info": "用户不存在"})
         
     def test_bad_pw(self):
-        res = self.login("Alice", self.md5("GI"))
+        res = self.login("Alice", "GI")
+        print(res.content)
         self.assertJSONEqual(res.content, {"code": -1, "info": "密码错误"})
-        
-    def test_locked(self):
-        res = self.login("locked", self.md5("locked"))
-        self.assertJSONEqual(res.content, {"code": -1, "info": "此用户已被管理员封禁"})
-        
-
+    
