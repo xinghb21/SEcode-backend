@@ -2,18 +2,19 @@ from rest_framework.views import exception_handler
 from rest_framework import exceptions, status
 from Aplus.settings import DEBUG
 
-
 def handler(e, ctx):
+    # print("type is ------", type(e))
     resp = exception_handler(e, ctx)
 
     if resp is not None:
-        if type(e) is exceptions.Throttled:
-            resp.data["code"] = -5
-        elif type(e) is exceptions.PermissionDenied:
+        if type(e) is exceptions.PermissionDenied:
             # status code is 403
-            resp.data["code"] = -4
+            resp.data["code"] = -5
         elif type(e) is exceptions.AuthenticationFailed:
             # status code is 403
+            resp.data["code"] = -4
+        elif type(e) is exceptions.MethodNotAllowed:
+            # status code is 405
             resp.data["code"] = -3
         elif type(e) is ParamErr:
             # status code is 400

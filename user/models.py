@@ -56,11 +56,11 @@ class User(models.Model):
 # 一个SessionID对应一个用户，一个用户可能对应多个sessionID
 # 要求前端每次传请求时都要带上sessionID
 # 每个sessionID有两天的有效期
-class SessionPool(models.Model):
-    sessionId = models.CharField(max_length=32)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    expireAt = models.DateTimeField(default=utils_time.get_expire_date)
+# class SessionPool(models.Model):
+#     sessionId = models.CharField(max_length=32)
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     expireAt = models.DateTimeField(default=utils_time.get_expire_date)
 
-    class Mata:
-        indexes = [models.Index(fields=["sessionId"])]
+#     class Mata:
+#         indexes = [models.Index(fields=["sessionId"])]
 # cyh
