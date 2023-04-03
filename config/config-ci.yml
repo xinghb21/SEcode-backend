@@ -12,7 +12,7 @@ site:
     - 'https://Aplus-frontend-Aplus.app.secoder.net'
 
 database:
-    type: "mysql" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
+    type: "sqlite3" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
     host: "database.Aplus.secoder.local"
     port: 3306
     name: "AplusBackend"

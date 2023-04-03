@@ -126,7 +126,7 @@ def logout(req:HttpRequest):
 #进入用户界面
 @CheckRequire
 def home(req:HttpRequest,username:any):
-    userName = require({"username": username}, "username", "string", err_msg="Bad param [username]", err_code=-1)
+    userName = require({"username": username}, "username", "string", err_msg="Bad param [username]")
     if req.method == "GET":
         user = User.objects.filter(name=userName).first()
         if user and userName in req.session and req.session.get(userName):

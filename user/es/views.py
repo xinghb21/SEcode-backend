@@ -5,9 +5,8 @@ import re
 from django.contrib.auth.hashers import make_password
 
 from user.models import User
-from department.models import Department
+from department.models import Department,Entity
 from logs.models import Logs
-
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
@@ -113,7 +112,7 @@ class EsViewSet(viewsets.ViewSet):
             "detail": "修改成功"
         }
         return Response(ret)
-        
+
     @action(detail=False, methods=['post'])
     def reset(self, req:Request):
         user = self.get_target_user(req)
@@ -121,3 +120,55 @@ class EsViewSet(viewsets.ViewSet):
         user.password = make_password(new_pw)
         user.save()
         return Response({"code": 0, "detail": "修改成功"})
+    
+    
+    #hyx
+    #创建部门
+    @action(detail=False,methods=['post'])
+    def createdepart(self,req:Request):
+        entname = require(req.data,"entity","string",err_msg="Missing or error type of [entity]")
+        depname = require(req.data,"depname","string",err_msg="Missing or error type of [depname]")
+        parentname = require(req.data,"parent","string",err_msg="Missing or error type of [parent]")
+        ent = Entity.objects.filter(name=entname).first()
+        if not ent:
+            raise Failure("业务实体不存在")
+        if not parentname:
+            newdepart = Department(name=depname,entity=ent.id)
+            newdepart.save()
+        else:
+            parent = Department.objects.filter(name=parentname,entity=ent.id).first()
+            if not parent:
+                raise Failure("上属部门不存在")
+            newdepart2 = Department(name=depname,entity=ent.id,parent=parent.id)
+            newdepart2.save()
+        ret = {
+            "code" : 0,
+            "name" : depname
+        }
+        return Response(ret)
+    
+    #递归构造部门树存储
+    def tree(self,ent,parent):
+        roots = Department.objects.filter(entity=ent,parent=parent).all()
+        #递归基
+        if not roots:
+            return "$"
+        else:
+            res = {}
+            for root in roots:
+                res.update({root.name:self.tree(ent,root.id)})
+            return res
+    
+    #查看部门树
+    @action(detail=False,methods=['get'])
+    def departs(self,req:Request):
+        if req.user.identity != 2:
+            raise Failure("此用户无权查看部门结构")
+        ent = Entity.objects.filter(admin=self.user.id).first()
+        if not ent:
+            raise Failure("业务实体不存在")
+        ret = {
+            "code" : 0,
+            "info" : self.tree(ent.id,0)
+        }
+        return Response(ret)

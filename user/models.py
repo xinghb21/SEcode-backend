@@ -5,8 +5,6 @@ from utils.utils_require import MAX_CHAR_LENGTH
 from django.contrib.auth.hashers import make_password, check_password
 # Create your models here.
 
-# Session过期时间
-EXPIRE_DAYS = 2
 
 # 用户信息的数据库
 class User(models.Model):
