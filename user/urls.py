@@ -7,7 +7,7 @@ from rest_framework.routers import DefaultRouter
 #TODO add urls
 router = DefaultRouter(trailing_slash=False)
 router.register("user", UserViewSet, basename="user")
-print(router.urls)
+# print(router.urls)
 
 urlpatterns = [
     path('entity/create',dpviews.createEt),
@@ -17,5 +17,5 @@ urlpatterns = [
     path('entity/superget',dpviews.getEt),
     path('user/es/', include("user.es.urls")),
     path('user/ep/', include('user.ep.urls')),
-    path('user/<username>/home', userviews.home),
+    path('user/<username>', userviews.home),
 ] + router.urls

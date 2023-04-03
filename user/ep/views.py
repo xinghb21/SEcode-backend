@@ -27,7 +27,7 @@ class EpViewSet(viewsets.ViewSet):
     allowed_identity = [EP]
     
     @action(detail=False, methods=['post'])
-    def create(self, req:Request):
+    def createAsset(self, req:Request):
         if 'parent' in req.data.keys():
             parent = require(req.data, 'parent', 'int', "Error type of [parent]")
         else:
