@@ -19,12 +19,12 @@ from rest_framework.decorators import action, throttle_classes, permission_class
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
+from rest_framework.renderers import JSONRenderer
 # 企业系统管理员
 
 class EsViewSet(viewsets.ViewSet):
     authentication_classes = [LoginAuthentication]
     permission_classes = [GeneralPermission]
-    
     
     allowed_identity = [ES]
     
@@ -50,29 +50,63 @@ class EsViewSet(viewsets.ViewSet):
     def check(self, req:Request):
         
         user = self.get_target_user(req)
+        if user.entity == 0:
+            et_name = ""
+        else:
+            et = Entity.objects.filter(id=user.entity).first()
+            if not et:
+                raise Failure("被操作的用户的业务实体不存在")
+            et_name = et.name
         
-        field_list = ["name", "entity", "department", "locked", "identity", "lockedapp"]
+        if user.department == 0:
+            dep_name = ""
+        else:
+            dep = Department.objects.filter(id=user.department).first()
+            if not dep:
+                raise Failure("被操作的用户的部门不存在")
+            dep_name = dep.name
+        if user.identity == 3:
+            id_name = "资产管理员"
+        else:
+            id_name = "员工"
         
-        return Response(return_field(user.serialize(), field_list))
+        ret = {
+            "code": 0,
+            "name": user.name,
+            "entity": et_name,
+            "department": dep_name,
+            "locked": user.locked,
+            "identity": id_name,
+            "lockedapp": user.lockedapp,
+        }
+        
+        return Response(ret)
     
-    # 将已有的员工添加入本企业
+    # 更改员工的部门
     @action(detail=False, methods=['post'])
     def alter(self, req:Request):
         user = self.get_target_user(req)
         # department
         old_dep = user.department
-        dep_index = require(req.data, "department", "int", "Missing or error type of [department]")
-        dep = Department.objects.filter(id=dep_index).first()
-        if dep_index != 0 and not dep:
-            raise Failure("部门不存在")
-        user.department = dep_index
-        user.save()
+        if old_dep == 0:
+            old_name = ""
+        else:
+            old_name = Department.objects.filter(id = old_dep).first().name
+        new_name = require(req.data, "department", "string", "Missing or error type of [department]")
+        if len(new_name) == 0:
+            user.department = 0
+            user.save()
+        else:
+            dep = Department.objects.filter(name=new_name).first()
+            if not dep:
+                raise Failure("新部门不存在")
+            user.department = dep.id
+            user.save()
         ret = {
             "code": 0,
             "name": user.name,
-            "old_department": old_dep,
-            "new_department": dep,
-            "info": "转移成功"
+            "old_department": old_name,
+            "new_department": new_name,
         }
         return Response(ret)
         
@@ -111,7 +145,6 @@ class EsViewSet(viewsets.ViewSet):
             "code": 0,
             "new_app": new_app,
             "old_app": old_app,
-            "detail": "修改成功"
         }
         return Response(ret)
 
@@ -121,7 +154,7 @@ class EsViewSet(viewsets.ViewSet):
         new_pw = require(req.data, "newpassword", err_msg="Missing or error type of [newpassword]")
         user.password = make_password(new_pw)
         user.save()
-        return Response({"code": 0, "detail": "修改成功"})
+        return Response({"code": 0})
     
     
     #hyx
