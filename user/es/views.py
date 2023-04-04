@@ -213,15 +213,13 @@ class EsViewSet(viewsets.ViewSet):
         depname = require(req.data,"name","string",err_msg="Missing or error type of [depname]")
         ent = Entity.objects.filter(admin=req.user.id).first()
         dep = Department.objects.filter(entity=ent.id,name=depname).first()
-        if not ent or ent.admin != req.user.id:
-            raise Failure("无权删除该部门")
         if not dep:
             raise Failure("该部门不存在")
         Logs(entity=ent.id,content="删除部门"+depname+"及其下属部门",type=2).save()
         self.layerdelete(dep)
         ret = {
             "code" : 0,
-            "rootDepartment" : depname
+            "name" : depname
         }
         return Response(ret)
     

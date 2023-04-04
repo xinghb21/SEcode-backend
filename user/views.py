@@ -20,14 +20,16 @@ from rest_framework.request import Request
 from rest_framework import viewsets
 
 def userapp(id):
-    if id == 1:
+    if id == 1 or id == "1":
         return "110000000"
-    if id == 2:
+    elif id == 2 or id == "2":
         return "001110000"
-    if id == 3:
+    elif id == 3 or id == "3":
         return "000001110"
-    if id == 4:
+    elif id == 4 or id == "4":
         return "000000001"
+    else:
+        raise Failure("Invalid identity")
 
 def valid_user(body):
     #获取无默认值的用户名和密码，缺失则报错
@@ -38,6 +40,7 @@ def valid_user(body):
         raise Failure("Bad length of [name]. The length should be no longer than 128.")
     identity = 4 if "identity" not in body else body["identity"]
     funclist = userapp(identity) if "funclist" not in body else body["funclist"]
+    identity = int(identity)
     entity = 0
     department = 0
     #检查业务实体和部门有效性
@@ -118,7 +121,7 @@ class UserViewSet(viewsets.ViewSet):
         user = User.objects.filter(name=name).first()
         if not user:
             # case 1 : 用户不存在
-            raise Failure("用户" + name + "不存在")
+            raise Failure("用户不存在")
         else:
             req._request.session[name] = False
             return Response({"name":name})
