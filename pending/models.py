@@ -33,10 +33,10 @@ class Pending(models.Model):
     result = models.IntegerField(default=0)
     
     #请求发起时间
-    request_time = models.BigIntegerField(default=utils_time.get_timestamp)
+    request_time = models.FloatField(default=utils_time.get_timestamp)
     
     #请求处理时间
-    review_time = models.BigIntegerField(default=0)
+    review_time = models.FloatField(default=0)
 
     class Meta:
         db_table = "Pending"
