@@ -19,10 +19,13 @@ class esTest(TestCase):
                                  identity=2, entity=1, department=0)
         ep = User.objects.create(name="ep", password=make_password("ep"), 
                                  identity=3, entity=1, department=1)
-        et1 = Entity.objects.create(name="et1", admin=4)
-        et2 = Entity.objects.create(name="et2", admin=4)
-        dep1 = Department.objects.create(name="dep1", entity=1, parent=0, admin=5)
-        dep2 = Department.objects.create(name="dep2", entity=1, parent=0, admin=5)
+        es2 = User.objects.create(name="es2", password=make_password("es2"), 
+                                 identity=2, entity=1, department=0)
+        et1 = Entity.objects.create(name="et1", admin=5)
+        et2 = Entity.objects.create(name="et2", admin=5)
+        et3 = Entity.objects.create(name="et3",admin=7)
+        dep1 = Department.objects.create(name="dep1", entity=1, parent=0, admin=6)
+        dep2 = Department.objects.create(name="dep2", entity=1, parent=0, admin=6)
         self.login("es", "es")
         
     def login(self, name, pw):
@@ -37,6 +40,7 @@ class esTest(TestCase):
             "name": name
         }
         return self.client.post("/user/logout", data=payload, content_type="application/json")
+    
     def identity(self, id):
         if id == 1:
             return "超级管理员"
@@ -116,4 +120,68 @@ class esTest(TestCase):
     
     def test_reset(self):
         resp = self.client.post("/user/es/reset", {"name": "op1", "newpassword": "abababab"}, content_type="application/json")
-        self.assertEqual(resp.json()["code"], 0)  
+        self.assertEqual(resp.json()["code"], 0)
+    
+    def test_bad_createdepart(self):
+        resp = self.client.post("/user/es/createdepart",{"entity":"et4","depname":"dep3","parent":""})
+        std ={
+            "code":-1,
+            "detail":"业务实体不存在"
+        }
+        self.assertJSONEqual(resp.content,std)
+        resp = self.client.post("/user/es/createdepart",{"entity":"et1","depname":"dep1","parent":""})
+        std ={
+            "code":-1,
+            "detail":"部门已存在"
+        }
+        self.assertJSONEqual(resp.content,std)
+        resp = self.client.post("/user/es/createdepart",{"entity":"et3","depname":"dep3","parent":""})
+        std ={
+            "code":-1,
+            "detail":"无权创建部门"
+        }
+        self.assertJSONEqual(resp.content,std)
+        resp = self.client.post("/user/es/createdepart",{"entity":"et1","depname":"dep3","parent":"dep4"})
+        std ={
+            "code":-1,
+            "detail":"上属部门不存在"
+        }
+        self.assertJSONEqual(resp.content,std)
+    
+    def test_create_and_check_departs(self):
+        self.login("es", "es")
+        resp = self.client.post("/user/es/createdepart",{"entity":"et1","depname":"dep3","parent":""})
+        std={
+            "code":0,
+            "name":"dep3"
+        }
+        self.assertJSONEqual(resp.content,std)
+        resp = self.client.post("/user/es/createdepart",{"entity":"et1","depname":"dep4","parent":"dep2"})
+        std={
+            "code":0,
+            "name":"dep4"
+        }
+        self.assertJSONEqual(resp.content,std)
+        resp = self.client.get("/user/es/departs")
+        std={
+            "code":0,
+            "info": {"dep1": "$", "dep2": {"dep4": "$"}, "dep3": "$"}
+        }
+        self.assertJSONEqual(resp.content,std)
+    
+    def test_delete_departs(self):
+        self.login("es", "es")
+        resp = self.client.delete("/user/es/deletedepart",{"name":"dep3"},content_type="application/json")
+        std ={
+            "code":-1,
+            "detail":"该部门不存在"
+        }
+        self.assertJSONEqual(resp.content,std)
+        resp = self.client.delete("/user/es/deletedepart",{"name":"dep1"},content_type="application/json")
+        std ={
+            "code":0,
+            "name":"dep1"
+        }
+        self.assertJSONEqual(resp.content,std)
+
+
