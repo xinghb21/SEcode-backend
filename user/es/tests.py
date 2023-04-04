@@ -119,7 +119,7 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["new_app"], "111111111")
     
     def test_reset(self):
-        resp = self.client.post("/user/es/reset", {"name": "op1", "newpassword": "abababab"}, content_type="application/json")
+        resp = self.client.post("/user/es/reset", {"name": "op1", "newpassword": "ashdjkasdlkj2143254dsfs"}, content_type="application/json")
         self.assertEqual(resp.json()["code"], 0)
     
     def test_bad_createdepart(self):
