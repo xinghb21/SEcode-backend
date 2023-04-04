@@ -29,9 +29,11 @@ class EsViewSet(viewsets.ViewSet):
     allowed_identity = [ES]
     
     # 获得被操作的用户
-    def get_target_user(self, req):
-        
-        name = require(req.query_params, "name", err_msg="Missing or error type of [name]")
+    def get_target_user(self, req:Request):
+        if req._request.method == "GET":
+            name = require(req.query_params, "name", err_msg="Missing or error type of [name]")
+        else:
+            name = require(req.data, "name", err_msg="Missing or error type of [name]")
         user = User.objects.filter(name=name).first()
         if not user:
             raise Failure("被查询的用户不存在")

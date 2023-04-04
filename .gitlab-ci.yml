@@ -22,11 +22,7 @@ unit-test:
     - cp ./config/config-ci.yml ./config/config.yml
     - pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
   script:
-    - python3 manage.py makemigrations user
-    - python3 manage.py makemigrations asset
-    - python3 manage.py makemigrations department
-    - python3 manage.py makemigrations pending
-    - python3 manage.py makemigrations logs
+  # 远程仅migrate，本地将makemigration的文件上传
     - python3 manage.py migrate
     - sh test.sh
   after_script:
