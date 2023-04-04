@@ -33,7 +33,8 @@ class Failure(exceptions.APIException):
     detail = "请求失败."
     
     def __init__(self, info=""):
-        self.detail += " " + info
+        if len(info) != 0:
+            self.detail = info
 
 # 参数错误
 class ParamErr(exceptions.APIException):

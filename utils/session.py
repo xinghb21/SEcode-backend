@@ -18,49 +18,51 @@ from rest_framework.request import Request
 #         return (verify_session_id(session_id), {"sessionId": session_id})
 
 
-class SessionAuthentication(authentication.BaseAuthentication):
+class LoginAuthentication(authentication.BaseAuthentication):
     def authenticate(self, req: Request):
         if 'id' not in req._request.session.keys():
-            return (None, None)
+            raise exceptions.AuthenticationFailed("用户未登录")
         id = req._request.session['id']
         if not id:
-            return (None, None)
+            raise exceptions.AuthenticationFailed("用户未登录")
         user = User.objects.get(id=id)
+        if not user:
+            raise exceptions.AuthenticationFailed("登录的用户不存在")
         return (user, None)
 
 
 # cyh：以下为冗余代码
-def get_session_id(request):
-    if request.method == "POST":
-        return request.data.get("sessionId")
-    return request.GET.get("sessionId")
+# def get_session_id(request):
+#     if request.method == "POST":
+#         return request.data.get("sessionId")
+#     return request.GET.get("sessionId")
 
 
-def set_session_id(response):
-    sessionId = "".join(random.sample(string.ascii_letters + string.digits, 32))
-    response.set_cookie("sessionId", sessionId, expires=60 * 60 * 24 * 2)
-    return response
+# def set_session_id(response):
+#     sessionId = "".join(random.sample(string.ascii_letters + string.digits, 32))
+#     response.set_cookie("sessionId", sessionId, expires=60 * 60 * 24 * 2)
+#     return response
 
 
-def verify_session_id(sessionId):
-    sessionRecord = SessionPool.objects.filter(sessionId=sessionId).first()
-    if sessionRecord:
-        if sessionRecord.expireAt < dt.datetime.now(pytz.timezone(TIME_ZONE)):
-            SessionPool.objects.filter(sessionId=sessionId).delete()
-            return None
-        return sessionRecord.user
-    else:
-        return None
+# def verify_session_id(sessionId):
+#     sessionRecord = SessionPool.objects.filter(sessionId=sessionId).first()
+#     if sessionRecord:
+#         if sessionRecord.expireAt < dt.datetime.now(pytz.timezone(TIME_ZONE)):
+#             SessionPool.objects.filter(sessionId=sessionId).delete()
+#             return None
+#         return sessionRecord.user
+#     else:
+#         return None
 
 
-def bind_session_id(sessionId: str, user: User):
-    SessionPool.objects.create(sessionId=sessionId, user=user)
+# def bind_session_id(sessionId: str, user: User):
+#     SessionPool.objects.create(sessionId=sessionId, user=user)
 
 
-def disable_session_id(sessionId: str):
-    record = SessionPool.objects.filter(sessionId=sessionId).first()
-    if record:
-        record.delete()
+# def disable_session_id(sessionId: str):
+#     record = SessionPool.objects.filter(sessionId=sessionId).first()
+#     if record:
+#         record.delete()
         
         
-# cyh
+# # cyh
