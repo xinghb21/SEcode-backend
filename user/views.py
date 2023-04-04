@@ -12,7 +12,7 @@ from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
 from utils.permission import GeneralPermission
 from utils.session import LoginAuthentication
-from utils.exceptions import Failure, ParamErr
+from utils.exceptions import Failure, ParamErr, Check
 
 from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -63,6 +63,7 @@ class UserViewSet(viewsets.ViewSet):
     authentication_classes = []
     permission_classes = []
     #创建用户
+    @Check
     @action(detail=False, methods=['post'])
     def createuser(self, req:Request):
         name,pwd,entity,department,identity,funclist = valid_user(req.data)
@@ -75,7 +76,8 @@ class UserViewSet(viewsets.ViewSet):
         return Response({"code":0,"username":name})
 
     #删除用户
-    @action(detail=False, methods=['DELETE'])
+    @Check
+    @action(detail=False, methods=['delete'])
     def deleteuser(self, req:Request):
         name = require(req.data, "name", "string", err_msg="Missing or error type of [name]")
         thisuser = User.objects.filter(name=name).first()
@@ -88,6 +90,7 @@ class UserViewSet(viewsets.ViewSet):
             raise Failure("此用户不存在")
 
     #用户登录
+    @Check
     @action(detail=False, methods=['post'], authentication_classes=[])
     def login(self, req:Request):
         name = require(req.data, "name", "string", err_msg="Missing or error type of [name]")
@@ -111,7 +114,8 @@ class UserViewSet(viewsets.ViewSet):
             return Response({"code":0,"name":name,"entity":user.entity,"department":user.department,"identity":user.identity,"funclist":user.lockedapp})
 
     #用户登出
-    @action(detail=False, methods=['POST'])
+    @Check
+    @action(detail=False, methods=['post'])
     def logout(self, req:Request):
         name = require(req.data, "name", "string", err_msg="Missing or error type of [name]")
         user = User.objects.filter(name=name).first()
@@ -123,6 +127,7 @@ class UserViewSet(viewsets.ViewSet):
             return Response({"code":0,"name":name})
 
 #进入用户界面
+@Check
 @api_view(['GET'])
 @authentication_classes([LoginAuthentication])
 @permission_classes([GeneralPermission])

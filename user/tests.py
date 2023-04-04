@@ -61,25 +61,27 @@ class userTest(TestCase):
         bob = User.objects.create(name="bob",password=make_password("bob"),identity=2,entity=1)
         coco = User.objects.create(name="coco",password=make_password("coco"),identity=3,entity=1,department=1,lockedapp="000001010")
         david = User.objects.create(name="david",password=make_password("david"),identity=4,entity=1,department=1,locked=True)
-        resp = self.client.post("/user/createuser",{"name":"bob","password":"bob","identity":2,"entity":"et"})
+        bobpw = "bob"
+        resp = self.client.post("/user/createuser",{"name":"bob","password":bobpw,"identity":2,"entity":"et"})
         std={
             "code":-1,
             "detail":"此用户名已存在"
         }
+        frpw = "francis"
         self.assertJSONEqual(resp.content,std)
-        resp = self.client.post("/user/createuser",{"name":"francis","password":"francis","identity":2,"entity":"et2"})
+        resp = self.client.post("/user/createuser",{"name":"francis","password":frpw,"identity":2,"entity":"et2"})
         std={
             "code":-1,
             "detail":"业务实体不存在"
         }
         self.assertJSONEqual(resp.content,std)
-        resp = self.client.post("/user/createuser",{"name":"francis","password":"francis","identity":3,"entity":"et","department":"dep2"})
+        resp = self.client.post("/user/createuser",{"name":"francis","password":frpw,"identity":3,"entity":"et","department":"dep2"})
         std={
             "code":-1,
             "detail":"部门不存在"
         }
         self.assertJSONEqual(resp.content,std)
-        resp = self.client.post("/user/createuser",{"name":"bob","password":"bob","identity":"WTF","entity":"et"})
+        resp = self.client.post("/user/createuser",{"name":"bob","password":bobpw,"identity":"WTF","entity":"et"})
         std={
             "code":-1,
             "detail":"Invalid identity"
@@ -88,7 +90,8 @@ class userTest(TestCase):
 
     def test_create(self):
         et = Entity.objects.create(name="et")
-        resp = self.client.post("/user/createuser",{"name":"francis","password":"francis","identity":2,"entity":"et"})
+        frpw = "francis"
+        resp = self.client.post("/user/createuser",{"name":"francis","password":frpw,"identity":2,"entity":"et"})
         std={
             "code":0,
             "username":"francis"

@@ -14,7 +14,7 @@ from utils.utils_time import get_timestamp
 from utils.identity import *
 from utils.permission import GeneralPermission
 from utils.session import LoginAuthentication
-from utils.exceptions import Failure, ParamErr
+from utils.exceptions import Failure, ParamErr, Check
 
 from rest_framework.decorators import action, throttle_classes, permission_classes
 from rest_framework.response import Response
@@ -47,6 +47,7 @@ class EsViewSet(viewsets.ViewSet):
         return user
 
     # 企业系统管理员查看企业用户
+    @Check
     @action(detail=False, methods=['get'])
     def check(self, req:Request):
         
@@ -66,10 +67,6 @@ class EsViewSet(viewsets.ViewSet):
             if not dep:
                 raise Failure("被操作的用户的部门不存在")
             dep_name = dep.name
-        if user.identity == 3:
-            id_name = "资产管理员"
-        else:
-            id_name = "员工"
         
         ret = {
             "code": 0,
@@ -77,13 +74,14 @@ class EsViewSet(viewsets.ViewSet):
             "entity": et_name,
             "department": dep_name,
             "locked": user.locked,
-            "identity": id_name,
+            "identity": user.identity,
             "lockedapp": user.lockedapp,
         }
         
         return Response(ret)
     
     # 更改员工的部门
+    @Check
     @action(detail=False, methods=['post'])
     def alter(self, req:Request):
         user = self.get_target_user(req)
@@ -110,7 +108,8 @@ class EsViewSet(viewsets.ViewSet):
             "new_department": new_name,
         }
         return Response(ret)
-        
+    
+    @Check
     @action(detail=False, methods=['post'])
     def lock(self, req:Request):
         user = self.get_target_user(req)
@@ -120,7 +119,8 @@ class EsViewSet(viewsets.ViewSet):
         else:
             user.locked = True
             return Response({"code": 0, "detail": "成功锁定用户"})
-        
+    
+    @Check   
     @action(detail=False, methods=['post'])
     def unlock(self, req:Request):
         user = self.get_target_user(req)
@@ -133,6 +133,7 @@ class EsViewSet(viewsets.ViewSet):
     # 用于匹配app列表的正则表达式
     re_app = r"^[01]{9}$"
     
+    @Check
     @action(detail=False, methods=['post'])
     def apps(self, req:Request):
         user = self.get_target_user(req)
@@ -148,7 +149,7 @@ class EsViewSet(viewsets.ViewSet):
             "old_app": old_app,
         }
         return Response(ret)
-
+    @Check
     @action(detail=False, methods=['post'])
     def reset(self, req:Request):
         user = self.get_target_user(req)
@@ -161,6 +162,7 @@ class EsViewSet(viewsets.ViewSet):
     #hyx
     
     #创建部门
+    @Check
     @action(detail=False,methods=['post'])
     def createdepart(self,req:Request):
         entname = require(req.data,"entity","string",err_msg="Missing or error type of [entity]")
@@ -205,6 +207,7 @@ class EsViewSet(viewsets.ViewSet):
         dep.delete()
     
     #删除部门，下属所有内容均删除
+    @Check
     @action(detail=False,methods=['delete'])
     def deletedepart(self,req:Request):
         depname = require(req.data,"name","string",err_msg="Missing or error type of [depname]")
@@ -221,6 +224,7 @@ class EsViewSet(viewsets.ViewSet):
         return Response(ret)
     
     #递归构造部门树存储
+    @Check
     def tree(self,ent,parent):
         roots = Department.objects.filter(entity=ent,parent=parent).all()
         #递归基
@@ -233,6 +237,7 @@ class EsViewSet(viewsets.ViewSet):
             return res
     
     #查看部门树
+    @Check
     @action(detail=False,methods=['get'])
     def departs(self,req:Request):
         if req.user.identity != 2:
