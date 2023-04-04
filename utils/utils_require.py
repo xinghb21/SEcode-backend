@@ -1,6 +1,7 @@
 from functools import wraps
 
 from utils.utils_request import request_failed
+from utils.exceptions import ParamErr, Failure
 
 MAX_CHAR_LENGTH = 255
 
@@ -19,11 +20,46 @@ def CheckRequire(check_fn):
 
 # Here err_code == -2 denotes "Error in request body"
 # And err_code == -1 denotes "Error in request URL parsing"
-def require(body, key, type="string", err_msg=None, err_code=-2):
+# def require(body, key, type="string", err_msg=None, err_code=-2):
+    
+#     if key not in body.keys():
+#         raise KeyError(err_msg if err_msg is not None 
+#                        else f"Invalid parameters. Expected `{key}`, but not found.", err_code)
+    
+#     val = body[key]
+    
+#     err_msg = f"Invalid parameters. Expected `{key}` to be `{type}` type."\
+#                 if err_msg is None else err_msg
+    
+#     if type == "int":
+#         try:
+#             val = int(val)
+#             return val
+#         except:
+#             raise KeyError(err_msg, err_code)
+    
+#     elif type == "float":
+#         try:
+#             val = float(val)
+#             return val
+#         except:
+#             raise KeyError(err_msg, err_code)
+    
+#     elif type == "string":
+#         try:
+#             val = str(val)
+#             return val
+#         except:
+#             raise KeyError(err_msg, err_code)
+    
+
+#     else:
+#         raise NotImplementedError(f"Type `{type}` not implemented.", err_code)
+def require(body, key, type="string", err_msg=None):
     
     if key not in body.keys():
-        raise KeyError(err_msg if err_msg is not None 
-                       else f"Invalid parameters. Expected `{key}`, but not found.", err_code)
+        raise ParamErr(err_msg if err_msg is not None 
+                       else f"Invalid parameters. Expected `{key}`, but not found.")
     
     val = body[key]
     
@@ -35,22 +71,29 @@ def require(body, key, type="string", err_msg=None, err_code=-2):
             val = int(val)
             return val
         except:
-            raise KeyError(err_msg, err_code)
+            raise ParamErr(err_msg)
     
     elif type == "float":
         try:
             val = float(val)
             return val
         except:
-            raise KeyError(err_msg, err_code)
+            raise ParamErr(err_msg)
     
     elif type == "string":
         try:
             val = str(val)
             return val
         except:
-            raise KeyError(err_msg, err_code)
+            raise ParamErr(err_msg)
+    
+    elif type == "bool":
+        try:
+            val = bool(val)
+            return val
+        except:
+            raise ParamErr(err_msg)
     
 
     else:
-        raise NotImplementedError(f"Type `{type}` not implemented.", err_code)
+        raise Failure(f"Type `{type}` not implemented.")
