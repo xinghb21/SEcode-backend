@@ -57,7 +57,7 @@ class esTest(TestCase):
             "name": op1.name,
             "entity": et.name,
             "department": dep.name,
-            "identity": self.identity(op1.identity),
+            "identity": op1.identity,
             "lockedapp": op1.lockedapp,
             "locked": op1.locked,
         }
@@ -116,4 +116,21 @@ class esTest(TestCase):
     
     def test_reset(self):
         resp = self.client.post("/user/es/reset", {"name": "op1", "newpassword": "abababab"}, content_type="application/json")
-        self.assertEqual(resp.json()["code"], 0)  
+        self.assertEqual(resp.json()["code"], 0) 
+    
+    def test_create_and_delete_depart(self):
+        es = User.objects.filter(name="es").first()
+        et = Entity.objects.create(name="newet", admin=es.id)
+        resp = self.client.post("/user/es/createdepart", {"entity": "newet", "depname": "newdep", "parent": ""})
+        std={
+            "code": 0,
+            "name": "newdep",
+        }
+        self.assertJSONEqual(resp.content, std)
+        resp2 = self.client.delete("/user/es/deletedepart", {"name": "newdep"})
+        std2 = {
+            "code": 0,
+            "name": "newdep"
+        }
+        self.assertJSONEqual(resp.content, std2)
+        

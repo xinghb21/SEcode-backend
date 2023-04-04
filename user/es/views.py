@@ -67,10 +67,6 @@ class EsViewSet(viewsets.ViewSet):
             if not dep:
                 raise Failure("被操作的用户的部门不存在")
             dep_name = dep.name
-        if user.identity == 3:
-            id_name = "资产管理员"
-        else:
-            id_name = "员工"
         
         ret = {
             "code": 0,
@@ -78,7 +74,7 @@ class EsViewSet(viewsets.ViewSet):
             "entity": et_name,
             "department": dep_name,
             "locked": user.locked,
-            "identity": id_name,
+            "identity": user.identity,
             "lockedapp": user.lockedapp,
         }
         
@@ -211,6 +207,7 @@ class EsViewSet(viewsets.ViewSet):
         dep.delete()
     
     #删除部门，下属所有内容均删除
+    @Check
     @action(detail=False,methods=['delete'])
     def deletedepart(self,req:Request):
         depname = require(req.data,"name","string",err_msg="Missing or error type of [depname]")

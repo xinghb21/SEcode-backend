@@ -26,10 +26,42 @@ class asset(APIView):
     permission_classes = [GeneralPermission]
     allowed_identity = [EP]
     
+    def get_object(object:Asset):
+        ret = {}
+        ret["id"] = object.id
+        ret["parent_id"] = object.parent
+        if ret["parent_id"] != 0:
+            ret["parent"] = Asset.objects.filter(id=ret["parent_id"]).first().name
+        else:
+            ret["parent"] = ""
+        ret["department_id"] = object.department
+        ret["department"] = Department.objects.filter(id=ret["department_id"]).first().name
+        ret["name"] = object.name
+        ret["type"] = object.type
+        ret["number"] = object.number
+        ret["belonging_id"] = object.belonging
+        ret["belonging"] = User.objects.filter(id=ret["belonging_id"]).first()
+        ret["price"] = object.price
+        ret["description"] = object.description
+        ret["additional"] = json.loads(object.additional)
+        ret["status"] = object.status
+        ret["create_time"] = object.create_time
+        ret["life"] = object.life
+        
+        return ret
+    
     @Check
     def get(self, req:Request, format=None):
-        for object in Asset.objects:
-            print(object)
+        object = Asset.objects.all()
+        if "id" in req.data:
+            id = req.data["id"]
+            object = object.filter(id=id)
+        if "parent" in req.data:
+            parent = req.data["parent"]
+            parent = Asset.objects.fi
+            object = object.filter(id=id)
+        
+            
         
     @Check   
     def post(self, req:Request):
