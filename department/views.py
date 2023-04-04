@@ -10,7 +10,7 @@ from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
 from django.contrib.sessions.models import Session
 from django.contrib.auth.hashers import make_password, check_password
-import hashlib
+
 # Create your views here.
 #hanyx
 #创建业务实体
@@ -107,8 +107,10 @@ def deleteES(req:HttpRequest):
 def getEt(req:HttpRequest):
     if req.method == "GET":
         super = User.objects.filter(identity=1).first()
-        if not super or not req.session[super.name]:
-            return request_failed(-1,"此用户不存在或不是系统超级管理员,无权查看")
+        if not super:
+            return request_failed(-1,"此用户不存在")
+        if super.name not in req.session or not req.session.get(super.name):
+            return request_failed(-1,"此用户不是系统超级管理员,无权查看")
         entlist = Entity.objects.all()
         return_list = []
         if entlist:

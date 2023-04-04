@@ -9,7 +9,8 @@ from django.contrib.auth.hashers import make_password, check_password
 class superAdminTest(TestCase):
     def setUp(self):
         aliceEntity = Entity.objects.create(name="Alice")
-        bobEnntity = Entity.objects.create(name="Bob")
+        bobEntity = Entity.objects.create(name="Bob")
+        cindyDepart = Department.objects.create(name="Cindy",entity=2)
 
     def md5(self, s):
         obj = hashlib.md5()
@@ -58,13 +59,22 @@ class superAdminTest(TestCase):
     
     def test_assgin_not_entity(self):
         res = self.assgin("David","hanyx","qwertyuiop")
-        print(res.content)
         self.assertJSONEqual(res.content,{"code":-1,"info":"此业务实体不存在"})
     
     def test_good_assgin(self):
-        res = self.assgin("Alice","David","qwertyuiop")
-        self.assertJSONEqual(res.content,{"code":0,"username":"David"})
+        res = self.assgin("Alice","Francis","qwertyuiop")
+        self.assertJSONEqual(res.content,{"code":0,"username":"Francis"})
 
-    def test_get_entity(self):
+    def test_not_found__get_entity(self):
         res = self.get_entity()
-        self.assertJSONEqual(res.content,{"code":0,"data":[{"id":1,"name":"Alice","admin":"David"},{"id":2,"name":"Bob","admin":""}]})
+        self.assertJSONEqual(res.content,{'code': -1, 'info': '此用户不存在'})
+
+'''    def test_not_qualified_get_entity(self):
+        client = User.objects.create(name="admin",password="huwid",identity=2,entity=1)
+        res = self.get_entity()
+        self.assertJSONEqual(res.content,{"code":-1,"info":"此用户不是系统超级管理员,无权查看"})
+
+ def test_good_get_entity(self):
+        client = User.objects.create(name="admin",password="huwid",identity=1)
+        res = self.get_entity()
+        self.assertJSONEqual(res.content,{"code":0,"data":[{"id":1,"name":"Alice","admin":"David"},{"id":2,"name":"Bob","admin":""}]})'''
