@@ -66,3 +66,13 @@ class Asset(models.Model):
 
     def __str__(self) -> str:
         return self.name
+    
+class AssetClass(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    
+    parent = models.ForeignKey('AssetClass', on_delete=models.CASCADE, verbose_name="父级类别")
+    
+    name = models.CharField(max_length=128, unique=True, verbose_name="类别名")
+    
+    
+    
