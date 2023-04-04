@@ -66,7 +66,7 @@ class EpViewSet(viewsets.ViewSet):
             additional = json.dumps({})
         
         Asset.objects.create(parent=parent, department=dep, name=name, type=tp, number=number, belonging=belonging, price=price, life=life, description=description, additional=additional)   
-        return Response({"detail": "success"})
+        return Response({"code":0,"detail": "success"})
     
     
 # cyh
