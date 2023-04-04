@@ -6,7 +6,7 @@ from django.contrib.sessions.models import Session
 
 from user.models import User
 from logs.models import Logs
-
+from department.models import Entity,Department
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
@@ -18,13 +18,6 @@ from rest_framework.decorators import action, api_view, authentication_classes, 
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
-
-'''
-@CheckRequire
-def start(req: HttpRequest):
-    return HttpResponse("Start!")
-'''
-
 
 def userapp(id):
     if id == 1:
@@ -50,8 +43,16 @@ def valid_user(body):
     #检查业务实体和部门有效性
     if identity != 1:
         entity = require(body, "entity", "string", err_msg="Missing or error type of [entity]")
+        ent = Entity.objects.filter(name=entity).first()
+        if not ent:
+            raise Failure("业务实体不存在")
+        entity = ent.id
     if identity != 1 and identity != 2:
         department = require(body, "department", "string", err_msg="Missing or error type of [department]")
+        dep = Department.objects.filter(name=department).first()
+        if not dep:
+            raise Failure("部门不存在")
+        department = dep.id
     return name,pwd,entity,department,identity,funclist
 
 
@@ -71,7 +72,7 @@ class UserViewSet(viewsets.ViewSet):
         return Response({"username":name})
 
     #删除用户
-    @action(detail=False, methods=['delete'])
+    @action(detail=False, methods=['DELETE'])
     def delete_user(self, req:Request):
         name = require(req.data, "name", "string", err_msg="Missing or error type of [name]")
         thisuser = User.objects.filter(name=name).first()
@@ -107,7 +108,7 @@ class UserViewSet(viewsets.ViewSet):
             return Response({"name":name,"entity":user.entity,"department":user.department,"identity":user.identity,"funclist":user.lockedapp})
 
     #用户登出
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['POST'])
     def logout(self, req:Request):
         name = require(req.data, "name", "string", err_msg="Missing or error type of [name]")
         user = User.objects.filter(name=name).first()
