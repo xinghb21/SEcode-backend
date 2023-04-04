@@ -1,6 +1,7 @@
 from rest_framework.views import exception_handler
 from rest_framework import exceptions, status
 from Aplus.settings import DEBUG
+from functools import wraps
 
 def handler(e, ctx):
     # print("type is ------", type(e))
@@ -27,13 +28,23 @@ def handler(e, ctx):
 
     return resp
 
+def Check(check_fn):
+    @wraps(check_fn)
+    def decorated(*args, **kwargs):
+        try:
+            return check_fn(*args, **kwargs)
+        except Exception as e:
+            raise Failure(e.args[0])
+    return decorated
+
+
 # 其它错误
 class Failure(exceptions.APIException):
     status_code = status.HTTP_400_BAD_REQUEST
     detail = "请求失败."
     
     def __init__(self, info=""):
-        if len(info) != 0:
+        if DEBUG and len(info) != 0:
             self.detail = info
 
 # 参数错误

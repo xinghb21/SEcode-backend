@@ -5,12 +5,7 @@ site:
     debug: false
     secret_key: "django-insecure-xvv16d@^4vu6-_^8w73_wt+xqf-wfppqevn)_zgye!#7l^6=p$"
     allowed_hosts: # Backend
-    - 'localhost'
-    - '127.0.0.1'
-    cors_allowed_hosts: # Frontend
-    - 'http://localhost:3000'
-    - 'https://Aplus-frontend-Aplus.app.secoder.net'
-
+    - '*'
 database:
     type: "sqlite3" # Choose between "mysql" and "sqlite3", the latter would lose data after updating
     host: "database.Aplus.secoder.local"

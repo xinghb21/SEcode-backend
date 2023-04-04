@@ -19,5 +19,6 @@ from django.urls import path, include
 #TODO need add here
 urlpatterns = [
     path('user/', include("user.urls")),
-    path('entity/', include("department.urls"))
+    path('entity/', include("department.urls")),
+    path('asset', include("asset.urls")),
 ]
