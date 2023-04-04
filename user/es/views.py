@@ -6,6 +6,7 @@ from django.contrib.auth.hashers import make_password
 
 from user.models import User
 from department.models import Department,Entity
+from asset.models import Asset
 from logs.models import Logs
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
@@ -163,6 +164,7 @@ class EsViewSet(viewsets.ViewSet):
     
     
     #hyx
+    
     #创建部门
     @Check
     @action(detail=False,methods=['post'])
@@ -173,6 +175,11 @@ class EsViewSet(viewsets.ViewSet):
         ent = Entity.objects.filter(name=entname).first()
         if not ent:
             raise Failure("业务实体不存在")
+        havedp = Department.objects.filter(entity=ent.id,name=depname).first()
+        if havedp:
+            raise Failure("部门已存在")
+        if req.user.id != ent.admin:
+            raise Failure("无权创建部门")
         if not parentname:
             newdepart = Department(name=depname,entity=ent.id)
             newdepart.save()
@@ -185,6 +192,39 @@ class EsViewSet(viewsets.ViewSet):
         ret = {
             "code" : 0,
             "name" : depname
+        }
+        Logs(entity=ent.id,content="创建部门"+depname,type=2).save()
+        return Response(ret)
+    
+    #递归删除部门
+    def layerdelete(self,dep):
+        children = Department.objects.filter(parent=dep.id).all()
+        if children:
+            for child in children:
+                self.layerdelete(child)
+        staffs = User.objects.filter(department=dep.id).all()
+        for staff in staffs:
+            staff.delete()
+        assets = Asset.objects.filter(department=dep.id).all()
+        for asset in assets:
+            asset.delete()
+        dep.delete()
+    
+    #删除部门，下属所有内容均删除
+    @action(detail=False,methods=['delete'])
+    def deletedepart(self,req:Request):
+        depname = require(req.data,"name","string",err_msg="Missing or error type of [depname]")
+        ent = Entity.objects.filter(admin=req.user.id).first()
+        dep = Department.objects.filter(entity=ent.id,name=depname).first()
+        if not ent or ent.admin != req.user.id:
+            raise Failure("无权删除该部门")
+        if not dep:
+            raise Failure("该部门不存在")
+        Logs(entity=ent.id,content="删除部门"+depname+"及其下属部门",type=2).save()
+        self.layerdelete(dep)
+        ret = {
+            "code" : 0,
+            "rootDepartment" : depname
         }
         return Response(ret)
     
@@ -207,7 +247,7 @@ class EsViewSet(viewsets.ViewSet):
     def departs(self,req:Request):
         if req.user.identity != 2:
             raise Failure("此用户无权查看部门结构")
-        ent = Entity.objects.filter(admin=self.user.id).first()
+        ent = Entity.objects.filter(admin=req.user.id).first()
         if not ent:
             raise Failure("业务实体不存在")
         ret = {
