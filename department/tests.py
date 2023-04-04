@@ -3,6 +3,7 @@ from user.models import User
 from department.models import Department,Entity
 import hashlib
 from django.contrib.auth.hashers import make_password, check_password
+from user.views import UserViewSet
 # Create your tests here.
 
 #hyx
@@ -11,12 +12,19 @@ class superAdminTest(TestCase):
         aliceEntity = Entity.objects.create(name="Alice")
         bobEntity = Entity.objects.create(name="Bob")
         cindyDepart = Department.objects.create(name="Cindy",entity=2)
-
+        
     def md5(self, s):
         obj = hashlib.md5()
         obj.update(s.encode())
         return obj.hexdigest()
 
+    def login(self, name, pw):
+        payload = {
+            "name": name,
+            "password": pw
+        }
+        return self.client.post("/user/login", data=payload, content_type="application/json")
+    
     def create(self,name):
         payload = {
             "name" : name
@@ -69,12 +77,14 @@ class superAdminTest(TestCase):
         res = self.get_entity()
         self.assertJSONEqual(res.content,{'code': -1, 'info': '此用户不存在'})
 
-'''    def test_not_qualified_get_entity(self):
-        client = User.objects.create(name="admin",password="huwid",identity=2,entity=1)
+    def test_not_qualified_get_entity(self):
+        admin = User.objects.create(name="admin",password="huwid",identity=1)
+        client = User.objects.create(name="client",password="huwid",identity=2,entity=1)
         res = self.get_entity()
-        self.assertJSONEqual(res.content,{"code":-1,"info":"此用户不是系统超级管理员,无权查看"})
+        self.assertJSONEqual(res.content,{"code":-1,"info":"此用户不是系统超级管理员或未登录,无权查看"})
 
- def test_good_get_entity(self):
-        client = User.objects.create(name="admin",password="huwid",identity=1)
+    def test_good_get_entity(self):
+        admin = User.objects.create(name="admin",password=make_password("hh"),identity=1)
+        loginres = self.login("admin","hh")
         res = self.get_entity()
-        self.assertJSONEqual(res.content,{"code":0,"data":[{"id":1,"name":"Alice","admin":"David"},{"id":2,"name":"Bob","admin":""}]})'''
+        self.assertJSONEqual(res.content,{"code":0,"data":[{"id":1,"name":"Alice","admin":"David"},{"id":2,"name":"Bob","admin":""}]})

@@ -110,7 +110,7 @@ def getEt(req:HttpRequest):
         if not super:
             return request_failed(-1,"此用户不存在")
         if super.name not in req.session or not req.session.get(super.name):
-            return request_failed(-1,"此用户不是系统超级管理员,无权查看")
+            return request_failed(-1,"此用户不是系统超级管理员或未登录,无权查看")
         entlist = Entity.objects.all()
         return_list = []
         if entlist:

@@ -60,7 +60,7 @@ class UserViewSet(viewsets.ViewSet):
     authentication_classes = [SessionAuthentication]
     permission_classes = [GeneralPermission]
     #创建用户
-    @action(detail=False, methods=['POST'])
+    @action(detail=True, methods=['post'])
     def create_user(self, req:Request):
         name,pwd,entity,department,identity,funclist = valid_user(req.data)
         sameuser = User.objects.filter(name=name).first()
