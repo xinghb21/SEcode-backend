@@ -11,7 +11,7 @@ from utils.utils_request import BAD_METHOD, request_failed, request_success, ret
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
 from utils.permission import GeneralPermission
-from utils.session import SessionAuthentication
+from utils.session import LoginAuthentication
 from utils.exceptions import Failure, ParamErr
 
 from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
@@ -57,7 +57,7 @@ def valid_user(body):
 
 
 class UserViewSet(viewsets.ViewSet):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [LoginAuthentication]
     permission_classes = [GeneralPermission]
     #创建用户
     @action(detail=True, methods=['post'])
@@ -85,7 +85,7 @@ class UserViewSet(viewsets.ViewSet):
             raise Failure("此用户不存在")
 
     #用户登录
-    @action(detail=False, methods=['POST'])
+    @action(detail=False, methods=['post'], authentication_classes=[])
     def login(self, req:Request):
         name = require(req.data, "name", "string", err_msg="Missing or error type of [name]")
         pwd = require(req.data, "password", "string", err_msg="Missing or error type of [password]")
@@ -121,7 +121,7 @@ class UserViewSet(viewsets.ViewSet):
 
 #进入用户界面
 @api_view(['GET'])
-@authentication_classes([SessionAuthentication])
+@authentication_classes([LoginAuthentication])
 @permission_classes([GeneralPermission])
 def home(req:Request,username:any):
     userName = require({"username": username}, "username", "string", err_msg="Bad param [username]")

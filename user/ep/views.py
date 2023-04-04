@@ -12,7 +12,7 @@ from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
 from utils.identity import *
 from utils.permission import GeneralPermission
-from utils.session import SessionAuthentication
+from utils.session import LoginAuthentication
 from utils.exceptions import Failure, ParamErr
 
 from rest_framework.decorators import action, throttle_classes, permission_classes
@@ -22,7 +22,7 @@ from rest_framework import viewsets
 # 资产管理员
 
 class EpViewSet(viewsets.ViewSet):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [LoginAuthentication]
     permission_classes = [GeneralPermission]
     allowed_identity = [EP]
     
