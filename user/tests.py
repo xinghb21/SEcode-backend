@@ -90,6 +90,7 @@ class userTest(TestCase):
         et = Entity.objects.create(name="et")
         resp = self.client.post("/user/createuser",{"name":"francis","password":"francis","identity":2,"entity":"et"})
         std={
+            "code":0,
             "username":"francis"
         }
         self.assertJSONEqual(resp.content,std)
@@ -106,6 +107,7 @@ class userTest(TestCase):
         bob = User.objects.create(name="bob",password=make_password("bob"),identity=2,entity=1)
         resp = self.client.delete("/user/deleteuser",{"name":"bob"},content_type="application/json")
         std={
+            "code":0,
             "username":"bob"
         }
         self.assertJSONEqual(resp.content,std)

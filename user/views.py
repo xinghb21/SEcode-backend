@@ -72,7 +72,7 @@ class UserViewSet(viewsets.ViewSet):
         user = User(name=name,password=make_password(pwd),entity=entity,department=department,identity=identity,lockedapp=funclist)
         user.save()
         Logs(entity = user.entity,content="创建用户"+user.name,type=1).save()
-        return Response({"username":name})
+        return Response({"code":0,"username":name})
 
     #删除用户
     @action(detail=False, methods=['DELETE'])
@@ -83,7 +83,7 @@ class UserViewSet(viewsets.ViewSet):
             name = thisuser.name
             Logs(entity = thisuser.entity,content="删除用户"+thisuser.name,type=1).save()
             thisuser.delete()
-            return Response({"username":name})
+            return Response({"code":0,"username":name})
         else:
             raise Failure("此用户不存在")
 
@@ -108,7 +108,7 @@ class UserViewSet(viewsets.ViewSet):
             req._request.session["id"] = user.id
             # cyh
             Logs(entity=user.entity,content="用户"+user.name+"登录",type=1).save()
-            return Response({"name":name,"entity":user.entity,"department":user.department,"identity":user.identity,"funclist":user.lockedapp})
+            return Response({"code":0,"name":name,"entity":user.entity,"department":user.department,"identity":user.identity,"funclist":user.lockedapp})
 
     #用户登出
     @action(detail=False, methods=['POST'])
@@ -120,7 +120,7 @@ class UserViewSet(viewsets.ViewSet):
             raise Failure("用户不存在")
         else:
             req._request.session[name] = False
-            return Response({"name":name})
+            return Response({"code":0,"name":name})
 
 #进入用户界面
 @api_view(['GET'])
