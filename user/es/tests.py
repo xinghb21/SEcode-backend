@@ -16,7 +16,7 @@ class esTest(TestCase):
                                  identity=1, entity=0, department=0)
         ep = User.objects.create(name="ep", password=make_password("ep"), 
                                  identity=3, entity=1, department=5)
-        self.client.post()
+        # self.client.post()
         self.login("es", "es")
         
     def login(self, name, pw):
