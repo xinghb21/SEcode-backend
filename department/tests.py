@@ -58,6 +58,18 @@ class superAdminTest(TestCase):
             "password" : password
         }
         return self.client.post("/entity/assgin", data=payload,content_type="application/json")
+    
+    def deleteadmin(self,entity):
+        payload={
+            "entity":entity
+        }
+        return self.client.delete("/entity/deleteadmin",data=payload,content_type="application/json")
+    
+    def deletealladmins(self,entity):
+        payload={
+            "entity":entity
+        }
+        return self.client.delete("/entity/deletealladmins",data=payload,content_type="application/json")
 
     def get_entity(self):
         res = self.assgin("Alice","David","qwertyuiop")
@@ -93,7 +105,23 @@ class superAdminTest(TestCase):
         res = self.assgin("Alice","Francis","qwertyuiop")
         self.assertJSONEqual(res.content,{"code":0,"username":"Francis"})
     
-
+    def test_bad_delete_admin(self):
+        res = self.deleteadmin("Francis")
+        self.assertJSONEqual(res.content,{"code":-1,"info":"此业务实体不存在"})
+        res = self.deleteadmin("Bob")
+        self.assertJSONEqual(res.content,{"code":-1,"info":"此业务实体无系统管理员"})
+    
+    def test_good_delete_admin(self):
+        self.assgin("Alice","Francis","qwertyuiop")
+        res = self.deleteadmin("Alice")
+        self.assertJSONEqual(res.content,{"code":0,"username":"Francis"})
+        
+    def test_delete_all_admins(self):
+        self.assgin("Alice","Eric","qwertyuiop")
+        self.assgin("Bob","Francis","qwertyuiop")
+        res = self.deletealladmins(["Bob","Alice"])
+        self.assertJSONEqual(res.content,{"code":0})
+        
     def test_not_qualified_get_entity(self):
         client = User.objects.create(name="client",password="huwid",identity=2,entity=1)
         lohout = self.logout("admin")
