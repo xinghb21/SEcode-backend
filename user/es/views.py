@@ -247,6 +247,30 @@ class EsViewSet(viewsets.ViewSet):
             raise Failure("业务实体不存在")
         ret = {
             "code" : 0,
-            "info" : self.tree(ent.id,0)
+            "info" : {ent.name:self.tree(ent.id,0)}
+        }
+        return Response(ret)
+    
+    #修改部门名称
+    @Check
+    @action(detail=False,methods=['POST'])
+    def renamedepart(self,req:Request):
+        oldname = require(req.data,"oldname","string",err_msg="Missing or error type of [oldname]")
+        newname = require(req.data,"newname","string",err_msg="Missing or error type of [newname]")
+        ent = Entity.objects.filter(admin=req.user.id).first()
+        dep = Department.objects.filter(entity=ent.id,name=oldname).first()
+        dep2 = Department.objects.filter(entity=ent.id,name=newname).first()
+        if not dep:
+            raise Failure("待修改部门不存在")
+        if dep2:
+            raise Failure("新名称部门已存在")
+        dep.name = newname
+        dep.save()
+        Logs(entity=ent.id,content="将部门"+oldname+"名称修改为"+newname,type=2).save()
+        self.layerdelete(dep)
+        ret = {
+            "code" : 0,
+            "oldname" : oldname,
+            "newname" : newname
         }
         return Response(ret)
