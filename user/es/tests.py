@@ -166,7 +166,7 @@ class esTest(TestCase):
         resp = self.client.get("/user/es/departs")
         std={
             "code":0,
-            "info": {"dep1": "$", "dep2": {"dep4": "$"}, "dep3": "$"}
+            "info": {"et1":{"dep1": "$", "dep2": {"dep4": "$"}, "dep3": "$"}}
         }
         self.assertJSONEqual(resp.content,std)
     
@@ -182,6 +182,27 @@ class esTest(TestCase):
         std ={
             "code":0,
             "name":"dep1"
+        }
+        self.assertJSONEqual(resp.content,std)
+    
+    def test_rename_departs(self):
+        self.login("es", "es")
+        resp = self.client.post("/user/es/renamedepart",{"oldname":"dep3","newname":"dep4"},content_type="application/json")
+        std ={
+            "code":-1,
+            "detail":"待修改部门不存在"
+        }
+        resp = self.client.post("/user/es/renamedepart",{"oldname":"dep1","newname":"dep2"},content_type="application/json")
+        std ={
+            "code":-1,
+            "detail":"新名称部门已存在"
+        }
+        self.assertJSONEqual(resp.content,std)
+        resp = self.client.post("/user/es/renamedepart",{"oldname":"dep1","newname":"dep4"},content_type="application/json")
+        std ={
+            "code":0,
+            "oldname":"dep1",
+            "newname":"dep4"
         }
         self.assertJSONEqual(resp.content,std)
 
