@@ -264,10 +264,9 @@ class EsViewSet(viewsets.ViewSet):
             raise Failure("待修改部门不存在")
         if dep2:
             raise Failure("新名称部门已存在")
-        dep.name = newname
+        dep.name=newname
         dep.save()
         Logs(entity=ent.id,content="将部门"+oldname+"名称修改为"+newname,type=2).save()
-        self.layerdelete(dep)
         ret = {
             "code" : 0,
             "oldname" : oldname,
