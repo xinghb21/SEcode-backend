@@ -15,12 +15,11 @@ from pathlib import Path
 import yaml
 # print(os.listdir("."))
 
-file = open("config.yml", "r", encoding="utf-8")
+file = open("config/config.yml", "r", encoding="utf-8")
 env = yaml.load(file, Loader=yaml.SafeLoader)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
@@ -34,9 +33,12 @@ SECRET_KEY = env['site']['secret_key']
 DEBUG = False if os.getenv('DEPLOY') else True
 # TODO End: [Student] Disable debug mode in production
 
-ALLOWED_HOSTS = [
-    '*'  # Insecure
-]
+if "*" in env["site"]["allowed_hosts"]:
+    ALLOWED_HOSTS = ["*"]
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    ALLOWED_HOSTS = env["site"]["allowed_hosts"]
+    CORS_ALLOWED_ORIGINS = env["site"]["cors_allowed_hosts"]
 
 
 # Application definition
@@ -47,6 +49,7 @@ INSTALLED_APPS = [
     'asset',
     'pending',
     'logs',
+    'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -109,7 +112,6 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
-# print(DATABASES)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -151,3 +153,16 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+APPEND_SLASH = False
+
+# restful framework settings
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "UNAUTHENTICATED_USER": None,
+    "EXCEPTION_HANDLER": "utils.exceptions.handler",
+    # 'DEFAULT_RENDERER_CLASSES': [
+    #     'rest_framework.renderers.JSONRenderer',
+    #     'rest_framework.renderers.BrowsableAPIRenderer',
+    # ]
+}

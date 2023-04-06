@@ -15,7 +15,7 @@ class Logs(models.Model):
     
     
     #时间戳
-    time = models.BigIntegerField(default=utils_time.get_timestamp)
+    time = models.FloatField(default=utils_time.get_timestamp)
     
     #日志类型，1人员，2部门，3资产
     type = models.IntegerField(default=1)

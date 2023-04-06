@@ -32,7 +32,7 @@ class Asset(models.Model):
     life = models.IntegerField(default=0)
     
     #资产的创建时间
-    create_time = models.BigIntegerField(default=utils_time.get_timestamp)
+    create_time = models.FloatField(default=utils_time.get_timestamp)
     
     #资产的说明和描述
     description = models.TextField(default="")
