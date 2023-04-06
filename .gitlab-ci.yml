@@ -5,36 +5,40 @@ stages:
   - test
   - deploy
 
-build:
+build-master:
   stage: build
   script:
-    - cp ./config.yml.bak ./config.yml
+    - cp ./config/config-ci.yml ./config/config.yml
     - export BUILD_IMAGE_NAME=$CI_REGISTRY_IMAGE
     - export BUILD_IMAGE_TAG=$CI_COMMIT_REF_SLUG
     - export BUILD_IMAGE_USERNAME=$CI_REGISTRY_USER
     - export BUILD_IMAGE_PASSWORD=$CI_REGISTRY_PASSWORD
     - deployer build
+  only:
+    - master
+
+build-dev:
+  stage: build
+  script:
+    - cp ./config/config-ci.yml ./config/config.yml
+    - export BUILD_IMAGE_NAME=$CI_REGISTRY_IMAGE
+    - export BUILD_IMAGE_TAG=$CI_COMMIT_REF_SLUG
+    - export BUILD_IMAGE_USERNAME=$CI_REGISTRY_USER
+    - export BUILD_IMAGE_PASSWORD=$CI_REGISTRY_PASSWORD
+    - deployer build
+  except:
+    - master
 
 unit-test:
-  # TODO Start: [Student] Set job image
   image: python:3.9
-  # TODO End: [Student] Set job image
   stage: test
   before_script:
-    - cp ./config.yml.bak ./config.yml
-    # TODO Start: [Student] Install dependencies
+    - cp ./config/config-ci.yml ./config/config.yml
     - pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
-    # TODO End: [Student] Install dependencies
   script:
-    # TODO Start: [Student] Migrate and run tests
-    - python3 manage.py makemigrations user
-    - python3 manage.py makemigrations asset
-    - python3 manage.py makemigrations department
-    - python3 manage.py makemigrations pending
-    - python3 manage.py makemigrations logs
+  # 远程仅migrate，本地将makemigration的文件上传
     - python3 manage.py migrate
     - sh test.sh
-    # TODO End: [Student] Migrate and run tests
   after_script:
     - SUFFIX=$RANDOM
     - curl "http://api.secoder.net/static/sonar-scanner.tar.gz" -s -o "/tmp/sonar-$SUFFIX.tar.gz"
@@ -44,4 +48,21 @@ unit-test:
 deploy:
   stage: deploy
   script:
-   - deployer dyno replace $CI_PROJECT_NAME "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" "$REGISTRY_USER" "$REGISTRY_PWD"
+    - deployer dyno replace $CI_PROJECT_NAME "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" "$REGISTRY_USER" "$REGISTRY_PWD"
+  only:
+    - master
+
+deploy-dev:
+  stage: deploy
+  script:
+    - deployer dyno replace backend-dev "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" "$REGISTRY_USER" "$REGISTRY_PWD"
+  only:
+    - dev
+
+deploy-feature:
+  stage: deploy
+  script:
+    - deployer dyno replace backend-feature "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" "$REGISTRY_USER" "$REGISTRY_PWD"
+  except:
+    - master
+    - dev
