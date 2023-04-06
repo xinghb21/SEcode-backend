@@ -86,7 +86,7 @@ class asset(viewsets.ViewSet):
         if "status" in req.query_params:
             status = require(req.query_params, "status", "int", err_msg="Error type of [status]")
             asset = asset.filter(status=status)
-        return Response([return_field(["name", "description", "number_idle", "category"], ast.serialize()) if ast.type else return_field(["name", "description", "status", "category"], ast.serialize()) for ast in asset])
+        return Response([return_field(["name", "description", "number_idle", "category", "type"], ast.serialize()) if ast.type else return_field(["name", "description", "status", "category", "type"], ast.serialize()) for ast in asset])
     
     @Check
     @action(detail=False, methods=["get"], url_path="getdetail")
@@ -97,7 +97,8 @@ class asset(viewsets.ViewSet):
         asset = Asset.objects.filter(entity=et, department=dep, name=name).first()
         return Response(asset.serialize())    
                
-    @Check   
+    @Check  
+    @action(detail=False, methods=["post"], url_path="post") 
     def post(self, req:Request):
         entity = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
@@ -199,21 +200,22 @@ class assetclass(APIView):
     
     @Check
     def post(self, req:Request):
+        et = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
         if "parent" in req.data:
             parent = require(req.data, "parent", err_msg="Error type of [parent]")
-            parent = AssetClass.objects.filter(name=parent).first()
+            parent = AssetClass.objects.filter(entity=et, department=dep, name=parent).first()
             if not parent:
                 raise Failure("父类别不存在")
         else:
             parent = None
-        dep = Department.objects.filter(id=req.user.department).first()
         name = require(req.data, "name", err_msg="Error type of [name]")
         if len(name) > 128:
             raise Failure("名称过长")
-        if AssetClass.objects.filter(department=dep, name=name).first():
+        if AssetClass.objects.filter(entity=et, department=dep, name=name).first():
             raise Failure("存在重名类别")
         tp = require(req.data, "type", "bool", err_msg="Error type of [type]")
-        AssetClass.objects.create(parent=parent, department=dep, name=name, type=tp)
+        AssetClass.objects.create(parent=parent, entity=et, department=dep, name=name, type=tp)
         return Response({"code": 0, "detail": "success"})
     
     # 返回该部门下的类别层级树
