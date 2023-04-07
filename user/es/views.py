@@ -273,3 +273,23 @@ class EsViewSet(viewsets.ViewSet):
             "newname" : newname
         }
         return Response(ret)
+    
+    #获取所有部门员工
+    @Check
+    @action(detail=False,methods=['GET'])
+    def staffs(self,req:Request):
+        if req.user.identity != 2:
+            raise Failure("此用户无权查看部门员工")
+        ent = Entity.objects.filter(admin=req.user.id).first()
+        if not ent:
+            raise Failure("业务实体不存在")
+        deps = Department.objects.filter(entity=ent.id).all()
+        info = {}
+        for dep in deps:
+            staffs = User.objects.filter(entity=ent.id,department=dep.id,identity=4).all()
+            info.update({dep.name:[staff.name for staff in staffs]})
+        ret = {
+            "code" : 0,
+            "info" : info
+        }
+        return Response(ret)
