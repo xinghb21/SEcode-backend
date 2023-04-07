@@ -45,6 +45,38 @@ class EsViewSet(viewsets.ViewSet):
         if user.entity != req.user.entity:
             raise Failure("系统管理员无权操作其它业务实体的用户")
         return user
+    # 查看业务实体下的所有用户
+    @Check
+    @action(detail=False, methods=['get'], url_path="checkall")
+    def check_all(self, req:Request):
+        et = req.user.entity
+        users = User.objects.filter(entity=et)
+        ret = []
+        for user in users:
+            tmp = return_field(user.serialize(), ["id", "name", "identity", "lockedapp", "locked"])
+            entity = user.entity
+            entity = Entity.objects.filter(id=entity).first().name
+            dep = user.department
+            if dep != 0:
+                dep = Department.objects.filter(id=dep).first().name
+            else:
+                dep = ""
+            tmp["entity"] = entity
+            tmp["department"] = dep
+            ret.append(tmp)
+        return Response(ret)
+    
+    @Check
+    @action(detail=False, methods=['delete'], url_path="batchdelete")
+    def batch_delete(self, req:Request):
+        if "names" not in req.data:
+            raise Failure("Missing [names]")
+        names = req.data["names"]
+        if type(names) is not list:
+            raise Failure("Error type of [names]")
+        User.objects.filter(entity=req.user.entity, name__in=names).delete()
+        return Response({"code": 0, "detail": "success"})
+    
 
     # 企业系统管理员查看企业用户
     @Check
@@ -147,6 +179,7 @@ class EsViewSet(viewsets.ViewSet):
             "code": 0,
             "new_app": new_app,
             "old_app": old_app,
+            "detail": "成功更改用户应用"
         }
         return Response(ret)
     @Check
@@ -156,7 +189,7 @@ class EsViewSet(viewsets.ViewSet):
         new_pw = require(req.data, "newpassword", err_msg="Missing or error type of [newpassword]")
         user.password = make_password(new_pw)
         user.save()
-        return Response({"code": 0})
+        return Response({"code": 0, "detail": "success"})
     
     
     #hyx
