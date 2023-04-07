@@ -30,15 +30,28 @@ class esTest(TestCase):
         return self.client.post("/user/logout", data=payload, content_type="application/json")        
     
     def test_post_class(self):
-        resp = self.client.post("/asset/assetclass", {"name": "assetclass", "type": True})
+        resp = self.client.post("/asset/assetclass", {"name": "assetclass", "type": 1})
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         
     def test_post(self):
-        self.client.post("/asset/assetclass", {"name": "assetclass", "type": True})
+        self.client.post("/asset/assetclass", {"name": "assetclass", "type": 1})
         resp = self.client.post("/asset/post", {"category": "assetclass", "name": "keqing", "life": 100, "number": 1000, "price": 1000})
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
+        self.client.post("/asset/assetclass", {"name": "yuanshen", "type": 0})
+        resp = self.client.post("/asset/post", {"category": "yuanshen", "name": "keqi", "life": 100, "price": 1000})
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        
+    def test_get(self):
+        self.client.post("/asset/assetclass", {"name": "assetclass", "type": 1})
+        self.client.post("/asset/post", {"category": "assetclass", "name": "keqing", "life": 100, "number": 1000, "price": 1000})
+        self.client.post("/asset/assetclass", {"name": "yuanshen", "type": 0})
+        self.client.post("/asset/post", {"category": "yuanshen", "name": "keqi", "life": 100, "price": 1000})
+        resp = self.client.get("/asset/get", {})
+        self.assertEqual(resp.json(), [{'category': 'assetclass', 'type': True, 'name': 'keqing', 'description': '', 'number_idle': 1000}, {'category': 'yuanshen', 'type': False, 'name': 'keqi', 'description': '', 'status': 0}])
+        
         
         
         

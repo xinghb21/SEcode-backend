@@ -87,13 +87,6 @@ def require(body, key, type="string", err_msg=None):
         except:
             raise ParamErr(err_msg)
     
-    elif type == "bool":
-        try:
-            val = bool(val)
-            return val
-        except:
-            raise ParamErr(err_msg)
-    
 
     else:
         raise Failure(f"Type `{type}` not implemented.")

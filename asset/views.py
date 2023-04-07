@@ -86,7 +86,7 @@ class asset(viewsets.ViewSet):
         if "status" in req.query_params:
             status = require(req.query_params, "status", "int", err_msg="Error type of [status]")
             asset = asset.filter(status=status)
-        return Response([return_field(["name", "description", "number_idle", "category", "type"], ast.serialize()) if ast.type else return_field(["name", "description", "status", "category", "type"], ast.serialize()) for ast in asset])
+        return Response([return_field(ast.serialize(), ["name", "description", "number_idle", "category", "type"]) if ast.type else return_field(ast.serialize(), ["name", "description", "status", "category", "type"]) for ast in asset])
     
     @Check
     @action(detail=False, methods=["get"], url_path="getdetail")
@@ -119,7 +119,6 @@ class asset(viewsets.ViewSet):
             raise Failure("名称过长")
         if Asset.objects.filter(entity=entity, department=dep, name=name).first():
             raise Failure("名称重复")
-        tp = category.type
         if "belonging" in req.data.keys():
             belonging = require(req.data, "belonging", "string", "Missing or error type of [belonging]")
             belonging = User.objects.filter(entity=entity.id, department=dep.id, name=belonging).first()
@@ -214,7 +213,8 @@ class assetclass(APIView):
             raise Failure("名称过长")
         if AssetClass.objects.filter(entity=et, department=dep, name=name).first():
             raise Failure("存在重名类别")
-        tp = require(req.data, "type", "bool", err_msg="Error type of [type]")
+        tp = require(req.data, "type", "int", err_msg="Error type of [type]")
+        tp = bool(tp)
         AssetClass.objects.create(parent=parent, entity=et, department=dep, name=name, type=tp)
         return Response({"code": 0, "detail": "success"})
     
