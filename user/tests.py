@@ -116,13 +116,15 @@ class userTest(TestCase):
         self.assertJSONEqual(resp.content,std)
     
     def test_get_home(self):
+        ent = Entity.objects.create(name="entity")
+        dept = Department.objects.create(name="department",entity=1)
         bob = User.objects.create(name="bob",password=make_password("bob"),identity=4,entity=1,department=1,lockedapp="000000000")
         self.login("bob","bob")
         resp = self.client.get("/user/home/bob")
         std={
             "code":0,
-            "department":1,
-            "entity":1,
+            "department":"department",
+            "entity":"entity",
             "funclist":"000000000",
             "identity":4,
             "username":"bob"

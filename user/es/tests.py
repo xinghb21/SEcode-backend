@@ -10,7 +10,7 @@ class esTest(TestCase):
         op1 = User.objects.create(name="op1", password=make_password("op1"), 
                                  identity=4, entity=1, department=1)
         op2 = User.objects.create(name="op2", password=make_password("op2"), 
-                                 identity=4, entity=1, department=2)
+                                 identity=4, entity=1, department=1)
         op3 = User.objects.create(name="op3", password=make_password("op3"), 
                                  identity=4, entity=2, department=2)
         ss = User.objects.create(name="ss", password=make_password("ss"), 
@@ -205,5 +205,12 @@ class esTest(TestCase):
             "newname":"dep4"
         }
         self.assertJSONEqual(resp.content,std)
-
-
+        
+    def test_check_staffs(self):
+        self.login("es", "es")
+        resp = self.client.get("/user/es/staffs")
+        std={
+            "code":0,
+            "info": {"dep1": ["op1","op2"], "dep2": []}
+        }
+        self.assertJSONEqual(resp.content,std)

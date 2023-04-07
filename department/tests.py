@@ -81,7 +81,7 @@ class superAdminTest(TestCase):
     
     def test_bad_create(self):
         res = self.create("Alice")
-        self.assertJSONEqual(res.content,{"code":-1,"info":"此业务实体名称已存在"})
+        self.assertJSONEqual(res.content,{"code":-1,"detail":"此业务实体名称已存在"})
     
     def test_good_delete(self):
         res = self.delete("Bob")
@@ -89,7 +89,7 @@ class superAdminTest(TestCase):
     
     def test_bad_delete(self):
         res = self.delete("David")
-        self.assertJSONEqual(res.content,{"code":-1,"info":"此业务实体不存在"})
+        self.assertJSONEqual(res.content,{"code":-1,"detail":"此业务实体不存在"})
     
     def test_all_delete(self):
         hyxEntity = Entity.objects.create(name="hanyx")
@@ -99,7 +99,7 @@ class superAdminTest(TestCase):
 
     def test_assgin_not_entity(self):
         res = self.assgin("David","hanyx","qwertyuiop")
-        self.assertJSONEqual(res.content,{"code":-1,"info":"此业务实体不存在"})
+        self.assertJSONEqual(res.content,{"code":-1,"detail":"此业务实体不存在"})
     
     def test_good_assgin(self):
         res = self.assgin("Alice","Francis","qwertyuiop")
@@ -107,9 +107,9 @@ class superAdminTest(TestCase):
     
     def test_bad_delete_admin(self):
         res = self.deleteadmin("Francis")
-        self.assertJSONEqual(res.content,{"code":-1,"info":"此业务实体不存在"})
+        self.assertJSONEqual(res.content,{"code":-1,"detail":"此业务实体不存在"})
         res = self.deleteadmin("Bob")
-        self.assertJSONEqual(res.content,{"code":-1,"info":"此业务实体无系统管理员"})
+        self.assertJSONEqual(res.content,{"code":-1,"detail":"此业务实体无系统管理员"})
     
     def test_good_delete_admin(self):
         self.assgin("Alice","Francis","qwertyuiop")
@@ -127,7 +127,7 @@ class superAdminTest(TestCase):
         lohout = self.logout("admin")
         logres = self.login("client","huwid")
         res = self.get_entity()
-        self.assertJSONEqual(res.content,{"code":-1,"info":"此用户不是系统超级管理员或未登录,无权查看"})
+        self.assertJSONEqual(res.content,{"code":-1,"detail":"此用户不是系统超级管理员或未登录,无权查看"})
 
     def test_good_get_entity(self):
         res = self.get_entity()
