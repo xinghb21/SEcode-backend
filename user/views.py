@@ -135,13 +135,17 @@ def home(req:Request,username:any):
     userName = require({"username": username}, "username", "string", err_msg="Bad param [username]")
     user = User.objects.filter(name=userName).first()
     if user and userName in req._request.session and req._request.session.get(userName):
+        ent = Entity.objects.filter(id=user.entity).first()
+        entname = "" if not ent else ent.name
+        depart = Department.objects.filter(id=user.department).first()
+        departname = "" if not depart else depart.name
         return_data = {
             "funclist":user.lockedapp,
             "code":0,
             "identity":user.identity,
             "username":username,
-            "entity":user.entity,
-            "department":user.department
+            "entity":entname,
+            "department":departname
         }
         return Response(return_data)
     else:
