@@ -86,7 +86,11 @@ class asset(viewsets.ViewSet):
         if "status" in req.query_params:
             status = require(req.query_params, "status", "int", err_msg="Error type of [status]")
             asset = asset.filter(status=status)
-        return Response([return_field(ast.serialize(), ["name", "description", "number_idle", "category", "type"]) if ast.type else return_field(ast.serialize(), ["name", "description", "status", "category", "type"]) for ast in asset])
+        ret = {
+            "code": 0,
+            "data": [return_field(ast.serialize(), ["name", "description", "number_idle", "category", "type"]) if ast.type else return_field(ast.serialize(), ["name", "description", "status", "category", "type"]) for ast in asset] 
+        }
+        return Response(ret)
     
     @Check
     @action(detail=False, methods=["get"], url_path="getdetail")
@@ -95,7 +99,11 @@ class asset(viewsets.ViewSet):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         asset = Asset.objects.filter(entity=et, department=dep, name=name).first()
-        return Response(asset.serialize())    
+        ret = {
+            "code": 0,
+            **asset.serialize(),
+        }
+        return Response(ret)    
                
     @Check  
     @action(detail=False, methods=["post"], url_path="post") 
@@ -219,8 +227,11 @@ class assetclass(APIView):
         return Response({"code": 0, "detail": "success"})
     
     # 返回该部门下的类别层级树
-    # @Check
-    # def get(self, req:Request):
+    @Check
+    def get(self, req:Request):
+        et = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        classes = AssetClass.objects.filter(entity=et, department=dep)
         
         
 
