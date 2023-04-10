@@ -64,7 +64,11 @@ class EsViewSet(viewsets.ViewSet):
             tmp["entity"] = entity
             tmp["department"] = dep
             ret.append(tmp)
-        return Response(ret)
+        ret_with_code = {
+            "code": 0,
+            "data": ret
+        }
+        return Response(ret_with_code)
     
     @Check
     @action(detail=False, methods=['delete'], url_path="batchdelete")
