@@ -12,4 +12,5 @@ router.register("", UserViewSet, basename="user")
 urlpatterns = router.urls + [
     path('es/', include("user.es.urls")),
     path('home/<username>', userviews.home),
+    path('username',userviews.name)
 ]

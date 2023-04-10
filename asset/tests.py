@@ -50,7 +50,7 @@ class esTest(TestCase):
         self.client.post("/asset/assetclass", {"name": "yuanshen", "type": 0})
         self.client.post("/asset/post", {"category": "yuanshen", "name": "keqi", "life": 100, "price": 1000})
         resp = self.client.get("/asset/get", {})
-        self.assertEqual(resp.json(), [{'category': 'assetclass', 'type': True, 'name': 'keqing', 'description': '', 'number_idle': 1000}, {'category': 'yuanshen', 'type': False, 'name': 'keqi', 'description': '', 'status': 0}])
+        self.assertEqual(resp.json(), {"code":0,"data":[{'category': 'assetclass', 'type': True, 'name': 'keqing', 'description': '', 'number_idle': 1000}, {'category': 'yuanshen', 'type': False, 'name': 'keqi', 'description': '', 'status': 0}]})
         
         
         

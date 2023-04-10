@@ -150,3 +150,16 @@ def home(req:Request,username:any):
         return Response(return_data)
     else:
         raise Failure("用户不存在或未登录")
+
+#获取当前登录的用户名
+@Check
+@api_view(['GET'])
+@authentication_classes([LoginAuthentication])
+@permission_classes([GeneralPermission])
+def name(req:Request):
+    if "id" not in req._request.session:
+        raise Failure("无用户登录")
+    user = User.objects.filter(id=req._request.session.get("id")).first()
+    return Response({"code":0,"name":user.name})
+
+
