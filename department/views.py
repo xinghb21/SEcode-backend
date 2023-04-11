@@ -36,11 +36,7 @@ def createEt(req:HttpRequest):
 
 #删除单个业务实体
 def singleDelete(ent):
-    crew = User.objects.filter(entity=ent.id).all()
     #需要删除名下所有人员、部门和资产
-    if crew:
-        for indiv in crew:
-            indiv.delete()
     departs = Department.objects.filter(entity=ent.id).all()
     if departs:
         for depart in departs:
@@ -49,6 +45,10 @@ def singleDelete(ent):
                 for asset in assets:
                     asset.delete()
             depart.delete()
+    crew = User.objects.filter(entity=ent.id).all()
+    if crew:
+        for indiv in crew:
+            indiv.delete()
     ent.delete()
 
 #删除单个业务实体

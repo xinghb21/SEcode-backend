@@ -26,6 +26,37 @@ class asset(viewsets.ViewSet):
     authentication_classes = [LoginAuthentication]
     permission_classes = [GeneralPermission]
     allowed_identity = [EP]
+    #hyx
+    #获取当前部门额外可选标签项
+    @Check
+    @action(detail=False, methods=["get"], url_path="usedlabel")
+    def usedlabel(self,req:Request):
+        dep = Department.objects.filter(id=req.user.department).first()
+        labels = dep.label
+        label = labels.split(",") if labels else []
+        return Response({"code":0,"info":label})
+    
+    #更改部门额外可选标签项
+    @Check
+    @action(detail=False, methods=["post"], url_path="setlabel")
+    def setlabel(self,req:Request):
+        label = require(req.data,"label","string",err_msg="Missing or error type of [label]")
+        dep = Department.objects.filter(id=req.user.department).first()
+        labels = label[1:len(label) - 1:1]
+        print(labels)
+        dep.label = labels
+        dep.save()
+        return Response({"code":0,"detail":"ok"})
+    
+    #获取当前部门所有额外属性
+    @Check
+    @action(detail=False,methods=["get"],url_path="attributes")
+    def attributes(self,req:Request):
+        dep = Department.objects.filter(id=req.user.department).first()
+        attri = json.loads(dep.attributes)
+        info = [key for key in attri]
+        return Response({"code":0,"info":info})
+    #hyx end
     
     @Check
     @action(detail=False, methods=["get"], url_path="get")
@@ -151,6 +182,17 @@ class asset(viewsets.ViewSet):
             if type(additional) is not dict:
                 raise Failure("Error type of [additional]")
             additional = json.dumps(additional)
+            
+            #hyx 更新部门中所有额外属性
+            attributes = json.loads(dep.attributes)
+            for key in json.loads(addi):
+                if key in attributes:
+                    attributes.update({key:attributes[key] + 1})
+                else:
+                    attributes.update({key:1})
+            dep.attributes = json.dumps(attributes)
+            dep.save()
+            #hyx end
         else:
             additional = "{}"
             
@@ -232,8 +274,4 @@ class assetclass(APIView):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         classes = AssetClass.objects.filter(entity=et, department=dep)
-        
-        
-
-
 # cyh
