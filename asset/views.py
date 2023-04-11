@@ -111,17 +111,22 @@ class asset(viewsets.ViewSet):
         entity = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         if 'parent' in req.data.keys():
-            parent = require(req.data, 'parent', 'string', "Error type of [parent]")
-            parent = Asset.objects.filter(entity=entity, department=dep, name=parent).first()
+            parent_name = require(req.data, 'parent', 'string', "Error type of [parent]")
+            parent = Asset.objects.filter(entity=entity, department=dep, name=parent_name).first()
             if not parent:
                 raise Failure("上级资产不存在")
         else:
             parent = None
-        category = require(req.data, "category", "string", "Missing or error type of [category]")
-        category = AssetClass.objects.filter(entity=entity, department=dep, name=category).first()
+        if "type" not in req.data.keys():
+            raise Failure("Missing [type]")
+        tp = bool(req.data["type"])
+
+        category_name = require(req.data, "category", "string", "Missing or error type of [category]")
+        category = AssetClass.objects.filter(entity=entity, department=dep, name=category_name).first()
         if not category:
-            raise Failure("该资产类型不存在")
-        tp = category.type
+            category = AssetClass.objects.create(entity=entity, department=dep, name=category_name, type=tp)
+        # if not category:
+        #     raise Failure("该资产类型不存在")
         name = require(req.data, "name", "string", "Missing or error type of [name]")
         if len(name) > 128:
             raise Failure("名称过长")

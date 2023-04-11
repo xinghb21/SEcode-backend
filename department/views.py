@@ -10,6 +10,12 @@ from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
 from django.contrib.sessions.models import Session
 from django.contrib.auth.hashers import make_password, check_password
+from utils.session import LoginAuthentication
+from utils.exceptions import Failure, ParamErr, Check
+
+from rest_framework.decorators import api_view, authentication_classes
+from rest_framework.response import Response
+from rest_framework.request import Request
 
 # Create your views here.
 #hanyx
@@ -193,4 +199,18 @@ def getEt(req:HttpRequest):
     else:
         return BAD_METHOD
 
-
+# cyh
+# 返回所有部门
+@Check
+@api_view(['GET'])
+@authentication_classes([LoginAuthentication])
+def getAllDep(req:Request):
+    if req.user.identity != 2:
+        raise PermissionError
+    et = req.user.entity
+    dep = Department.objects.filter(entity=et)
+    data = [d.name for d in dep]
+    return Response({
+        "code": 0,
+        "data": data,
+    })
