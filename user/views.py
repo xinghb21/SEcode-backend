@@ -44,18 +44,24 @@ def valid_user(body):
     entity = 0
     department = 0
     #检查业务实体和部门有效性
-    if identity != 1:
+    if identity == 2:
         entity = require(body, "entity", "string", err_msg="Missing or error type of [entity]")
         ent = Entity.objects.filter(name=entity).first()
+        if ent.admin != 0:
+            raise Failure("该业务实体已经有系统管理员")
         if not ent:
             raise Failure("业务实体不存在")
         entity = ent.id
-    if identity != 1 and identity != 2:
+    if identity == 3:
+        entity = require(body, "entity", "string", err_msg="Missing or error type of [entity]")
         department = require(body, "department", "string", err_msg="Missing or error type of [department]")
         dep = Department.objects.filter(name=department).first()
+        if dep.admin != 0:
+            raise Failure("该部门下已经有资产管理员")
         if not dep:
             raise Failure("部门不存在")
         department = dep.id
+        entity = ent.id
     return name,pwd,entity,department,identity,funclist
 
 

@@ -71,8 +71,8 @@ class EsViewSet(viewsets.ViewSet):
         return Response(ret_with_code)
     
     @Check
-    @action(detail=False, methods=['delete'], url_path="batchdelete")
-    def batch_delete(self, req:Request):
+    @action(detail=False, methods=['delete'])
+    def batchdelete(self, req:Request):
         if "names" not in req.data:
             raise Failure("Missing [names]")
         names = req.data["names"]
@@ -332,3 +332,70 @@ class EsViewSet(viewsets.ViewSet):
             "info" : info
         }
         return Response(ret)
+    @Check
+    @action(detail=False, methods=["delete"], url_path="deletealldeparts")
+    def batch_delete(self, req:Request):
+        if type(req.data) is not list:
+            raise Failure("请求参数格式错误")
+        names = req.data
+        Department.objects.filter(entity=req.user.entity, name__in=names).delete()
+        return Response({
+            "code": 0,
+            "detail": "success",
+        })
+        
+    @Check
+    @action(detail=False, methods=['post'])
+    def searchuser(self, req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        if "username" in req.data.keys() and req.data["username"] != "":
+            name = require(req.data, "username", err_msg="Error type of [username]")
+            user = User.objects.filter(entity=req.user.entity, name=name)
+            return Response({
+                "code": 0,
+                "data": [usr.serialize() for usr in user]
+            })
+        users = User.objects.filter(entity=req.user.entity)
+        if "department" in req.data.keys() and req.data["department"] != "":
+            name = require(req.data, "department", err_msg="Error type of [department]")
+            dep = Department.objects.filter(entity=req.user.entity, name=name).first()
+            users = users.filter(department=dep.id)
+        if "indentity" in req.data.keys():
+            id = require(req.data, "identity", "int", "Error type of [identity]")
+            if id == 3 or id == 4:
+                users = users.filter(identity=id)
+        return Response({
+                "code": 0,
+                "data": [usr.serialize() for usr in users]
+            })
+        
+    @Check
+    @action(detail=False, methods=['post'])
+    def changeidentity(self, req:Request):
+        dep = Department.objects.filter(id=req.user.department).first()
+        entity = Entity.objects.filter(id=req.user.entity).first()
+        name = require(req.data, "name", err_msg="Missing or Error type of [name]")
+        new_id = require(req.data, "new", "int", err_msg="Missing or Error type of [new]")
+        if new_id != 3 and new_id != 4:
+            raise Failure("传入的新身份不合法")
+        user = User.objects.filter(department=req.user.department, entity=req.user.entity, name=name).first()
+        if not user:
+            raise Failure("该用户不存在")
+        if new_id == 3:
+            if dep.admin != 0:
+                raise Failure("该部门下已经有资产管理员")
+            user.identity = 3
+            user.save()
+            dep.admin = user.id
+            dep.save()
+        else:
+            if user.identity == 3:
+                dep.admin = 0
+                dep.save()
+                user.identity = 4
+                user.save()
+        return Response({
+            "code": 0,
+            "detail": "success"
+        })
+          
