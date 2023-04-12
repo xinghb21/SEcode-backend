@@ -79,7 +79,8 @@ class asset(viewsets.ViewSet):
         else:
             res = {}
             for root in roots:
-                res.update({root.name:self.classtree(ent,dep,root)})
+                sym = "1" if root.type else "0"
+                res.update({root.name + "," + sym : self.classtree(ent,dep,root)})
             return res
 
     #返回类别树结构
