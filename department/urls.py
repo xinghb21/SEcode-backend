@@ -13,4 +13,5 @@ urlpatterns = [
     path('superget',dpviews.getEt),
     path('deleteall',dpviews.deleteAllEt),
     path('deletealladmins',dpviews.deleteAllES),
+    path('getalldep', dpviews.getAllDep)
 ]
