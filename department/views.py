@@ -94,9 +94,9 @@ def deleteAllEt(req:HttpRequest):
             if ent:
                 print(ent.name)
                 singleDelete(ent)
-                return request_success()
             else:
                 return request_failed(-1,"业务实体"+name+"不存在")
+        return request_success()
     else:
         return BAD_METHOD
 
@@ -177,7 +177,8 @@ def deleteAllES(req:HttpRequest):
                 return request_failed(-1,"此业务实体"+entname+"无系统管理员")
             name = User.objects.filter(id=ent.admin).first().name
             deleteSingleES(ent)
-            return request_success()
+        ##这么写有问题，万一中间某一个没有删除成功会出现客户预料不到的结果 hqf
+        return request_success()
     else:
         return BAD_METHOD
 
