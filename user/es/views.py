@@ -345,8 +345,27 @@ class EsViewSet(viewsets.ViewSet):
         })
         
     @Check
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['post'])
     def searchuser(self, req:Request):
-        if "username" in req.query_params.keys():
-            name = require(req.query_params, "username", err_msg="Error type of [username]")
-            
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        if "username" in req.data.keys() and req.data["username"] != "":
+            name = require(req.data, "username", err_msg="Error type of [username]")
+            user = User.objects.filter(entity=req.user.entity, name=name)
+            return Response({
+                "code": 0,
+                "data": [usr.serialize() for usr in user]
+            })
+        users = User.objects.filter(entity=req.user.entity)
+        if "department" in req.data.keys() and req.data["department"] != "":
+            name = require(req.data, "department", err_msg="Error type of [department]")
+            dep = Department.objects.filter(entity=req.user.entity, name=name).first()
+            users = users.filter(department=dep.id)
+        if "indentity" in req.data.keys():
+            id = require(req.data, "identity", "int", "Error type of [identity]")
+            if id == 3 or id == 4:
+                users = users.filter(identity=id)
+        return Response({
+                "code": 0,
+                "data": [usr.serialize() for usr in user]
+            })
+          
