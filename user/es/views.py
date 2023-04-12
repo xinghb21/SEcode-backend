@@ -237,12 +237,12 @@ class EsViewSet(viewsets.ViewSet):
         if children:
             for child in children:
                 self.layerdelete(child)
-        staffs = User.objects.filter(department=dep.id).all()
-        for staff in staffs:
-            staff.delete()
         assets = Asset.objects.filter(department=dep.id).all()
         for asset in assets:
             asset.delete()
+        staffs = User.objects.filter(department=dep.id).all()
+        for staff in staffs:
+            staff.delete()
         dep.delete()
     
     #删除部门，下属所有内容均删除

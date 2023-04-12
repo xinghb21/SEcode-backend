@@ -217,7 +217,7 @@ class esTest(TestCase):
     
     def test_check_all(self):
         resp = self.client.get("/user/es/checkall")
-        self.assertEqual(resp.json()[0], {'id': 1, 'name': 'op1', 'identity': 4, 'lockedapp': '000000001', 'locked': False, 'entity': 'et1', 'department': 'dep1'})
+        self.assertEqual(resp.json()["data"][0], {'id': 1, 'name': 'op1', 'identity': 4, 'lockedapp': '000000001', 'locked': False, 'entity': 'et1', 'department': 'dep1'})
         
     def test_batch_delete(self):
         User.objects.create(name="todelete", password=make_password("yuanshen"),
