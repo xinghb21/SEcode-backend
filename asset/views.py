@@ -42,7 +42,7 @@ class asset(viewsets.ViewSet):
     def setlabel(self,req:Request):
         label = require(req.data,"label","string",err_msg="Missing or error type of [label]")
         dep = Department.objects.filter(id=req.user.department).first()
-        labels = label[1:len(label) - 1:1]
+        labels = label[1:len(label) - 1:1].replace('"','').replace('\'','').replace(' ','')
         print(labels)
         dep.label = labels
         dep.save()
