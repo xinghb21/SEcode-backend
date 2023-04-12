@@ -154,6 +154,7 @@ class EsViewSet(viewsets.ViewSet):
             return Response({"code": 0, "detail": "用户已经处于锁定状态"})
         else:
             user.locked = True
+            user.save()
             return Response({"code": 0, "detail": "成功锁定用户"})
     
     @Check   
@@ -164,6 +165,7 @@ class EsViewSet(viewsets.ViewSet):
             return Response({"code": 0, "detail": "用户未处于锁定状态"})
         else:
             user.locked = False
+            user.save()
             return Response({"code": 0, "detail": "成功解锁用户"})
     
     # 用于匹配app列表的正则表达式
