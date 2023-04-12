@@ -71,8 +71,8 @@ class EsViewSet(viewsets.ViewSet):
         return Response(ret_with_code)
     
     @Check
-    @action(detail=False, methods=['delete'], url_path="batchdelete")
-    def batch_delete(self, req:Request):
+    @action(detail=False, methods=['delete'])
+    def batchdelete(self, req:Request):
         if "names" not in req.data:
             raise Failure("Missing [names]")
         names = req.data["names"]
@@ -332,3 +332,21 @@ class EsViewSet(viewsets.ViewSet):
             "info" : info
         }
         return Response(ret)
+    @Check
+    @action(detail=False, methods=["delete"], url_path="deletealldeparts")
+    def batch_delete(self, req:Request):
+        if type(req.data) is not list:
+            raise Failure("请求参数格式错误")
+        names = req.data
+        Department.objects.filter(entity=req.user.entity, name__in=names).delete()
+        return Response({
+            "code": 0,
+            "detail": "success",
+        })
+        
+    @Check
+    @action(detail=False, methods=['get'])
+    def searchuser(self, req:Request):
+        if "username" in req.query_params.keys():
+            name = require(req.query_params, "username", err_msg="Error type of [username]")
+            

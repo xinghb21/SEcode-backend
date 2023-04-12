@@ -225,9 +225,18 @@ class esTest(TestCase):
         User.objects.create(name="todelete2", password=make_password("yuanshen"),
                                        identity=4, entity=1, department=2)    
         resp = self.client.delete("/user/es/batchdelete", {"names": ["todelete", "todelete2"]}, content_type="application/json")
+        # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         user = User.objects.filter(name="todelete").first()
         user2 = User.objects.filter(name="todelete2").first()
         self.assertEqual(user, None)
         self.assertEqual(user2, None)
     
+    def test_delete_dep(self):
+        
+        Department.objects.create(name="dep3", entity=1, parent=0, admin=6)
+        Department.objects.create(name="dep4", entity=1, parent=0, admin=6)
+        deps = Department.objects.filter(name="dep3")
+        # print(Department.objects.filter(name="dep3"))
+        self.client.delete("/user/es/deletealldeparts", ["dep3", "dep4"], content_type="application/json")
+        self.assertEqual(Department.objects.filter(name="dep3").first(), None)  

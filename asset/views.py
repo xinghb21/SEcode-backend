@@ -64,53 +64,58 @@ class asset(viewsets.ViewSet):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         # 按名字查直接返回单个
-        if "name" in req.query_params:
+        if "name" in req.query_params.keys():
             name = require(req.query_params, "name", err_msg="Error type of [name]")
-            asset = Asset.objects.filter(name=name).first()
+            asset = Asset.objects.filter(entity=et, department=dep, name=name).first()
+            if not asset:
+                return Response({
+                    "code": 0,
+                    "data": []
+                })
             return Response({
                 "code": 0,
                 "data": [return_field(asset.serialize(), ["name", "description", "category", "type"])]
             })
         asset = Asset.objects.filter(entity=et, department=dep)
-        if "parent" in req.query_params:
+        if "parent" in req.query_params.keys():
             parent = require(req.query_params, "parent", "string", "Error type of [parent]")
             parent = Asset.objects.filter(entity=et, department=dep, name=parent).first()
             if not parent:
                 raise Failure("所提供的上级资产不存在")
             asset = asset.filter(parent=parent)
-        if "category" in req.query_params:
+        if "category" in req.query_params.keys():
             cate = require(req.query_params, "category", err_msg="Error type of [category]")
             cate = AssetClass.objects.filter(entity=et, department=dep, name=cate).first()
             if not cate:
                 raise Failure("所提供的资产类型不存在")
             asset = asset.filter(category=cate)
         # 按挂账人进行查询还需要讨论一下，比如一个部门下的资产的挂账人除了资产管理员还可以是谁
-        if "belonging" in req.query_params:
+        if "belonging" in req.query_params.keys():
             user = require(req.query_params, "belonging", err_msg="Error type of [belonging]")
             user = User.objects.filter(name=user).first()
             if not user:
                 raise Failure("所提供的挂账人不存在")
             asset = asset.filter(user=user)
-        if "from" in req.query_params:
+        if "from" in req.query_params.keys():
             from_ = require(req.query_params, "from", "float", err_msg="Error type of [from]")
             asset = asset.filter(create_time__gte=from_)
         if "to" in req.query_params:
             to_ = require(req.query_params, "to", "float", err_msg="Error type of [to]")
             asset = asset.filter(create_time__lte=to_)
         # 资产使用者只能是本部门下的吗？
-        if "user" in req.query_params:
+        if "user" in req.query_params.keys():
             user = require(req.query_params, "user", err_msg="Error type of [user]")
             user = User.objects.filter(name=user).first()
             if not user:
                 raise Failure("所提供的使用者不存在")
             asset = asset.filter(user=user)
-        if "status" in req.query_params:
+        if "status" in req.query_params.keys():
             status = require(req.query_params, "status", "int", err_msg="Error type of [status]")
             asset = asset.filter(status=status)
-        if "pricefrom" in req.query_params:
+        if "pricefrom" in req.query_params.keys():
             pfrom = require(req.query_params, "pricefrom", "float", err_msg="Error type of [pricefrom]")
             asset = asset.filter(price__gte=pfrom)
-        if "priceto" in req.query_params:
+        if "priceto" in req.query_params.keys():
             pto = require(req.query_params, "priceto", "float", err_msg="Error type of [priceto]")
             asset = asset.filter(price__lte=pto)
         ret = {
@@ -126,6 +131,8 @@ class asset(viewsets.ViewSet):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         asset = Asset.objects.filter(entity=et, department=dep, name=name).first()
+        if not asset:
+            raise Failure("该资产不存在")
         ret = {
             "code": 0,
             **asset.serialize(),
@@ -295,4 +302,8 @@ class assetclass(APIView):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         classes = AssetClass.objects.filter(entity=et, department=dep)
+        return Response({
+            "code": 0,
+            "data": [clas.name for clas in classes],
+        })
 # cyh
