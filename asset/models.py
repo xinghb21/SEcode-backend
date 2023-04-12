@@ -23,14 +23,14 @@ class Asset(models.Model):
     parent = models.ForeignKey('Asset', null=True, on_delete=models.SET_NULL)
     
     # 资产所属的部门
-    department = models.ForeignKey('department.Department', null=True, on_delete=models.PROTECT)
+    department = models.ForeignKey('department.Department', null=True, on_delete=models.CASCADE)
     
     # 资产所属的业务实体
-    entity = models.ForeignKey('department.Entity', null=True, on_delete=models.PROTECT)
+    entity = models.ForeignKey('department.Entity', null=True, on_delete=models.CASCADE)
     
     # 资产类别
-    # 资产必须属于某一个类别，类别被删除时，该类别下必须没有资产
-    category = models.ForeignKey('AssetClass', null=True, on_delete=models.PROTECT) 
+    # 资产必须属于某一个类别，类别被删除时，该类别下资产均被删除
+    category = models.ForeignKey('AssetClass', null=True, on_delete=models.CASCADE) 
     
     # True为数量型，False为条目型
     type = models.BooleanField(null=True)
@@ -40,7 +40,7 @@ class Asset(models.Model):
     
     #挂账人
     # 每个资产都一定要有挂账人，删除一个用户之前一定要保证这个用户下没有挂账的资产，否则这里报错: ProtectedError
-    belonging = models.ForeignKey('user.User', null=True, on_delete=models.PROTECT, related_name="belonging")
+    belonging = models.ForeignKey('user.User', null=True, on_delete=models.CASCADE, related_name="belonging")
     
     #资产原价值
     price = models.DecimalField(max_digits=10,decimal_places=2)
@@ -149,5 +149,4 @@ class AssetClass(models.Model):
     
     #资产类型，False为条目型，True为数量型
     type = models.BooleanField(null=False, default=False)
-    
     

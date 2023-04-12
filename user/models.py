@@ -31,6 +31,7 @@ class User(models.Model):
     
     #用户是否被锁定，只有既非超级管理员又非系统管理员的用户可被锁定
     locked = models.BooleanField(default=False)
+    
 
     class Meta:
         db_table = "User"

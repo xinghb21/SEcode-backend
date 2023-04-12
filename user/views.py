@@ -44,18 +44,25 @@ def valid_user(body):
     entity = 0
     department = 0
     #检查业务实体和部门有效性
-    if identity != 1:
+    if identity == 2:
         entity = require(body, "entity", "string", err_msg="Missing or error type of [entity]")
         ent = Entity.objects.filter(name=entity).first()
         if not ent:
             raise Failure("业务实体不存在")
+        if ent.admin != 0:
+            raise Failure("该业务实体已经有系统管理员")
         entity = ent.id
-    if identity != 1 and identity != 2:
+    if identity == 3 or identity == 4:
+        entity = require(body, "entity", "string", err_msg="Missing or error type of [entity]")
         department = require(body, "department", "string", err_msg="Missing or error type of [department]")
         dep = Department.objects.filter(name=department).first()
+        ent= Entity.objects.filter(name=entity).first()
         if not dep:
             raise Failure("部门不存在")
+        if dep.admin != 0:
+            raise Failure("此部门资产管理员已存在")
         department = dep.id
+        entity = ent.id
     return name,pwd,entity,department,identity,funclist
 
 
@@ -72,6 +79,11 @@ class UserViewSet(viewsets.ViewSet):
             raise Failure("此用户名已存在")
         user = User(name=name,password=make_password(pwd),entity=entity,department=department,identity=identity,lockedapp=funclist)
         user.save()
+        if identity == 3:
+            dep=Department.objects.filter(id=department).first()
+            if dep:
+                dep.admin=user.id
+                dep.save()
         Logs(entity = user.entity,content="创建用户"+user.name,type=1).save()
         return Response({"code":0,"username":name})
 
@@ -150,3 +162,16 @@ def home(req:Request,username:any):
         return Response(return_data)
     else:
         raise Failure("用户不存在或未登录")
+
+#获取当前登录的用户名
+@Check
+@api_view(['GET'])
+@authentication_classes([LoginAuthentication])
+@permission_classes([GeneralPermission])
+def name(req:Request):
+    if "id" not in req._request.session:
+        raise Failure("无用户登录")
+    user = User.objects.filter(id=req._request.session.get("id")).first()
+    return Response({"code":0,"name":user.name})
+
+

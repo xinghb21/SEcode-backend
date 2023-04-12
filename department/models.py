@@ -41,6 +41,12 @@ class Department(models.Model):
     
     #部门的资产管理员id
     admin = models.BigIntegerField(default=0)
+    
+    #用户自定义的资产标签项目，只有资产管理员可以使用,以逗号隔开
+    label = models.TextField(default="")
+    
+    #所有自定义资产属性的json
+    attributes = models.TextField(default="{}")
 
     class Meta:
         db_table = "Department"
@@ -51,7 +57,8 @@ class Department(models.Model):
             "name":self.name,
             "entity":self.entity,
             "parent":self.parent,
-            "admin":self.admin
+            "admin":self.admin,
+            "label":self.label
         }
 
     def __str__(self) -> str:

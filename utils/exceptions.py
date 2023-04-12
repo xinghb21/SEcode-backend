@@ -43,8 +43,9 @@ class Failure(exceptions.APIException):
     status_code = status.HTTP_400_BAD_REQUEST
     detail = "请求失败."
     
+    # 在debug=false时也显示错误信息
     def __init__(self, info=""):
-        if DEBUG and len(info) != 0:
+        if len(info) != 0:
             self.detail = info
 
 # 参数错误
@@ -52,6 +53,7 @@ class ParamErr(exceptions.APIException):
     status_code = status.HTTP_400_BAD_REQUEST
     detail = "Invalid parameters."
     
+    # 在debug=false时也显示错误信息
     def __init__(self, info=""):
-        if DEBUG and len(info):
+        if len(info):
             self.detail += " " + info

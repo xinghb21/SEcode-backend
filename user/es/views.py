@@ -45,6 +45,43 @@ class EsViewSet(viewsets.ViewSet):
         if user.entity != req.user.entity:
             raise Failure("系统管理员无权操作其它业务实体的用户")
         return user
+    # 查看业务实体下的所有用户
+    @Check
+    @action(detail=False, methods=['get'], url_path="checkall")
+    def check_all(self, req:Request):
+        et = req.user.entity
+        users = User.objects.filter(entity=et).exclude(identity=2)
+        ret = []
+        for user in users:
+            tmp = return_field(user.serialize(), ["id", "name", "entity","identity", "lockedapp", "locked"])
+            entity = user.entity
+            entity = Entity.objects.filter(id=entity).first().name
+            dep = user.department
+            if dep != 0:
+                dep = Department.objects.filter(id=dep).first().name
+            else:
+                dep = ""
+            tmp["entity"] = entity
+            tmp["department"] = dep
+            if(user.identity != 2):
+                ret.append(tmp)
+        ret_with_code = {
+            "code": 0,
+            "data": ret
+        }
+        return Response(ret_with_code)
+    
+    @Check
+    @action(detail=False, methods=['delete'])
+    def batchdelete(self, req:Request):
+        if "names" not in req.data:
+            raise Failure("Missing [names]")
+        names = req.data["names"]
+        if type(names) is not list:
+            raise Failure("Error type of [names]")
+        User.objects.filter(entity=req.user.entity, name__in=names).delete()
+        return Response({"code": 0, "detail": "success"})
+    
 
     # 企业系统管理员查看企业用户
     @Check
@@ -99,6 +136,8 @@ class EsViewSet(viewsets.ViewSet):
             dep = Department.objects.filter(name=new_name).first()
             if not dep:
                 raise Failure("新部门不存在")
+            if dep.admin != 0 and user.identity == 3:
+                raise Failure("该部门已存在资产管理员")
             user.department = dep.id
             user.save()
         ret = {
@@ -118,6 +157,7 @@ class EsViewSet(viewsets.ViewSet):
             return Response({"code": 0, "detail": "用户已经处于锁定状态"})
         else:
             user.locked = True
+            user.save()
             return Response({"code": 0, "detail": "成功锁定用户"})
     
     @Check   
@@ -128,6 +168,7 @@ class EsViewSet(viewsets.ViewSet):
             return Response({"code": 0, "detail": "用户未处于锁定状态"})
         else:
             user.locked = False
+            user.save()
             return Response({"code": 0, "detail": "成功解锁用户"})
     
     # 用于匹配app列表的正则表达式
@@ -147,6 +188,7 @@ class EsViewSet(viewsets.ViewSet):
             "code": 0,
             "new_app": new_app,
             "old_app": old_app,
+            "detail": "成功更改用户应用"
         }
         return Response(ret)
     @Check
@@ -156,7 +198,7 @@ class EsViewSet(viewsets.ViewSet):
         new_pw = require(req.data, "newpassword", err_msg="Missing or error type of [newpassword]")
         user.password = make_password(new_pw)
         user.save()
-        return Response({"code": 0})
+        return Response({"code": 0, "detail": "success"})
     
     
     #hyx
@@ -198,12 +240,12 @@ class EsViewSet(viewsets.ViewSet):
         if children:
             for child in children:
                 self.layerdelete(child)
-        staffs = User.objects.filter(department=dep.id).all()
-        for staff in staffs:
-            staff.delete()
         assets = Asset.objects.filter(department=dep.id).all()
         for asset in assets:
             asset.delete()
+        staffs = User.objects.filter(department=dep.id).all()
+        for staff in staffs:
+            staff.delete()
         dep.delete()
     
     #删除部门，下属所有内容均删除
@@ -293,3 +335,119 @@ class EsViewSet(viewsets.ViewSet):
             "info" : info
         }
         return Response(ret)
+    @Check
+    @action(detail=False, methods=["delete"], url_path="deletealldeparts")
+    def batch_delete(self, req:Request):
+        if type(req.data) is not list:
+            raise Failure("请求参数格式错误")
+        names = req.data
+        Department.objects.filter(entity=req.user.entity, name__in=names).delete()
+        return Response({
+            "code": 0,
+            "detail": "success",
+        })
+        
+    @Check
+    @action(detail=False, methods=['post'])
+    def searchuser(self, req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        if "username" in req.data.keys() and req.data["username"] != "":
+            name = require(req.data, "username", err_msg="Error type of [username]")
+            user = User.objects.filter(entity=req.user.entity, name=name).first()
+            if not user:
+                return Response({
+                    "code":0,
+                    "data":[]
+                })
+            else:    
+                ret =[]
+                tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked"])
+                entity = user.entity
+                entity = Entity.objects.filter(id=entity).first().name
+                dep = user.department
+                if dep != 0:
+                    dep = Department.objects.filter(id=dep).first().name
+                else:
+                    dep = ""
+                tmp["entity"] = entity
+                tmp["department"] = dep
+                if(user.identity != 2):
+                    ret.append(tmp)
+                if "department" in req.data.keys() and req.data["department"] != "":
+                    if req.data["department"]!= dep:
+                        return Response({
+                                            "code": 0,
+                                            "data": []
+                            })
+                if "identity" in req.data.keys():
+                    if req.data["identity"] != user.identity:
+                        return Response({
+                                        "code": 0,
+                                        "data": []
+                            })
+                return Response({
+                    "code":0,
+                    "data":ret
+                    })
+        users = User.objects.filter(entity=req.user.entity)
+        if "department" in req.data.keys() and req.data["department"] != "":
+            name = require(req.data, "department", err_msg="Error type of [department]")
+            dep = Department.objects.filter(entity=req.user.entity, name=name).first()
+            users = users.filter(department=dep.id)
+        if "identity" in req.data.keys():
+            id = require(req.data, "identity", "int", "Error type of [identity]")
+            if id == 3 or id == 4:
+                users = users.filter(identity=id)
+        ret =[]
+        for user in users:
+            tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked"])
+            entity = user.entity
+            entity = Entity.objects.filter(id=entity).first().name
+            dep = user.department
+            if dep != 0:
+                dep = Department.objects.filter(id=dep).first().name
+            else:
+                dep = ""
+            tmp["entity"] = entity
+            tmp["department"] = dep
+            if(user.identity != 2):
+                ret.append(tmp)
+        return Response({
+                "code": 0,
+                "data": ret
+            })
+        
+    @Check
+    @action(detail=False, methods=['post'])
+    def changeidentity(self, req:Request):
+        name = require(req.data, "name", err_msg="Missing or Error type of [name]")
+        new_id = require(req.data, "new", "int", err_msg="Missing or Error type of [new]")
+        depart = require(req.data, "department", err_msg="Missing or Error type of [department]")
+        entityname = require(req.data, "entity", err_msg="Missing or Error type of [entity]") 
+        entity=Entity.objects.filter(name=entityname).first()
+        dep = Department.objects.filter(name=depart).first()
+        if new_id != 3 and new_id != 4:
+            raise Failure("传入的新身份不合法")
+        user = User.objects.filter(department= dep.id, entity=entity.id, name=name).first()
+        if not user:
+            raise Failure("该用户不存在")
+        if new_id == 3:
+            if dep.admin != 0:
+                raise Failure("该部门下已经有资产管理员")
+            user.identity = 3
+            user.lockedapp = "000001110"
+            user.save()
+            dep.admin = user.id
+            dep.save()
+        else:
+            if user.identity == 3:
+                dep.admin = 0
+                dep.save()
+                user.identity = 4
+                user.lockedapp = "000000001"
+                user.save()
+        return Response({
+            "code": 0,
+            "detail": "success"
+        })
+          

@@ -10,6 +10,12 @@ from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
 from django.contrib.sessions.models import Session
 from django.contrib.auth.hashers import make_password, check_password
+from utils.session import LoginAuthentication
+from utils.exceptions import Failure, ParamErr, Check
+
+from rest_framework.decorators import api_view, authentication_classes
+from rest_framework.response import Response
+from rest_framework.request import Request
 
 # Create your views here.
 #hanyx
@@ -36,11 +42,7 @@ def createEt(req:HttpRequest):
 
 #删除单个业务实体
 def singleDelete(ent):
-    crew = User.objects.filter(entity=ent.id).all()
     #需要删除名下所有人员、部门和资产
-    if crew:
-        for indiv in crew:
-            indiv.delete()
     departs = Department.objects.filter(entity=ent.id).all()
     if departs:
         for depart in departs:
@@ -49,6 +51,10 @@ def singleDelete(ent):
                 for asset in assets:
                     asset.delete()
             depart.delete()
+    crew = User.objects.filter(entity=ent.id).all()
+    if crew:
+        for indiv in crew:
+            indiv.delete()
     ent.delete()
 
 #删除单个业务实体
@@ -88,9 +94,9 @@ def deleteAllEt(req:HttpRequest):
             if ent:
                 print(ent.name)
                 singleDelete(ent)
-                return request_success()
             else:
                 return request_failed(-1,"业务实体"+name+"不存在")
+        return request_success()
     else:
         return BAD_METHOD
 
@@ -106,6 +112,8 @@ def assginES(req:HttpRequest):
         user = Entity.objects.filter(name=username).first()
         if not ent:
             return request_failed(-1,"此业务实体不存在")
+        if ent.admin != 0:
+            return request_failed(-1,"该业务实体系统管理员已存在")
         if user:
             return request_failed(-1,"此用户名已存在")
         es = User(name=username,password=make_password(pwd),entity=ent.id,department=0,identity=2,lockedapp="001110000")
@@ -169,7 +177,8 @@ def deleteAllES(req:HttpRequest):
                 return request_failed(-1,"此业务实体"+entname+"无系统管理员")
             name = User.objects.filter(id=ent.admin).first().name
             deleteSingleES(ent)
-            return request_success()
+        ##这么写有问题，万一中间某一个没有删除成功会出现客户预料不到的结果 hqf
+        return request_success()
     else:
         return BAD_METHOD
 
@@ -193,4 +202,18 @@ def getEt(req:HttpRequest):
     else:
         return BAD_METHOD
 
-
+# cyh
+# 返回所有部门
+@Check
+@api_view(['GET'])
+@authentication_classes([LoginAuthentication])
+def getAllDep(req:Request):
+    if req.user.identity != 2:
+        raise PermissionError
+    et = req.user.entity
+    dep = Department.objects.filter(entity=et)
+    data = [d.name for d in dep]
+    return Response({
+        "code": 0,
+        "data": data,
+    })

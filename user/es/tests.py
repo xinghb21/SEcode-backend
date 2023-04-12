@@ -214,3 +214,29 @@ class esTest(TestCase):
             "info": {"dep1": ["op1","op2"], "dep2": []}
         }
         self.assertJSONEqual(resp.content,std)
+    
+    def test_check_all(self):
+        resp = self.client.get("/user/es/checkall")
+        self.assertEqual(resp.json()["data"][0], {'id': 1, 'name': 'op1', 'identity': 4, 'lockedapp': '000000001', 'locked': False, 'entity': 'et1', 'department': 'dep1'})
+        
+    def test_batch_delete(self):
+        User.objects.create(name="todelete", password=make_password("yuanshen"),
+                                       identity=4, entity=1, department=2)
+        User.objects.create(name="todelete2", password=make_password("yuanshen"),
+                                       identity=4, entity=1, department=2)    
+        resp = self.client.delete("/user/es/batchdelete", {"names": ["todelete", "todelete2"]}, content_type="application/json")
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        user = User.objects.filter(name="todelete").first()
+        user2 = User.objects.filter(name="todelete2").first()
+        self.assertEqual(user, None)
+        self.assertEqual(user2, None)
+    
+    def test_delete_dep(self):
+        
+        Department.objects.create(name="dep3", entity=1, parent=0, admin=6)
+        Department.objects.create(name="dep4", entity=1, parent=0, admin=6)
+        deps = Department.objects.filter(name="dep3")
+        # print(Department.objects.filter(name="dep3"))
+        self.client.delete("/user/es/deletealldeparts", ["dep3", "dep4"], content_type="application/json")
+        self.assertEqual(Department.objects.filter(name="dep3").first(), None)  
