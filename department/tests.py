@@ -132,3 +132,33 @@ class superAdminTest(TestCase):
     def test_good_get_entity(self):
         res = self.get_entity()
         self.assertJSONEqual(res.content,{"code":0,"data":[{"id":1,"name":"Alice","admin":"David"},{"id":2,"name":"Bob","admin":""}]})
+        
+class EnterpriseSystemTest(TestCase):
+    def setUp(self):
+        aliceEntity = Entity.objects.create(name="Alice")
+        bobDepart = Department.objects.create(name="Bob", entity=1)
+        cindyDepart = Department.objects.create(name="Cindy",entity=1)
+        es = User.objects.create(name="es",password=make_password("es"),identity=2, entity=1)
+        loginres = self.login("es","es")
+
+    def md5(self, s):
+        obj = hashlib.md5()
+        obj.update(s.encode())
+        return obj.hexdigest()
+
+    def login(self, name, pw):
+        payload = {
+            "name": name,
+            "password": pw
+        }
+        return self.client.post("/user/login", data=payload, content_type="application/json")
+    
+    def logout(self, name):
+        payload = {
+            "name": name
+        }
+        return self.client.post("/user/logout", data=payload, content_type="application/json")
+    
+    def test_get_all_depart(self):
+        resp = self.client.get("/entity/getalldep")
+        self.assertEqual(resp.json()["data"], ['Bob', 'Cindy'])
