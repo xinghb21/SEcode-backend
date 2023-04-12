@@ -296,7 +296,7 @@ class assetclass(APIView):
         AssetClass.objects.create(parent=parent, entity=et, department=dep, name=name, type=tp)
         return Response({"code": 0, "detail": "success"})
     
-    # 返回该部门下的类别层级树
+    # 返回该部门下的类别
     @Check
     def get(self, req:Request):
         et = Entity.objects.filter(id=req.user.entity).first()
