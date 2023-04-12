@@ -141,7 +141,7 @@ class asset(viewsets.ViewSet):
         dep = Department.objects.filter(id=req.user.department).first()
         toadd = []
         for asset in req.data:
-            if 'parent' in asset.keys():
+            if 'parent' in asset.keys() and asset["parent"] != "" and asset["parnet"] != None:
                 parent_name = require(asset, 'parent', 'string', "Error type of [parent]")
                 parent = Asset.objects.filter(entity=entity, department=dep, name=parent_name).first()
                 if not parent:
@@ -159,7 +159,7 @@ class asset(viewsets.ViewSet):
                 raise Failure("名称过长")
             if Asset.objects.filter(entity=entity, department=dep, name=name).first():
                 raise Failure("名称重复")
-            if "belonging" in asset.keys():
+            if "belonging" in asset.keys() and asset["belonging"] != "" and asset["belonging"] != None:
                 belonging = require(asset, "belonging", "string", "Missing or error type of [belonging]")
                 belonging = User.objects.filter(entity=entity.id, department=dep.id, name=belonging).first()
                 if not belonging:
@@ -170,11 +170,11 @@ class asset(viewsets.ViewSet):
             life = require(asset, "life", "int", "error type of [life]")
             if life < 0:
                 raise Failure("使用年限不能为负数")
-            if 'description' in asset.keys():
+            if 'description' in asset.keys() and asset["description"] != None:
                 description = require(asset, 'description', 'string', "Error type of [description]")
             else:
                 description = ""
-            if "additional" in asset.keys():
+            if "additional" in asset.keys() and asset["additional"] != "" and asset["additional"] != None:
                 addi = asset["additional"]
                 additional = json.loads(addi)
                 if type(additional) is not dict:
@@ -243,12 +243,23 @@ class asset(viewsets.ViewSet):
     # cyh
     # 批量删除资产
     @Check
-    @action(detail=False, methods=['DELETE'], url_path="delete")
-    def delete(req:Request):
+    @action(detail=False, methods=['delete'], url_path="delete")
+    def delete(self, req:Request):
         names = req.data
         if type(names) is not list:
             raise ParamErr("请求参数格式不正确")
-        Asset.objects.filter(name__in=names).delete()
+        assets = Asset.objects.filter(name__in=names)
+        dep = assets.first().department
+        attr:dict = json.loads(dep.attributes)
+        for asset in assets:
+            addi = json.loads(asset.additional)
+            for key in addi.keys():
+                attr[key] -= 1
+                if attr[key] == 0:
+                    attr.pop(key)
+            asset.delete()
+        dep.attributes = json.dumps(attr)
+        dep.save()
         return Response({"code": 0, "detail": "success"})
   
   
