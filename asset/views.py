@@ -27,6 +27,19 @@ class asset(viewsets.ViewSet):
     permission_classes = [GeneralPermission]
     allowed_identity = [EP]
     #hyx
+    @Check
+    @action(detail=False, methods=["post"], url_path="createattributes")
+    def createattributes(self,req:Request):
+        name = require(req.data,"name","string",err_msg="Missing or error type of [label]")
+        dep = Department.objects.filter(id=req.user.department).first()
+        attri = json.loads(dep.attributes)
+        if name in attri:
+            raise Failure("该属性已存在")
+        attri.update({name:0})
+        dep.attributes = json.dumps(attri)
+        dep.save()
+        return Response({"code":0,"detail":"创建成功"})
+    
     #获取当前部门额外可选标签项
     @Check
     @action(detail=False, methods=["get"], url_path="usedlabel")
@@ -43,7 +56,6 @@ class asset(viewsets.ViewSet):
         label = require(req.data,"label","string",err_msg="Missing or error type of [label]")
         dep = Department.objects.filter(id=req.user.department).first()
         labels = label[1:len(label) - 1:1].replace('"','').replace('\'','').replace(' ','')
-        print(labels)
         dep.label = labels
         dep.save()
         return Response({"code":0,"detail":"ok"})
@@ -56,6 +68,33 @@ class asset(viewsets.ViewSet):
         attri = json.loads(dep.attributes)
         info = [key for key in attri]
         return Response({"code":0,"info":info})
+    
+    #递归构造类别树存储
+    def classtree(self,ent,dep,parent):
+        #递归基
+        roots = AssetClass.objects.filter(entity=ent,department=dep,parent=parent).all()
+        print(roots)
+        if not roots:
+            return "$"
+        else:
+            res = {}
+            for root in roots:
+                res.update({root.name:self.classtree(ent,dep,root)})
+            return res
+
+    #返回类别树结构
+    @Check
+    @action(detail=False, methods=["get"], url_path="assetclasstree") 
+    def assetclasstree(self,req:Request):
+        if req.user.identity != 3:
+            raise Failure("此用户无权查看部门结构")
+        dep = Department.objects.filter(id=req.user.department).first()
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        ret = {
+            "code" : 0,
+            "info" : {dep.name:self.classtree(ent,dep,None)}
+        }
+        return Response(ret)
     #hyx end
     
     @Check
@@ -253,6 +292,30 @@ class assetclass(APIView):
     allowed_identity = [EP]
     
     @Check
+    def delete(self,req:Request):
+        name = require(req.data, "name", err_msg="Error type of [name]")
+        et = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        ac = AssetClass.objects.filter(entity=et, department=dep, name=name).first()
+        if not ac:
+            raise Failure("该资产类别不存在")
+        ac.delete()
+        return Response({"code": 0, "detail": "success"})
+    
+    @Check
+    def put(self,req:Request):
+        oldname = require(req.data, "oldname", err_msg="Error type of [oldname]")
+        newname = require(req.data, "newname", err_msg="Error type of [newname]")
+        et = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        ac = AssetClass.objects.filter(entity=et, department=dep, name=oldname).first()
+        if not ac:
+            raise Failure("该资产类别不存在")
+        ac.name = newname
+        ac.save()
+        return Response({"code": 0, "detail": "success"})
+    
+    @Check
     def post(self, req:Request):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
@@ -279,4 +342,5 @@ class assetclass(APIView):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         classes = AssetClass.objects.filter(entity=et, department=dep)
+    
 # cyh

@@ -50,7 +50,7 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path="checkall")
     def check_all(self, req:Request):
         et = req.user.entity
-        users = User.objects.filter(entity=et)
+        users = User.objects.filter(entity=et).exclude(identity=2)
         ret = []
         for user in users:
             tmp = return_field(user.serialize(), ["id", "name", "identity", "lockedapp", "locked"])
@@ -135,6 +135,8 @@ class EsViewSet(viewsets.ViewSet):
             dep = Department.objects.filter(name=new_name).first()
             if not dep:
                 raise Failure("新部门不存在")
+            if dep.admin != 0 and user.identity == 3:
+                raise Failure("该部门已存在资产管理员")
             user.department = dep.id
             user.save()
         ret = {
@@ -154,6 +156,7 @@ class EsViewSet(viewsets.ViewSet):
             return Response({"code": 0, "detail": "用户已经处于锁定状态"})
         else:
             user.locked = True
+            user.save()
             return Response({"code": 0, "detail": "成功锁定用户"})
     
     @Check   
@@ -164,6 +167,7 @@ class EsViewSet(viewsets.ViewSet):
             return Response({"code": 0, "detail": "用户未处于锁定状态"})
         else:
             user.locked = False
+            user.save()
             return Response({"code": 0, "detail": "成功解锁用户"})
     
     # 用于匹配app列表的正则表达式

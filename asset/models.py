@@ -30,7 +30,7 @@ class Asset(models.Model):
     
     # 资产类别
     # 资产必须属于某一个类别，类别被删除时，该类别下必须没有资产
-    category = models.ForeignKey('AssetClass', null=True, on_delete=models.PROTECT) 
+    category = models.ForeignKey('AssetClass', null=True, on_delete=models.CASCADE) 
     
     # True为数量型，False为条目型
     type = models.BooleanField(null=True)

@@ -70,6 +70,10 @@ class UserViewSet(viewsets.ViewSet):
         sameuser = User.objects.filter(name=name).first()
         if sameuser:
             raise Failure("此用户名已存在")
+        if identity == 3:
+            dep = Department.objects.filter(name=department).first()
+            if dep and dep.admin != 0:
+                raise Failure("此部门资产管理员已存在")
         user = User(name=name,password=make_password(pwd),entity=entity,department=department,identity=identity,lockedapp=funclist)
         user.save()
         Logs(entity = user.entity,content="创建用户"+user.name,type=1).save()

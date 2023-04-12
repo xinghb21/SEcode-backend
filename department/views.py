@@ -112,6 +112,8 @@ def assginES(req:HttpRequest):
         user = Entity.objects.filter(name=username).first()
         if not ent:
             return request_failed(-1,"此业务实体不存在")
+        if ent.admin != 0:
+            return request_failed(-1,"该业务实体系统管理员已存在")
         if user:
             return request_failed(-1,"此用户名已存在")
         es = User(name=username,password=make_password(pwd),entity=ent.id,department=0,identity=2,lockedapp="001110000")
