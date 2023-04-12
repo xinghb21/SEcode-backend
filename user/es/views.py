@@ -50,10 +50,10 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path="checkall")
     def check_all(self, req:Request):
         et = req.user.entity
-        users = User.objects.filter(entity=et)
+        users = User.objects.filter(entity=et).exclude(identity=2)
         ret = []
         for user in users:
-            tmp = return_field(user.serialize(), ["id", "name", "identity", "lockedapp", "locked"])
+            tmp = return_field(user.serialize(), ["id", "name", "entity","identity", "lockedapp", "locked"])
             entity = user.entity
             entity = Entity.objects.filter(id=entity).first().name
             dep = user.department
@@ -63,7 +63,8 @@ class EsViewSet(viewsets.ViewSet):
                 dep = ""
             tmp["entity"] = entity
             tmp["department"] = dep
-            ret.append(tmp)
+            if(user.identity != 2):
+                ret.append(tmp)
         ret_with_code = {
             "code": 0,
             "data": ret
@@ -135,6 +136,8 @@ class EsViewSet(viewsets.ViewSet):
             dep = Department.objects.filter(name=new_name).first()
             if not dep:
                 raise Failure("新部门不存在")
+            if dep.admin != 0 and user.identity == 3:
+                raise Failure("该部门已存在资产管理员")
             user.department = dep.id
             user.save()
         ret = {
@@ -350,41 +353,89 @@ class EsViewSet(viewsets.ViewSet):
         ent = Entity.objects.filter(id=req.user.entity).first()
         if "username" in req.data.keys() and req.data["username"] != "":
             name = require(req.data, "username", err_msg="Error type of [username]")
-            user = User.objects.filter(entity=req.user.entity, name=name)
-            return Response({
-                "code": 0,
-                "data": [usr.serialize() for usr in user]
-            })
+            user = User.objects.filter(entity=req.user.entity, name=name).first()
+            if not user:
+                return Response({
+                    "code":0,
+                    "data":[]
+                })
+            else:    
+                ret =[]
+                tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked"])
+                entity = user.entity
+                entity = Entity.objects.filter(id=entity).first().name
+                dep = user.department
+                if dep != 0:
+                    dep = Department.objects.filter(id=dep).first().name
+                else:
+                    dep = ""
+                tmp["entity"] = entity
+                tmp["department"] = dep
+                if(user.identity != 2):
+                    ret.append(tmp)
+                if "department" in req.data.keys() and req.data["department"] != "":
+                    if req.data["department"]!= dep:
+                        return Response({
+                                            "code": 0,
+                                            "data": []
+                            })
+                if "identity" in req.data.keys():
+                    if req.data["identity"] != user.identity:
+                        return Response({
+                                        "code": 0,
+                                        "data": []
+                            })
+                return Response({
+                    "code":0,
+                    "data":ret
+                    })
         users = User.objects.filter(entity=req.user.entity)
         if "department" in req.data.keys() and req.data["department"] != "":
             name = require(req.data, "department", err_msg="Error type of [department]")
             dep = Department.objects.filter(entity=req.user.entity, name=name).first()
             users = users.filter(department=dep.id)
-        if "indentity" in req.data.keys():
+        if "identity" in req.data.keys():
             id = require(req.data, "identity", "int", "Error type of [identity]")
             if id == 3 or id == 4:
                 users = users.filter(identity=id)
+        ret =[]
+        for user in users:
+            tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked"])
+            entity = user.entity
+            entity = Entity.objects.filter(id=entity).first().name
+            dep = user.department
+            if dep != 0:
+                dep = Department.objects.filter(id=dep).first().name
+            else:
+                dep = ""
+            tmp["entity"] = entity
+            tmp["department"] = dep
+            if(user.identity != 2):
+                ret.append(tmp)
         return Response({
                 "code": 0,
-                "data": [usr.serialize() for usr in users]
+                "data": ret
             })
         
     @Check
     @action(detail=False, methods=['post'])
     def changeidentity(self, req:Request):
-        dep = Department.objects.filter(id=req.user.department).first()
-        entity = Entity.objects.filter(id=req.user.entity).first()
         name = require(req.data, "name", err_msg="Missing or Error type of [name]")
         new_id = require(req.data, "new", "int", err_msg="Missing or Error type of [new]")
+        depart = require(req.data, "department", err_msg="Missing or Error type of [department]")
+        entityname = require(req.data, "entity", err_msg="Missing or Error type of [entity]") 
+        entity=Entity.objects.filter(name=entityname).first()
+        dep = Department.objects.filter(name=depart).first()
         if new_id != 3 and new_id != 4:
             raise Failure("传入的新身份不合法")
-        user = User.objects.filter(department=req.user.department, entity=req.user.entity, name=name).first()
+        user = User.objects.filter(department= dep.id, entity=entity.id, name=name).first()
         if not user:
             raise Failure("该用户不存在")
         if new_id == 3:
             if dep.admin != 0:
                 raise Failure("该部门下已经有资产管理员")
             user.identity = 3
+            user.lockedapp = "000001110"
             user.save()
             dep.admin = user.id
             dep.save()
@@ -393,6 +444,7 @@ class EsViewSet(viewsets.ViewSet):
                 dep.admin = 0
                 dep.save()
                 user.identity = 4
+                user.lockedapp = "000000001"
                 user.save()
         return Response({
             "code": 0,

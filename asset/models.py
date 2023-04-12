@@ -150,4 +150,3 @@ class AssetClass(models.Model):
     #资产类型，False为条目型，True为数量型
     type = models.BooleanField(null=False, default=False)
     
-    

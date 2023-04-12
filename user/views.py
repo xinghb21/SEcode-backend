@@ -47,19 +47,20 @@ def valid_user(body):
     if identity == 2:
         entity = require(body, "entity", "string", err_msg="Missing or error type of [entity]")
         ent = Entity.objects.filter(name=entity).first()
-        if ent.admin != 0:
-            raise Failure("该业务实体已经有系统管理员")
         if not ent:
             raise Failure("业务实体不存在")
+        if ent.admin != 0:
+            raise Failure("该业务实体已经有系统管理员")
         entity = ent.id
-    if identity == 3:
+    if identity == 3 or identity == 4:
         entity = require(body, "entity", "string", err_msg="Missing or error type of [entity]")
         department = require(body, "department", "string", err_msg="Missing or error type of [department]")
         dep = Department.objects.filter(name=department).first()
-        if dep.admin != 0:
-            raise Failure("该部门下已经有资产管理员")
+        ent= Entity.objects.filter(name=entity).first()
         if not dep:
             raise Failure("部门不存在")
+        if dep.admin != 0:
+            raise Failure("此部门资产管理员已存在")
         department = dep.id
         entity = ent.id
     return name,pwd,entity,department,identity,funclist
@@ -78,6 +79,11 @@ class UserViewSet(viewsets.ViewSet):
             raise Failure("此用户名已存在")
         user = User(name=name,password=make_password(pwd),entity=entity,department=department,identity=identity,lockedapp=funclist)
         user.save()
+        if identity == 3:
+            dep=Department.objects.filter(id=department).first()
+            if dep:
+                dep.admin=user.id
+                dep.save()
         Logs(entity = user.entity,content="创建用户"+user.name,type=1).save()
         return Response({"code":0,"username":name})
 
