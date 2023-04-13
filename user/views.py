@@ -57,10 +57,9 @@ def valid_user(body):
         department = require(body, "department", "string", err_msg="Missing or error type of [department]")
         dep = Department.objects.filter(name=department).first()
         ent= Entity.objects.filter(name=entity).first()
+        ent= Entity.objects.filter(name=entity).first()
         if not dep:
             raise Failure("部门不存在")
-        if dep.admin != 0:
-            raise Failure("此部门资产管理员已存在")
         department = dep.id
         entity = ent.id
     return name,pwd,entity,department,identity,funclist
@@ -77,6 +76,10 @@ class UserViewSet(viewsets.ViewSet):
         sameuser = User.objects.filter(name=name).first()
         if sameuser:
             raise Failure("此用户名已存在")
+        if identity == 3:
+            dep = Department.objects.filter(id=department).first()
+            if dep and dep.admin != 0:
+                raise Failure("此部门资产管理员已存在")
         user = User(name=name,password=make_password(pwd),entity=entity,department=department,identity=identity,lockedapp=funclist)
         user.save()
         if identity == 3:
