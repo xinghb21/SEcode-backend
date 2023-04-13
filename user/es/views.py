@@ -122,34 +122,26 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def alter(self, req:Request):
         user = self.get_target_user(req)
-        # department
-        old_dep = user.department
-        if old_dep == 0:
-            old_name = ""
-        else:
-            old_name = Department.objects.filter(id = old_dep).first().name
         new_name = require(req.data, "department", "string", "Missing or error type of [department]")
-        if len(new_name) == 0:
-            user.department = 0
-            user.save()
-        else:
-            olddep = Department.objects.filter(name=old_name).first()
-            dep = Department.objects.filter(name=new_name).first()
-            if not dep:
-                raise Failure("新部门不存在")
-            if dep.admin != 0 and user.identity == 3:
-                raise Failure("该部门已存在资产管理员")
-            if user.identity == 3:
-                olddep.admin = 0
-                dep.admin = user.id
-                olddep.save()
-                dep.save()
-            user.department = dep.id
-            user.save()
+        if not new_name:
+            raise Failure("新部门名称不能为空")
+        olddep = Department.objects.filter(id = user.department).first()
+        dep = Department.objects.filter(name=new_name).first()
+        if not dep:
+            raise Failure("新部门不存在")
+        if dep.admin != 0 and user.identity == 3:
+            raise Failure("该部门已存在资产管理员")
+        if user.identity == 3:
+            olddep.admin = 0
+            dep.admin = user.id
+            olddep.save()
+            dep.save()
+        user.department = dep.id
+        user.save()
         ret = {
             "code": 0,
             "name": user.name,
-            "old_department": old_name,
+            "old_department": olddep.name,
             "new_department": new_name,
         }
         return Response(ret)
@@ -222,6 +214,8 @@ class EsViewSet(viewsets.ViewSet):
         havedp = Department.objects.filter(entity=ent.id,name=depname).first()
         if havedp:
             raise Failure("部门已存在")
+        if depname == entname:
+            raise Failure("部门名称不可与业务实体名称相同")
         if req.user.id != ent.admin:
             raise Failure("无权创建部门")
         if not parentname:
@@ -308,6 +302,8 @@ class EsViewSet(viewsets.ViewSet):
         ent = Entity.objects.filter(admin=req.user.id).first()
         dep = Department.objects.filter(entity=ent.id,name=oldname).first()
         dep2 = Department.objects.filter(entity=ent.id,name=newname).first()
+        if newname == ent.name:
+            raise Failure("新名称不可与业务实体名相同")
         if not dep:
             raise Failure("待修改部门不存在")
         if dep2:

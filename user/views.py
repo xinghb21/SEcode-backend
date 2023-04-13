@@ -35,6 +35,10 @@ def valid_user(body):
     #获取无默认值的用户名和密码，缺失则报错
     name = require(body, "name", "string", err_msg="Missing or error type of [name]")
     pwd = require(body, "password", "string", err_msg="Missing or error type of [password]")
+    if not name or " " in name:
+        raise Failure("姓名不可为空或有空格")
+    if not pwd or " " in pwd:
+        raise Failure("密码不可为空或有空格")
     #用户名不得长于128个字符
     if not 0 < len(name) <= 128:
         raise Failure("Bad length of [name]. The length should be no longer than 128.")
