@@ -133,11 +133,17 @@ class EsViewSet(viewsets.ViewSet):
             user.department = 0
             user.save()
         else:
+            olddep = Department.objects.filter(name=old_name).first()
             dep = Department.objects.filter(name=new_name).first()
             if not dep:
                 raise Failure("新部门不存在")
             if dep.admin != 0 and user.identity == 3:
                 raise Failure("该部门已存在资产管理员")
+            if user.identity == 3:
+                olddep.admin = 0
+                dep.admin = user.id
+                olddep.save()
+                dep.save()
             user.department = dep.id
             user.save()
         ret = {
