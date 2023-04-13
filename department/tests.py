@@ -15,11 +15,6 @@ class superAdminTest(TestCase):
         admin = User.objects.create(name="admin",password=make_password("hh"),identity=1)
         loginres = self.login("admin","hh")
 
-    def md5(self, s):
-        obj = hashlib.md5()
-        obj.update(s.encode())
-        return obj.hexdigest()
-
     def login(self, name, pw):
         payload = {
             "name": name,
@@ -123,9 +118,10 @@ class superAdminTest(TestCase):
         self.assertJSONEqual(res.content,{"code":0})
         
     def test_not_qualified_get_entity(self):
-        client = User.objects.create(name="client",password="huwid",identity=2,entity=1)
-        lohout = self.logout("admin")
-        logres = self.login("client","huwid")
+        pw = "huwid"
+        User.objects.create(name="client",password=pw,identity=2,entity=1)
+        self.logout("admin")
+        self.login("client",pw)
         res = self.get_entity()
         self.assertJSONEqual(res.content,{"code":-1,"detail":"此用户不是系统超级管理员或未登录,无权查看"})
 
@@ -141,10 +137,6 @@ class EnterpriseSystemTest(TestCase):
         es = User.objects.create(name="es",password=make_password("es"),identity=2, entity=1)
         loginres = self.login("es","es")
 
-    def md5(self, s):
-        obj = hashlib.md5()
-        obj.update(s.encode())
-        return obj.hexdigest()
 
     def login(self, name, pw):
         payload = {
