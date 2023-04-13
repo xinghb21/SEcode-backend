@@ -73,7 +73,7 @@ class asset(viewsets.ViewSet):
     def classtree(self,ent,dep,parent):
         #递归基
         roots = AssetClass.objects.filter(entity=ent,department=dep,parent=parent).all()
-        print(roots)
+        # print(roots)
         if not roots:
             return "$"
         else:
@@ -129,13 +129,14 @@ class asset(viewsets.ViewSet):
             if not cate:
                 raise Failure("所提供的资产类型不存在")
             asset = asset.filter(category=cate)
+            # print(asset)
         # 按挂账人进行查询还需要讨论一下，比如一个部门下的资产的挂账人除了资产管理员还可以是谁
         if "belonging" in req.query_params.keys():
             user = require(req.query_params, "belonging", err_msg="Error type of [belonging]")
-            user = User.objects.filter(name=user).first()
+            user = User.objects.filter(entity=et.id, department=dep.id, name=user).first()
             if not user:
                 raise Failure("所提供的挂账人不存在")
-            asset = asset.filter(user=user)
+            asset = asset.filter(belonging=user)
         if "from" in req.query_params.keys():
             from_ = require(req.query_params, "from", "float", err_msg="Error type of [from]")
             asset = asset.filter(create_time__gte=from_)
@@ -188,7 +189,7 @@ class asset(viewsets.ViewSet):
         dep = Department.objects.filter(id=req.user.department).first()
         toadd = []
         for asset in req.data:
-            if 'parent' in asset.keys() and asset["parent"] != "" and asset["parnet"] != None:
+            if 'parent' in asset.keys() and asset["parent"] != "" and asset["parent"] != None:
                 parent_name = require(asset, 'parent', 'string', "Error type of [parent]")
                 parent = Asset.objects.filter(entity=entity, department=dep, name=parent_name).first()
                 if not parent:
