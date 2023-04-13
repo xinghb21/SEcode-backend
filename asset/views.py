@@ -304,8 +304,6 @@ class asset(viewsets.ViewSet):
             addi = json.loads(asset.additional)
             for key in addi.keys():
                 attr[key] -= 1
-                if attr[key] == 0:
-                    attr.pop(key)
             asset.delete()
         dep.attributes = json.dumps(attr)
         dep.save()
