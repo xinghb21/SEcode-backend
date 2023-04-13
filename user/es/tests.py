@@ -251,14 +251,21 @@ class esTest(TestCase):
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         
-    def test_changeidentity(self):
-        dep = Department.objects.create(name="depn", entity=1, parent=0, admin=0)
-        User.objects.create(name="op", password=make_password("op"), 
-                                 identity=4, entity=1, department=dep.id)
-        resp = self.client.post("/user/es/changeidentity", {"name": "op", "new": "3", "department": "depn", "entity": "et1"})
-        # print(resp.json())
-        self.assertEqual(resp.json()["code"], 0)
-        user = User.objects.filter(entity=1, department=dep.id, name="op").first()
-        # print(user.lockedapp)
-        self.assertEqual(user.lockedapp, "000001110")
+    def test_change_identity(self):
+        User.objects.create(name="tochange", password=make_password("yuanshen"),identity=4, entity=1, department=2)
+        User.objects.create(name="tochange2", password=make_password("yuanshen"),identity=3, entity=1, department=2)
+        resp = self.client.post("/user/es/changeidentity", {"name":"tochange","new":3,"department":"dep2","entity":"et1"}, content_type="application/json")
+        std ={
+            "code":-1,
+            "detail":"该部门下已经有资产管理员"
+        }
+        self.assertJSONEqual(resp.content,std)
+        resp = self.client.post("/user/es/changeidentity", {"name":"tochange2","new":5,"department":"dep2","entity":"et1"}, content_type="application/json")
+        std ={
+            "code":-1,
+            "detail":"传入的新身份不合法"
+        }
+        self.assertJSONEqual(resp.content,std)
+        resp = self.client.post("/user/es/changeidentity", {"name":"tochange2","new":4,"department":"dep2","entity":"et1"}, content_type="application/json")
+        self.assertEqual(User.objects.filter(name="tochange2").first().identity, 4)
         
