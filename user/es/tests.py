@@ -233,10 +233,32 @@ class esTest(TestCase):
         self.assertEqual(user2, None)
     
     def test_delete_dep(self):
-        
         Department.objects.create(name="dep3", entity=1, parent=0, admin=6)
         Department.objects.create(name="dep4", entity=1, parent=0, admin=6)
         deps = Department.objects.filter(name="dep3")
         # print(Department.objects.filter(name="dep3"))
         self.client.delete("/user/es/deletealldeparts", ["dep3", "dep4"], content_type="application/json")
-        self.assertEqual(Department.objects.filter(name="dep3").first(), None)  
+        self.assertEqual(Department.objects.filter(name="dep3").first(), None) 
+        
+    def test_searchuser(self):
+        resp = self.client.post("/user/es/searchuser", {"username": "op1", "department": "dep1"})
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.post("/user/es/searchuser", {"department": "dep1"})
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.post("/user/es/searchuser", {"identity": 4})
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        
+    def test_changeidentity(self):
+        dep = Department.objects.create(name="depn", entity=1, parent=0, admin=0)
+        User.objects.create(name="op", password=make_password("op"), 
+                                 identity=4, entity=1, department=dep.id)
+        resp = self.client.post("/user/es/changeidentity", {"name": "op", "new": "3", "department": "depn", "entity": "et1"})
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        user = User.objects.filter(entity=1, department=dep.id, name="op").first()
+        # print(user.lockedapp)
+        self.assertEqual(user.lockedapp, "000001110")
+        
