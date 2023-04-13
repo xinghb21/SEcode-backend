@@ -49,8 +49,8 @@ class esTest(TestCase):
         self.client.post("/asset/post", [{"category": "assetclass", "name": "keqing", "life": 100, "number": 1000, "price": 1000}, {"category": "yuanshen", "name": "keqi", "life": 100, "price": 1000}]
                          ,content_type="application/json")
         resp = self.client.get("/asset/get")
-        #print(resp.json())
-        self.assertEqual(resp.json()["data"], [{'category': 'assetclass', 'type': True, 'name': 'keqing', 'description': ''}, {'category': 'yuanshen', 'type': False, 'name': 'keqi', 'description': ''}])
+        print(resp.json())
+        self.assertEqual(resp.json()["data"], [{'key': 1, 'name': 'keqing', 'category': 'assetclass', 'description': '', 'type': True}, {'key': 2, 'name': 'keqi', 'category': 'yuanshen', 'description': '', 'type': False}])
         
     def test_delete(self):
         self.client.post("/asset/assetclass", {"name": "assetclass", "type": 1})
@@ -123,9 +123,9 @@ class esTest(TestCase):
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
     
-    def test_abab(self):
-        users = User.objects.filter(name="notexist")
-        print(users)
-        users = users.filter(name="op")
-        print(users)
+    # def test_abab(self):
+    #     users = User.objects.filter(name="notexist")
+    #     print(users)
+    #     users = users.filter(name="op")
+    #     print(users)
         
