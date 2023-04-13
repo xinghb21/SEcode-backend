@@ -161,7 +161,7 @@ class asset(viewsets.ViewSet):
             asset = asset.filter(price__lte=pto)
         ret = {
             "code": 0,
-            "data": [return_field(ast.serialize(), ["name", "description", "category", "type"]) for ast in asset] 
+            "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name, "description": ast.description, "type": ast.type} for ast in asset] 
         }
         return Response(ret)
     
