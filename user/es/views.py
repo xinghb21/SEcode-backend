@@ -79,7 +79,16 @@ class EsViewSet(viewsets.ViewSet):
         names = req.data["names"]
         if type(names) is not list:
             raise Failure("Error type of [names]")
-        User.objects.filter(entity=req.user.entity, name__in=names).delete()
+        users = User.objects.filter(entity=req.user.entity, name__in=names)
+        for user in users:
+            if user.identity == 3:
+                dep = Department.objects.filter(id=user.department).first()
+                if not dep:
+                    raise Failure("资产管理员"+user.name+"所属的部门不存在")
+                dep.admin = 0
+                dep.save()
+            user.delete()
+            
         return Response({"code": 0, "detail": "success"})
     
 
