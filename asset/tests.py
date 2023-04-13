@@ -50,7 +50,7 @@ class esTest(TestCase):
         self.client.post("/asset/post", [{"category": "assetclass", "name": "keqing", "life": 100, "number": 1000, "price": 1000}, {"category": "yuanshen", "name": "keqi", "life": 100, "price": 1000}]
                          ,content_type="application/json")
         resp = self.client.get("/asset/get")
-        print(resp.json())
+        #print(resp.json())
         self.assertEqual(resp.json()["data"], [{'category': 'assetclass', 'type': True, 'name': 'keqing', 'description': ''}, {'category': 'yuanshen', 'type': False, 'name': 'keqi', 'description': ''}])
         
     def test_delete(self):
@@ -62,16 +62,33 @@ class esTest(TestCase):
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
     
-    # def test_get_attributes(self):
-    #     self.client.post("/asset/assetclass", {"name": "assetclass", "type": 1})
-    #     self.client.post("/asset/assetclass", {"name": "yuanshen", "type": 0})
-    #     resp = self.client.post("/asset/post", [{"category": "assetclass", "name": "keqing", "life": 100, "number": 1000, "price": 1000, "additional": {"abab": 1}},
-    #                                      {"category": "yuanshen", "name": "keqi", "life": 100, "price": 1000, "additional": {"cdcd": 2}}]
-    #                      ,content_type="application/json")
-    #     resp = self.client.get("/asset/getdetail", {"name": "keqi"})
-    #     resp = self.client.get("/asset/get", {})
-    #     print(resp.json())
+    def test_get_attributes(self):
+        self.client.post("/asset/assetclass", {"name": "assetclass", "type": 1})
+        self.client.post("/asset/assetclass", {"name": "yuanshen", "type": 0})
+        resp = self.client.post("/asset/post", [{"category": "assetclass", "name": "keqing", "life": 100, "number": 1000, "price": 1000, "additional": {"abab": 1}},
+                                        {"category": "yuanshen", "name": "keqi", "life": 100, "price": 1000, "additional": {"cdcd": 2}}]
+                        ,content_type="application/json")
+        resp = self.client.get("/asset/getdetail", {"name": "keqi"})
+        resp = self.client.get("/asset/get", {})
+        #print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
         
+    def test_create_and_get_attributes(self):
+        self.client.post("/asset/createattributes", {"name": "attribute1"})
+        resp = self.client.get("/asset/attributes")
+        self.assertEqual(resp.json()["info"], ['attribute1'])
+    
+    def test_create_and_get_label(self):
+        self.client.post("/asset/setlabel", {"label": "[\"a\",\"b\"]"})
+        resp = self.client.get("/asset/usedlabel")
+        self.assertEqual(resp.json()["info"], ['a','b'])
         
-        
-        
+    def test_asset_class_tree(self):
+        self.client.post("/asset/assetclass", {"name": "class1","type":0})
+        self.client.post("/asset/assetclass", {"name": "class2","parent":"class1","type":0})
+        self.client.post("/asset/assetclass", {"name": "class3","type":1})
+        self.client.delete("/asset/assetclass", {"name": "class3"})
+        self.client.post("/asset/assetclass", {"name": "class4","type":0})
+        self.client.put("/asset/assetclass", {"oldname": "class4","newname":"class3","type":0})
+        resp = self.client.get("/asset/assetclasstree")
+        self.assertEqual(resp.json()["info"], {'dep': {'class1,0': {'class2,0': '$'}, 'class3,1': '$', 'class4,0': '$'}})
