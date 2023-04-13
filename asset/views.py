@@ -296,8 +296,9 @@ class asset(viewsets.ViewSet):
         names = req.data
         if type(names) is not list:
             raise ParamErr("请求参数格式不正确")
-        assets = Asset.objects.filter(name__in=names)
-        dep = assets.first().department
+        et = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        assets = Asset.objects.filter(entity=et, department=dep, name__in=names)
         attr:dict = json.loads(dep.attributes)
         for asset in assets:
             addi = json.loads(asset.additional)
