@@ -30,7 +30,7 @@ class asset(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=["post"], url_path="createattributes")
     def createattributes(self,req:Request):
-        name = require(req.data,"name","string",err_msg="Missing or error type of [label]")
+        name = require(req.data,"name","string",err_msg="Missing or error type of [name]")
         dep = Department.objects.filter(id=req.user.department).first()
         attri = json.loads(dep.attributes)
         if name in attri:
