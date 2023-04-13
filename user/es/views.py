@@ -350,46 +350,10 @@ class EsViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['post'])
     def searchuser(self, req:Request):
-        ent = Entity.objects.filter(id=req.user.entity).first()
+        users = User.objects.filter(entity=req.user.entity)
         if "username" in req.data.keys() and req.data["username"] != "":
             name = require(req.data, "username", err_msg="Error type of [username]")
-            user = User.objects.filter(entity=req.user.entity, name=name).first()
-            if not user:
-                return Response({
-                    "code":0,
-                    "data":[]
-                })
-            else:    
-                ret =[]
-                tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked"])
-                entity = user.entity
-                entity = Entity.objects.filter(id=entity).first().name
-                dep = user.department
-                if dep != 0:
-                    dep = Department.objects.filter(id=dep).first().name
-                else:
-                    dep = ""
-                tmp["entity"] = entity
-                tmp["department"] = dep
-                if(user.identity != 2):
-                    ret.append(tmp)
-                if "department" in req.data.keys() and req.data["department"] != "":
-                    if req.data["department"]!= dep:
-                        return Response({
-                                            "code": 0,
-                                            "data": []
-                            })
-                if "identity" in req.data.keys():
-                    if req.data["identity"] != user.identity:
-                        return Response({
-                                        "code": 0,
-                                        "data": []
-                            })
-                return Response({
-                    "code":0,
-                    "data":ret
-                    })
-        users = User.objects.filter(entity=req.user.entity)
+            users = users.filter(name=name)
         if "department" in req.data.keys() and req.data["department"] != "":
             name = require(req.data, "department", err_msg="Error type of [department]")
             dep = Department.objects.filter(entity=req.user.entity, name=name).first()

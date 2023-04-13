@@ -122,4 +122,10 @@ class esTest(TestCase):
                                               })
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
+    
+    def test_abab(self):
+        users = User.objects.filter(name="notexist")
+        print(users)
+        users = users.filter(name="op")
+        print(users)
         
