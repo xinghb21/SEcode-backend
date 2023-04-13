@@ -31,6 +31,8 @@ class asset(viewsets.ViewSet):
     @action(detail=False, methods=["post"], url_path="createattributes")
     def createattributes(self,req:Request):
         name = require(req.data,"name","string",err_msg="Missing or error type of [name]")
+        if not name or " " in name:
+            raise Failure("属性名不可为空或有空格")
         dep = Department.objects.filter(id=req.user.department).first()
         attri = json.loads(dep.attributes)
         if name in attri:
@@ -330,8 +332,12 @@ class assetclass(APIView):
     def put(self,req:Request):
         oldname = require(req.data, "oldname", err_msg="Error type of [oldname]")
         newname = require(req.data, "newname", err_msg="Error type of [newname]")
+        if not newname or " " in newname:
+            raise Failure("新的资产类别名不可为空或有空格")
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
+        if newname == dep.name:
+            raise Failure("新的资产类别名不可与部门名相同")
         ac = AssetClass.objects.filter(entity=et, department=dep, name=oldname).first()
         if not ac:
             raise Failure("该资产类别不存在")
@@ -351,8 +357,12 @@ class assetclass(APIView):
         else:
             parent = None
         name = require(req.data, "name", err_msg="Error type of [name]")
+        if not name or " " in name:
+            raise Failure("资产类别名不可为空或有空格")
         if len(name) > 128:
             raise Failure("名称过长")
+        if name == dep.name:
+            raise Failure("资产类别名不可与部门同名")
         if AssetClass.objects.filter(entity=et, department=dep, name=name).first():
             raise Failure("存在重名类别")
         tp = require(req.data, "type", "int", err_msg="Error type of [type]")
