@@ -300,14 +300,8 @@ class asset(viewsets.ViewSet):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         assets = Asset.objects.filter(entity=et, department=dep, name__in=names)
-        attr:dict = json.loads(dep.attributes)
         for asset in assets:
-            addi = json.loads(asset.additional)
-            for key in addi.keys():
-                attr[key] -= 1
             asset.delete()
-        dep.attributes = json.dumps(attr)
-        dep.save()
         return Response({"code": 0, "detail": "success"})
   
   
