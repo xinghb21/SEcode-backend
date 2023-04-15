@@ -1,9 +1,8 @@
 from django.test import TestCase, Client
 from user.models import User
 from department.models import Department, Entity
-import hashlib
+from utils.utils_time import get_timestamp
 from django.contrib.auth.hashers import make_password, check_password
-from urllib.parse import urlencode
 
 class esTest(TestCase):
     def setUp(self) -> None:
@@ -50,8 +49,8 @@ class esTest(TestCase):
         self.client.post("/asset/post", [{"category": "assetclass", "name": "keqing", "life": 100, "number": 1000, "price": 1000}, {"category": "yuanshen", "name": "keqi", "life": 100, "price": 1000}]
                          ,content_type="application/json")
         resp = self.client.get("/asset/get")
-        #print(resp.json())
-        self.assertEqual(resp.json()["data"], [{'category': 'assetclass', 'type': True, 'name': 'keqing', 'description': ''}, {'category': 'yuanshen', 'type': False, 'name': 'keqi', 'description': ''}])
+        print(resp.json())
+        self.assertEqual(resp.json()["data"], [{'key': 1, 'name': 'keqing', 'category': 'assetclass', 'description': '', 'type': True}, {'key': 2, 'name': 'keqi', 'category': 'yuanshen', 'description': '', 'type': False}])
         
     def test_delete(self):
         self.client.post("/asset/assetclass", {"name": "assetclass", "type": 1})
@@ -92,3 +91,41 @@ class esTest(TestCase):
         self.client.put("/asset/assetclass", {"oldname": "class4","newname":"class3","type":0})
         resp = self.client.get("/asset/assetclasstree")
         self.assertEqual(resp.json()["info"], {'dep': {'class1,0': {'class2,0': '$'}, 'class3,1': '$', 'class4,0': '$'}})
+
+    def test_get_by_condition(self):
+        self.client.post("/asset/assetclass", {"name": "class1","type":0})
+        resp = self.client.post("/asset/post", 
+                         [{"category": "class1", "name": "keqing", "life": 100, "price": 1000}, 
+                          {"category": "class1", "name": "keqi", "life": 100, "price": 1000},
+                          ]
+                         ,content_type="application/json")
+        resp = self.client.post("/asset/post", 
+                         [{"category": "class1", "name": "ningguang", "parent": "keqi", "life": 100, "price": 1000}]
+                         ,content_type="application/json")
+        
+        resp = self.client.get("/asset/get")
+        self.assertEqual(resp.json()["code"], 0)
+        # print(resp.json())
+        resp = self.client.get("/asset/get", {"name": "keqi"})
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.get("/asset/get", {"parent": "keqi"})
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.get("/asset/get", {"category": "class1",
+                                              "belonging": "ep",
+                                            "from": get_timestamp() - 7200,
+                                              "to": get_timestamp(),
+                                              "status": 0,
+                                              "pricefrom": 900,
+                                              "priceto": 1100
+                                              })
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+    
+    # def test_abab(self):
+    #     users = User.objects.filter(name="notexist")
+    #     print(users)
+    #     users = users.filter(name="op")
+    #     print(users)
+        

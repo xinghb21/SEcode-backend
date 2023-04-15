@@ -84,7 +84,7 @@ class asset(viewsets.ViewSet):
     def classtree(self,ent,dep,parent):
         #递归基
         roots = AssetClass.objects.filter(entity=ent,department=dep,parent=parent).all()
-        print(roots)
+        # print(roots)
         if not roots:
             return "$"
         else:
@@ -140,13 +140,14 @@ class asset(viewsets.ViewSet):
             if not cate:
                 raise Failure("所提供的资产类型不存在")
             asset = asset.filter(category=cate)
+            # print(asset)
         # 按挂账人进行查询还需要讨论一下，比如一个部门下的资产的挂账人除了资产管理员还可以是谁
         if "belonging" in req.query_params.keys():
             user = require(req.query_params, "belonging", err_msg="Error type of [belonging]")
-            user = User.objects.filter(name=user).first()
+            user = User.objects.filter(entity=et.id, department=dep.id, name=user).first()
             if not user:
                 raise Failure("所提供的挂账人不存在")
-            asset = asset.filter(user=user)
+            asset = asset.filter(belonging=user)
         if "from" in req.query_params.keys():
             from_ = require(req.query_params, "from", "float", err_msg="Error type of [from]")
             asset = asset.filter(create_time__gte=from_)
@@ -171,7 +172,7 @@ class asset(viewsets.ViewSet):
             asset = asset.filter(price__lte=pto)
         ret = {
             "code": 0,
-            "data": [return_field(ast.serialize(), ["name", "description", "category", "type"]) for ast in asset] 
+            "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name, "description": ast.description, "type": ast.type} for ast in asset] 
         }
         return Response(ret)
     
@@ -199,7 +200,7 @@ class asset(viewsets.ViewSet):
         dep = Department.objects.filter(id=req.user.department).first()
         toadd = []
         for asset in req.data:
-            if 'parent' in asset.keys() and asset["parent"] != "" and asset["parnet"] != None:
+            if 'parent' in asset.keys() and asset["parent"] != "" and asset["parent"] != None:
                 parent_name = require(asset, 'parent', 'string', "Error type of [parent]")
                 parent = Asset.objects.filter(entity=entity, department=dep, name=parent_name).first()
                 if not parent:
@@ -296,15 +297,14 @@ class asset(viewsets.ViewSet):
         names = req.data
         if type(names) is not list:
             raise ParamErr("请求参数格式不正确")
-        assets = Asset.objects.filter(name__in=names)
-        dep = assets.first().department
+        et = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        assets = Asset.objects.filter(entity=et, department=dep, name__in=names)
         attr:dict = json.loads(dep.attributes)
         for asset in assets:
             addi = json.loads(asset.additional)
             for key in addi.keys():
                 attr[key] -= 1
-                if attr[key] == 0:
-                    attr.pop(key)
             asset.delete()
         dep.attributes = json.dumps(attr)
         dep.save()
