@@ -79,7 +79,16 @@ class EsViewSet(viewsets.ViewSet):
         names = req.data["names"]
         if type(names) is not list:
             raise Failure("Error type of [names]")
-        User.objects.filter(entity=req.user.entity, name__in=names).delete()
+        users = User.objects.filter(entity=req.user.entity, name__in=names)
+        for user in users:
+            if user.identity == 3:
+                dep = Department.objects.filter(id=user.department).first()
+                if not dep:
+                    raise Failure("资产管理员"+user.name+"所属的部门不存在")
+                dep.admin = 0
+                dep.save()
+            user.delete()
+            
         return Response({"code": 0, "detail": "success"})
     
 
@@ -337,6 +346,7 @@ class EsViewSet(viewsets.ViewSet):
             "info" : info
         }
         return Response(ret)
+
     @Check
     @action(detail=False, methods=["delete"], url_path="deletealldeparts")
     def batch_delete(self, req:Request):
@@ -352,46 +362,10 @@ class EsViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['post'])
     def searchuser(self, req:Request):
-        ent = Entity.objects.filter(id=req.user.entity).first()
+        users = User.objects.filter(entity=req.user.entity)
         if "username" in req.data.keys() and req.data["username"] != "":
             name = require(req.data, "username", err_msg="Error type of [username]")
-            user = User.objects.filter(entity=req.user.entity, name=name).first()
-            if not user:
-                return Response({
-                    "code":0,
-                    "data":[]
-                })
-            else:    
-                ret =[]
-                tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked"])
-                entity = user.entity
-                entity = Entity.objects.filter(id=entity).first().name
-                dep = user.department
-                if dep != 0:
-                    dep = Department.objects.filter(id=dep).first().name
-                else:
-                    dep = ""
-                tmp["entity"] = entity
-                tmp["department"] = dep
-                if(user.identity != 2):
-                    ret.append(tmp)
-                if "department" in req.data.keys() and req.data["department"] != "":
-                    if req.data["department"]!= dep:
-                        return Response({
-                                            "code": 0,
-                                            "data": []
-                            })
-                if "identity" in req.data.keys():
-                    if req.data["identity"] != user.identity:
-                        return Response({
-                                        "code": 0,
-                                        "data": []
-                            })
-                return Response({
-                    "code":0,
-                    "data":ret
-                    })
-        users = User.objects.filter(entity=req.user.entity)
+            users = users.filter(name=name)
         if "department" in req.data.keys() and req.data["department"] != "":
             name = require(req.data, "department", err_msg="Error type of [department]")
             dep = Department.objects.filter(entity=req.user.entity, name=name).first()
@@ -452,4 +426,66 @@ class EsViewSet(viewsets.ViewSet):
             "code": 0,
             "detail": "success"
         })
-          
+    
+    #hyx 2023.4.15
+    #增加用户应用
+    @Check
+    @action(detail=False,methods=["post"])
+    def addapp(self,req:Request):
+        username = require(req.data, "username", err_msg="Missing or Error type of [username]")
+        appadded = require(req.data, "appadded", "list",err_msg="Missing or Error type of [appadded]")
+        ent = req.user.entity
+        user = User.objects.filter(name=username).first()
+        if not user or user.entity != ent:
+            raise Failure("此用户不存在")
+        if user.identity != 3 and user.identity != 4:
+            raise Failure("此用户不是资产管理员或员工")
+        if not user.apps:
+            user.apps = json.dumps({"data":[]})
+        oldapps = json.loads(user.apps)
+        oldlist = oldapps["data"]
+        for item in appadded:
+            needupdate = True
+            for i in oldlist:
+                if item["name"] == i["name"]:
+                    i["urlvalue"] = item["urlvalue"]
+                    needupdate = False
+                    break
+            if needupdate:
+                oldlist.append(item)
+        user.apps = json.dumps({"data":oldlist})
+        user.save()
+        return Response({
+            "code": 0,
+            "info": "success"
+        })
+        
+    #删除用户应用
+    @Check
+    @action(detail=False,methods=["delete"])
+    def deleteapps(self,req:Request):
+        username = require(req.data, "username", err_msg="Missing or Error type of [username]")
+        appdeleted = require(req.data, "appdeleted", "list",err_msg="Missing or Error type of [appdeleted]")
+        ent = req.user.entity
+        user = User.objects.filter(name=username).first()
+        if not user or user.entity != ent:
+            raise Failure("此用户不存在")
+        if user.identity != 3 and user.identity != 4:
+            raise Failure("此用户不是资产管理员或员工")
+        if not user.apps:
+            user.apps = json.dumps({"data":[]})
+        oldapps = json.loads(user.apps)
+        oldlist = oldapps["data"]
+        print(oldlist)
+        print(appdeleted)
+        for item in appdeleted:
+            for i in oldlist:
+                if item == i["name"]:
+                    oldlist.remove(i)
+                    break
+        user.apps = json.dumps({"data":oldlist})
+        user.save()
+        return Response({
+            "code": 0,
+            "info": "success"
+        })

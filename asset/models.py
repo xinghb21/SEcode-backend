@@ -90,8 +90,7 @@ class Asset(models.Model):
         db_table = "Asset"
     
     def serialize(self):
-        if self.type:
-            return{
+        ret = {
                 "id":self.id,
                 "parent":self.parent.name if self.parent else None,
                 "department":self.department.name,
@@ -105,31 +104,19 @@ class Asset(models.Model):
                 "create_time":self.create_time,
                 "description":self.description,
                 "additional": json.loads(self.additional),
-                "number": self.number,
-                "number_idle": self.number_idle,
-                "usage": json.loads(self.usage),
-                "maintain": json.loads(self.maintain),
-                "number_expire": self.number_expire,
-                "expire": self.expire,
             }
+        if self.type:
+            ret["number"] = self.number
+            ret["number_idle"] = self.number_idle
+            ret["usage"] = json.loads(self.usage)
+            ret["maintain"] = json.loads(self.maintain)
+            ret["number_expire"] = self.number_expire
+            ret["expire"] = self.expire
+            return ret
         else:
-            return{
-                "id":self.id,
-                "parent":self.parent.name if self.parent else None,
-                "department":self.department.name,
-                "entity": self.entity.name,
-                "category": self.category.name,
-                "type": self.type,
-                "name":self.name,
-                "belonging":self.belonging.name,
-                "price":self.price,
-                "life":self.life,
-                "create_time":self.create_time,
-                "description":self.description,
-                "additional":json.loads(self.additional),
-                "user": self.user.name if self.user else None,
-                "status": self.status,
-            }
+            ret["user"] = self.user.name if self.user else None
+            ret["status"] = self.status
+            return ret
             
 
     def __str__(self) -> str:

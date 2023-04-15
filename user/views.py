@@ -69,6 +69,7 @@ def valid_user(body):
     return name,pwd,entity,department,identity,funclist
 
 
+
 class UserViewSet(viewsets.ViewSet):
     authentication_classes = []
     permission_classes = []
@@ -131,7 +132,7 @@ class UserViewSet(viewsets.ViewSet):
             # cyh
             Logs(entity=user.entity,content="用户"+user.name+"登录",type=1).save()
             return Response({"code":0,"name":name,"entity":user.entity,"department":user.department,"identity":user.identity,"funclist":user.lockedapp})
-
+    
     #用户登出
     @Check
     @action(detail=False, methods=['post'])
@@ -144,6 +145,20 @@ class UserViewSet(viewsets.ViewSet):
         else:
             req._request.session[name] = False
             return Response({"code":0,"name":name})
+
+    #2023.4.14  hyx
+    #获取用户额外应用
+    @Check
+    @action(detail=False, methods=['get'])
+    def getapplists(self,req:Request):
+        if "id" not in req._request.session:
+            raise Failure("用户未登录")
+        user = User.objects.filter(id=req._request.session.get("id")).first()
+        if not user.apps:
+            return Response({"code":0,"info":[]})
+        applist = json.loads(user.apps)["data"]
+        print(applist)
+        return Response({"code":0,"info":applist})
 
 #进入用户界面
 @Check
@@ -180,5 +195,4 @@ def name(req:Request):
         raise Failure("无用户登录")
     user = User.objects.filter(id=req._request.session.get("id")).first()
     return Response({"code":0,"name":user.name})
-
 

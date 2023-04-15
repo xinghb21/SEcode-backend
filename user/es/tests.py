@@ -238,7 +238,18 @@ class esTest(TestCase):
         deps = Department.objects.filter(name="dep3")
         # print(Department.objects.filter(name="dep3"))
         self.client.delete("/user/es/deletealldeparts", ["dep3", "dep4"], content_type="application/json")
-        self.assertEqual(Department.objects.filter(name="dep3").first(), None)  
+        self.assertEqual(Department.objects.filter(name="dep3").first(), None) 
+        
+    def test_searchuser(self):
+        resp = self.client.post("/user/es/searchuser", {"username": "op1", "department": "dep1"})
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.post("/user/es/searchuser", {"department": "dep1"})
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.post("/user/es/searchuser", {"identity": 4})
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
         
     def test_change_identity(self):
         User.objects.create(name="tochange", password=make_password("yuanshen"),identity=4, entity=1, department=2)
@@ -257,3 +268,4 @@ class esTest(TestCase):
         self.assertJSONEqual(resp.content,std)
         resp = self.client.post("/user/es/changeidentity", {"name":"tochange2","new":4,"department":"dep2","entity":"et1"}, content_type="application/json")
         self.assertEqual(User.objects.filter(name="tochange2").first().identity, 4)
+        
