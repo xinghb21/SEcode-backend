@@ -17,8 +17,8 @@ class Pending(models.Model):
     #转移目标用户id，非转移操作则设为0
     destination = models.BigIntegerField(default=0)
     
-    #目标资产id
-    asset = models.BigIntegerField()
+    #目标资产名称列表
+    asset = models.TextField(default="")
     
     #申请类型，枚举，1领用，2转移，3维保，4退库
     type = models.IntegerField(default=0)

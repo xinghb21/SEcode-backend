@@ -32,6 +32,8 @@ class User(models.Model):
     #用户是否被锁定，只有既非超级管理员又非系统管理员的用户可被锁定
     locked = models.BooleanField(default=False)
     
+    #用户的额外应用，json格式字符串
+    apps = models.TextField(default="{\"data\":[]}")
 
     class Meta:
         db_table = "User"
@@ -45,7 +47,8 @@ class User(models.Model):
             "department":self.department,
             "identity":self.identity,
             "lockedapp":self.lockedapp,
-            "locked":self.locked
+            "locked":self.locked,
+            "apps":self.apps
         }
     
     def __str__(self) -> str:

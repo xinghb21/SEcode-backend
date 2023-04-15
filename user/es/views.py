@@ -337,6 +337,7 @@ class EsViewSet(viewsets.ViewSet):
             "info" : info
         }
         return Response(ret)
+
     @Check
     @action(detail=False, methods=["delete"], url_path="deletealldeparts")
     def batch_delete(self, req:Request):
@@ -452,4 +453,66 @@ class EsViewSet(viewsets.ViewSet):
             "code": 0,
             "detail": "success"
         })
-          
+    
+    #hyx 2023.4.15
+    #增加用户应用
+    @Check
+    @action(detail=False,methods=["post"])
+    def addapp(self,req:Request):
+        username = require(req.data, "username", err_msg="Missing or Error type of [username]")
+        appadded = require(req.data, "appadded", "list",err_msg="Missing or Error type of [appadded]")
+        ent = req.user.entity
+        user = User.objects.filter(name=username).first()
+        if not user or user.entity != ent:
+            raise Failure("此用户不存在")
+        if user.identity != 3 and user.identity != 4:
+            raise Failure("此用户不是资产管理员或员工")
+        if not user.apps:
+            user.apps = json.dumps({"data":[]})
+        oldapps = json.loads(user.apps)
+        oldlist = oldapps["data"]
+        for item in appadded:
+            needupdate = True
+            for i in oldlist:
+                if item["name"] == i["name"]:
+                    i["urlvalue"] = item["urlvalue"]
+                    needupdate = False
+                    break
+            if needupdate:
+                oldlist.append(item)
+        user.apps = json.dumps({"data":oldlist})
+        user.save()
+        return Response({
+            "code": 0,
+            "info": "success"
+        })
+        
+    #删除用户应用
+    @Check
+    @action(detail=False,methods=["delete"])
+    def deleteapps(self,req:Request):
+        username = require(req.data, "username", err_msg="Missing or Error type of [username]")
+        appdeleted = require(req.data, "appdeleted", "list",err_msg="Missing or Error type of [appdeleted]")
+        ent = req.user.entity
+        user = User.objects.filter(name=username).first()
+        if not user or user.entity != ent:
+            raise Failure("此用户不存在")
+        if user.identity != 3 and user.identity != 4:
+            raise Failure("此用户不是资产管理员或员工")
+        if not user.apps:
+            user.apps = json.dumps({"data":[]})
+        oldapps = json.loads(user.apps)
+        oldlist = oldapps["data"]
+        print(oldlist)
+        print(appdeleted)
+        for item in appdeleted:
+            for i in oldlist:
+                if item == i["name"]:
+                    oldlist.remove(i)
+                    break
+        user.apps = json.dumps({"data":oldlist})
+        user.save()
+        return Response({
+            "code": 0,
+            "info": "success"
+        })
