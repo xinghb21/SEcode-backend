@@ -304,7 +304,6 @@ class asset(viewsets.ViewSet):
             asset.delete()
         return Response({"code": 0, "detail": "success"})
   
-  
 class assetclass(APIView):
     authentication_classes = [LoginAuthentication]
     permission_classes = [GeneralPermission]
