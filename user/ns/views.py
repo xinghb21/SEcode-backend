@@ -1,0 +1,87 @@
+﻿#hyx
+
+import json
+import re
+
+from django.contrib.auth.hashers import make_password
+
+from user.models import User
+from department.models import Department,Entity
+from asset.models import Asset
+from logs.models import Logs
+from pending.models import Pending
+from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
+from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
+from utils.utils_time import get_timestamp
+from utils.identity import *
+from utils.permission import GeneralPermission
+from utils.session import LoginAuthentication
+from utils.exceptions import Failure, ParamErr, Check
+
+from rest_framework.decorators import action, throttle_classes, permission_classes
+from rest_framework.response import Response
+from rest_framework.request import Request
+from rest_framework import viewsets
+from rest_framework.renderers import JSONRenderer
+
+class NsViewSet(viewsets.ViewSet):
+    authentication_classes = [LoginAuthentication]
+    permission_classes = [GeneralPermission]
+    
+    allowed_identity = [EN]
+    #发起代办申请
+    @Check
+    @action(detail=False, methods=['post'], url_path="userapply")
+    def userapply(self,req:Request):
+        user = req.user
+        ent = Entity.objects.filter(id=user.entity).first()
+        dep = Department.objects.filter(id=user.department).first()
+        assets = require(req.data, "assetsapply", "list" , err_msg="Error type of [assetsapply]")
+        reason = require(req.data, "reason", "list" , err_msg="Error type of [reason]")
+        assetdict = {}
+        for item in assets:
+            asset = Asset.objects.filter(entity=ent,department=dep,name=item["assetname"]).first()
+            if not asset:
+                raise Failure("资产%s不存在" % item["assetname"])
+            if asset.id != item["id"]:
+                raise Failure("资产id错误")
+            if asset.category.name != item["assetclass"]:
+                raise Failure("资产类别错误")
+            #数量型
+            if asset.type:
+                targetnum = item["assetcount"]
+                if targetnum > asset.number_idle:
+                    raise Failure("资产%s闲置数量不足" % asset.name)
+                assetdict.update({item["assetname"]:item["assetcount"]})
+            #条目型
+            else:
+                if asset.status != 0:
+                    raise Failure("资产%s未处于闲置状态" % asset.name)
+                assetdict.update({item["assetname"]:1})
+        #更新资产状态
+        for key in assetdict:
+            asset = Asset.objects.filter(entity=ent,department=dep,name=key).first()
+            #数量型
+            if asset.type:
+                asset.number_idle -= assetdict[key]
+                process = json.loads(asset.process)
+                if not process:
+                    asset.process = "[" + "{\"%s\":%d}" % (user.name,assetdict[key]) + "]"
+                else:
+                    needupdate = True
+                    for term in process:
+                        if user.name in term:
+                            term.update({user.name:term[user.name]+item["assetcount"]})
+                            needupdate = False
+                            break
+                    if needupdate:
+                        process.append({user.name:item["assetcount"]})
+                    asset.process = json.dumps(process)
+            else:
+                asset.status = 5
+                asset.user = user
+            asset.save()
+        assetlist = [{key:assetdict[key]} for key in assetdict]
+        pending = Pending(entity=ent.id,department=dep.id,initiator=user.id,asset=str(assetlist),type=1,description=reason)
+        pending.save()
+        return Response({"code":0,"info":"success"})

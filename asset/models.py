@@ -61,7 +61,7 @@ class Asset(models.Model):
     # 资产使用者
     user = models.ForeignKey("user.User",null=True ,on_delete=models.SET_NULL, related_name="user")
     
-    #资产的状态，枚举类型，0闲置，1在使用，2维保，3清退，4删除
+    #资产的状态，枚举类型，0闲置，1在使用，2维保，3清退，4删除 , 5处理中
     status = models.IntegerField(choices=AsserStatus.choices, default=AsserStatus.IDLE)
     # -----------------------------------
     
@@ -77,6 +77,9 @@ class Asset(models.Model):
     
     # 维保情况，是一个可序列化的字符串，记录了谁是维保责任人，维保多少
     maintain = models.TextField(null=False, default="[]")
+    
+    # 待处理情况，是一个可序列化的字符串，记录了谁是发起人，待处理多少
+    process = models.TextField(null=False, default="[]")
     
     # 清退数量
     number_expire = models.IntegerField(null=False, default=0)

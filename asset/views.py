@@ -241,7 +241,6 @@ class asset(viewsets.ViewSet):
                 additional = json.dumps(additional)
             else:
                 additional = "{}"
-                
             if tp == True:
                 number = require(asset, "number", "int", "Missing or error type of [number]")
                 if number < 0:
