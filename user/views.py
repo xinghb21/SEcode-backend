@@ -3,7 +3,7 @@ from utils import utils_time
 from django.contrib.auth.hashers import make_password, check_password
 from django.http import HttpRequest, HttpResponse
 from django.contrib.sessions.models import Session
-
+from pending.models import Pending
 from user.models import User
 from logs.models import Logs
 from department.models import Entity,Department
@@ -195,4 +195,5 @@ def name(req:Request):
         raise Failure("无用户登录")
     user = User.objects.filter(id=req._request.session.get("id")).first()
     return Response({"code":0,"name":user.name})
+
 

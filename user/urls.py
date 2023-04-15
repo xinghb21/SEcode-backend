@@ -1,8 +1,7 @@
 ﻿from django.urls import path, include
 import user.views as userviews
-import department.views as dpviews
 from user.views import UserViewSet
-
+from user.ns.views import NsViewSet
 from rest_framework.routers import DefaultRouter
 #TODO add urls
 router = DefaultRouter(trailing_slash=False)
