@@ -101,28 +101,28 @@ class NsViewSet(viewsets.ViewSet):
         returnlist = [{"id":item.id,"reason":item.description,"status":item.result,"message":item.reply} for item in pendings]
         return Response({"code":0,"info":returnlist})
 
-#获取所有领用涉及的资产
-@Check
-@api_view(['GET'])
-@authentication_classes([LoginAuthentication])
-@permission_classes([GeneralPermission])
-def assetsinapply(req:Request,id:any):
-    user = req.user
-    ent = Entity.objects.filter(id=user.entity).first()
-    dep = Department.objects.filter(id=user.department).first()
-    if not ent :
-        raise Failure("用户不属于任何业务实体")
-    if not dep:
-        raise Failure("用户不属于任何部门")
-    pending = Pending.objects.filter(id=id).first()
-    if not pending:
-        raise Failure("待办项不存在")
-    if pending.initiator != user.id:
-        raise Failure("该申请与申请人不符")
-    assets = json.loads(pending.asset)
-    returnlist = []
-    for item in assets:
-        assetname = list(item.keys())[0]
-        asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).first()
-        returnlist.append({"id":asset.id,"assetname":assetname,"assetcount":item[assetname]})
-    return Response({"code":0,"info":returnlist})
+    #获取所有领用涉及的资产
+    @Check
+    @action(detail=False, methods=['get'], url_path="assetsinapply")
+    def assetsinapply(self,req:Request):
+        id = req.query_params['id']
+        user = req.user
+        ent = Entity.objects.filter(id=user.entity).first()
+        dep = Department.objects.filter(id=user.department).first()
+        if not ent :
+            raise Failure("用户不属于任何业务实体")
+        if not dep:
+            raise Failure("用户不属于任何部门")
+        pending = Pending.objects.filter(id=id).first()
+        if not pending:
+            raise Failure("待办项不存在")
+        if pending.initiator != user.id:
+            raise Failure("该申请与申请人不符")
+        assets = json.loads(pending.asset)
+        returnlist = []
+        for item in assets:
+            assetname = list(item.keys())[0]
+            asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).first()
+            returnlist.append({"id":asset.id,"assetname":assetname,"assetcount":item[assetname]})
+        return Response({"code":0,"info":returnlist})
+

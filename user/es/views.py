@@ -489,16 +489,15 @@ class EsViewSet(viewsets.ViewSet):
             "code": 0,
             "info": "success"
         })
-        
+
 #获取某个资产管理员或员工应用
-@Check
-@api_view(['GET'])
-@authentication_classes([LoginAuthentication])
-@permission_classes([GeneralPermission])
-def getonesapp(req:Request,username:any):
-    admin = req.user
-    user = User.objects.filter(name=username).first()
-    if not user or admin.entity != user.entity:
-        raise Failure("该用户不在业务实体内")
-    apps = json.loads(user.apps)
-    return Response({"code": 0,"info": apps["data"]})
+    @Check
+    @action(detail=False,methods=["get"])
+    def getonesapp(self,req:Request):
+        username = req.query_params["name"]
+        admin = req.user
+        user = User.objects.filter(name=username).first()
+        if not user or admin.entity != user.entity:
+            raise Failure("该用户不在业务实体内")
+        apps = json.loads(user.apps)
+        return Response({"code": 0,"info": apps["data"]})
