@@ -21,4 +21,6 @@ urlpatterns = [
     path('user/', include("user.urls")),
     path('entity/', include("department.urls")),
     path('asset/', include("asset.urls")),
+    path('feishu/', include("feishu.urls")),
+    
 ]
