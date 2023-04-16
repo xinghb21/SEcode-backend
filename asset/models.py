@@ -14,7 +14,8 @@ class Asset(models.Model):
         INUSE = 1 # 使用中
         MAINTAIN = 2 # 维修
         CLEAR = 3 # 清退
-        # DELETE = 4 ? 应该没用
+        DELETE = 4 # 删除 应该没用?
+        PROCESS = 5 # 处理中
     
     #资产id，主键自增
     id = models.BigAutoField(primary_key=True)
@@ -113,6 +114,7 @@ class Asset(models.Model):
             ret["number_idle"] = self.number_idle
             ret["usage"] = json.loads(self.usage)
             ret["maintain"] = json.loads(self.maintain)
+            ret["process"] = json.loads(self.process)
             ret["number_expire"] = self.number_expire
             ret["expire"] = self.expire
             return ret

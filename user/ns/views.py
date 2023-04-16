@@ -36,8 +36,9 @@ class NsViewSet(viewsets.ViewSet):
         user = req.user
         ent = Entity.objects.filter(id=user.entity).first()
         dep = Department.objects.filter(id=user.department).first()
+        # print(req.data["assetapply"])
         assets = require(req.data, "assetsapply", "list" , err_msg="Error type of [assetsapply]")
-        reason = require(req.data, "reason", "list" , err_msg="Error type of [reason]")
+        reason = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
         assetdict = {}
         for item in assets:
             asset = Asset.objects.filter(entity=ent,department=dep,name=item["assetname"]).first()

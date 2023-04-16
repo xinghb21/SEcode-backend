@@ -376,7 +376,7 @@ class EsViewSet(viewsets.ViewSet):
                 users = users.filter(identity=id)
         ret =[]
         for user in users:
-            tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked"])
+            tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked", "apps"])
             entity = user.entity
             entity = Entity.objects.filter(id=entity).first().name
             dep = user.department
@@ -433,7 +433,8 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=["post"])
     def addapp(self,req:Request):
         username = require(req.data, "username", err_msg="Missing or Error type of [username]")
-        appadded = require(req.data, "appadded", "list",err_msg="Missing or Error type of [appadded]")
+        # print(req.data['appadded'])
+        appadded = require(req.data, "appadded", "list", err_msg="Missing or Error type of [appadded]")
         ent = req.user.entity
         user = User.objects.filter(name=username).first()
         if not user or user.entity != ent:
@@ -476,8 +477,8 @@ class EsViewSet(viewsets.ViewSet):
             user.apps = json.dumps({"data":[]})
         oldapps = json.loads(user.apps)
         oldlist = oldapps["data"]
-        print(oldlist)
-        print(appdeleted)
+        # print(oldlist)
+        # print(appdeleted)
         for item in appdeleted:
             for i in oldlist:
                 if item == i["name"]:
