@@ -35,8 +35,8 @@ class feishu(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['post'], url_path="answer")
     def answer_challenge(self, req:Request):
-        # challenge = self.decipher.decrypt_string(req.data['encrypt'])
-        # print(challenge)
-        # challenge = json.loads(challenge)
-        # print(challenge)
-        return Response({"challenge": req.data["challenge"]})
+        challenge = self.decipher.decrypt_string(req.data['encrypt'])
+        print(challenge)
+        challenge = json.loads(challenge)
+        print(challenge)
+        return Response({"challenge": challenge["challenge"]})
