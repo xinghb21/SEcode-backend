@@ -40,6 +40,12 @@ else:
     ALLOWED_HOSTS = env["site"]["allowed_hosts"]
     CORS_ALLOWED_ORIGINS = env["site"]["cors_allowed_hosts"]
 
+# djange-cors-headers
+# 暂时允许所有的主机进行跨域请求
+CORS_ORIGIN_ALLOW_ALL = True
+
+# 只有一部分api需要跨域请求
+CORS_URLS_REGEX = r'^/feishu/.*$'
 
 # Application definition
 
@@ -50,6 +56,7 @@ INSTALLED_APPS = [
     'pending',
     'logs',
     'rest_framework',
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -61,6 +68,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     # Remove CSRF middleware to make it happy, although insecure :(
     # 'django.middleware.csrf.CsrfViewMiddleware',
