@@ -48,7 +48,7 @@ class feishu(viewsets.ViewSet):
     
     # 通过授权码判断该飞书用户是否已经绑定了帐号
     @Check
-    @action(detail=False, methods=['get'], url_name="isbound")
+    @action(detail=False, methods=['get'], url_path="isbound")
     def check_is_bound(self, req:Request):
         code = require(req.query_params, "code", err_msg="Missing or Error type of [code]")
         redirect = require(req.query_params, "redirect", err_msg="Missing or Error type of [redirect]")

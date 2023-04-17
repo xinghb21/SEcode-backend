@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'asset',
     'pending',
     'logs',
+    'feishu',
     'rest_framework',
     'corsheaders',
     'django.contrib.admin',
