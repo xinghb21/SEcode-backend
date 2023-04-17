@@ -77,4 +77,3 @@ class esTest(TestCase):
         resp = self.client.get("/user/ns/assetsinapply?id=1")
         # print(resp.json())
         self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'assetname': 'hutao', 'assetcount': 50}]})
-        
