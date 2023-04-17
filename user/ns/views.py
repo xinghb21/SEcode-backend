@@ -36,7 +36,6 @@ class NsViewSet(viewsets.ViewSet):
         user = req.user
         ent = Entity.objects.filter(id=user.entity).first()
         dep = Department.objects.filter(id=user.department).first()
-        # print(req.data["assetapply"])
         assets = require(req.data, "assetsapply", "list" , err_msg="Error type of [assetsapply]")
         reason = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
         assetdict = {}
@@ -67,7 +66,7 @@ class NsViewSet(viewsets.ViewSet):
                 asset.number_idle -= assetdict[key]
                 process = json.loads(asset.process)
                 if not process:
-                    asset.process = "[" + "{\"%s\":%d}" % (user.name,assetdict[key]) + "]"
+                    asset.process = json.dumps([{user.name:assetdict[key]}])
                 else:
                     needupdate = True
                     for term in process:
