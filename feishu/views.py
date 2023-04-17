@@ -46,7 +46,6 @@ class feishu(viewsets.ViewSet):
         print(challenge)
         return Response({"challenge": challenge["challenge"]})
     
-    # 飞书登录接口
     # 通过授权码判断该飞书用户是否已经绑定了帐号
     @Check
     @action(detail=False, methods=['get'], url_name="isbound")
@@ -102,16 +101,34 @@ class feishu(viewsets.ViewSet):
         fs.refresh_token=resp['refresh_token']
         fs.refresh_expires_in=resp['refresh_expires_in']
         fs.save()
-        if fs.user.locked:
-            raise Failure("此用户已被管理员封禁")
-        # 将绑定的帐号设置为登录状态
-        req._request.session['id'] = fs.user.id
         return Response({
             "code": 0,
             "isbound": True,
+            "name": fs.user.name,
         })
-            
-    
+        
+    # 通过飞书绑定的帐号登录
+    @Check
+    @action(detail=False, methods=['post'], url_path="login")
+    def login(self, req:Request):
+        try:
+            feishu_id = req._request.session["feishu_id"]
+        except Exception:
+            raise Failure("该飞书用户未登录")
+        name = require(req.data, "name", err_msg="Missing or Error type of [name]")
+        fs = Feishu.objects.filter(id=feishu_id).first()
+        if not fs.user:
+            raise Failure("该飞书用户未绑定帐号")
+        if name != fs.user.name:
+            raise Failure("登录的帐号不是该飞书用户绑定的帐号")
+        if fs.user.locked:
+            raise Failure("该帐号已被系统管理员封禁")
+        req._request.session["id"] = fs.user.id
+        return Response({
+            "code": 0,
+            "detail": "success",
+        })
+        
     # 绑定帐号
     @Check
     def post(self, req: Request):
@@ -119,6 +136,11 @@ class feishu(viewsets.ViewSet):
             feishu_id = req._request.session["feishu_id"]
         except Exception:
             raise Failure("该飞书用户未登录")
+        fs = Feishu.objects.filter(id=feishu_id).first()
+        if not fs:
+            raise Failure("飞书用户不存在")
+        if fs.user:
+            raise Failure("该飞书用户已经绑定了用户")
         name = require(req.data, "name", err_msg="Missing or Error type of [name]")
         pw = require(req.data, "password", err_msg="Missing or Error type of [password]")
         user = User.objects.filter(name=name).first()
@@ -128,11 +150,6 @@ class feishu(viewsets.ViewSet):
             raise Failure("密码错误")
         if user.locked:
             raise Failure("此用户已被管理员封禁")
-        fs = Feishu.objects.filter(id=feishu_id).first()
-        if not fs:
-            raise Failure("飞书用户不存在")
-        if fs.user:
-            raise Failure("该飞书用户已经绑定了用户")
         fs.user = user
         fs.save()
         # 将绑定的帐号设置为登录状态
@@ -141,5 +158,10 @@ class feishu(viewsets.ViewSet):
             "code": 0,
             "detail": "success",
         })
+    
+    # 
+    # @Check
+    # def delete(self, req: Request):
+        
         
             
