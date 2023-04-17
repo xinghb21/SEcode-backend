@@ -29,15 +29,15 @@ class asset(viewsets.ViewSet):
     #hyx
     #创建新属性
     
-    # 查看资产管理员自己的部门和业务实体
+    # 资产管理员查看自己的部门和业务实体
     @Check
     @action(detail=False, methods=['get'], url_path="getbelonging")
     def get_belonging(self, req:Request):
-        return {
+        return Response({
             "code": 0,
             "entity": Entity.objects.filter(id=req.user.entity).first().name,
             "department": Department.objects.filter(id=req.user.department).first().name,
-        }
+        })
     
     @Check
     @action(detail=False, methods=["post"], url_path="createattributes")
