@@ -28,6 +28,17 @@ class asset(viewsets.ViewSet):
     allowed_identity = [EP]
     #hyx
     #创建新属性
+    
+    # 资产管理员查看自己的部门和业务实体
+    @Check
+    @action(detail=False, methods=['get'], url_path="getbelonging")
+    def get_belonging(self, req:Request):
+        return Response({
+            "code": 0,
+            "entity": Entity.objects.filter(id=req.user.entity).first().name,
+            "department": Department.objects.filter(id=req.user.department).first().name,
+        })
+    
     @Check
     @action(detail=False, methods=["post"], url_path="createattributes")
     def createattributes(self,req:Request):
@@ -241,7 +252,6 @@ class asset(viewsets.ViewSet):
                 additional = json.dumps(additional)
             else:
                 additional = "{}"
-                
             if tp == True:
                 number = require(asset, "number", "int", "Missing or error type of [number]")
                 if number < 0:

@@ -9,16 +9,19 @@ class Pending(models.Model):
     id = models.BigAutoField(primary_key=True)
     
     #所属业务实体
-    department = models.BigIntegerField()
+    entity = models.BigIntegerField(default=0)
+    
+    #所属部门
+    department = models.BigIntegerField(default=0)
     
     #申请人用户id
-    initiator = models.BigIntegerField()
+    initiator = models.BigIntegerField(default=0)
     
     #转移目标用户id，非转移操作则设为0
     destination = models.BigIntegerField(default=0)
     
-    #目标资产名称列表
-    asset = models.TextField(default="")
+    #目标资产名称和数量列表
+    asset = models.TextField(default="[]")
     
     #申请类型，枚举，1领用，2转移，3维保，4退库
     type = models.IntegerField(default=0)

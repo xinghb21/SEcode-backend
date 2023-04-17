@@ -122,9 +122,8 @@ class esTest(TestCase):
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
     
-    # def test_abab(self):
-    #     users = User.objects.filter(name="notexist")
-    #     print(users)
-    #     users = users.filter(name="op")
-    #     print(users)
+    def test_get_belonging(self):
+        resp = self.client.get("/asset/getbelonging")
+        # print(resp.json())
+        self.assertEqual(resp.json(), {'code': 0, 'entity': 'et', 'department': 'dep'})
         

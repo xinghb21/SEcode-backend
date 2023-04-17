@@ -16,7 +16,7 @@ from utils.permission import GeneralPermission
 from utils.session import LoginAuthentication
 from utils.exceptions import Failure, ParamErr, Check
 
-from rest_framework.decorators import action, throttle_classes, permission_classes
+from rest_framework.decorators import action, throttle_classes, permission_classes, authentication_classes, api_view
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
@@ -376,7 +376,7 @@ class EsViewSet(viewsets.ViewSet):
                 users = users.filter(identity=id)
         ret =[]
         for user in users:
-            tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked"])
+            tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked", "apps"])
             entity = user.entity
             entity = Entity.objects.filter(id=entity).first().name
             dep = user.department
@@ -433,7 +433,8 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=["post"])
     def addapp(self,req:Request):
         username = require(req.data, "username", err_msg="Missing or Error type of [username]")
-        appadded = require(req.data, "appadded", "list",err_msg="Missing or Error type of [appadded]")
+        # print(req.data['appadded'])
+        appadded = require(req.data, "appadded", "list", err_msg="Missing or Error type of [appadded]")
         ent = req.user.entity
         user = User.objects.filter(name=username).first()
         if not user or user.entity != ent:
@@ -476,8 +477,8 @@ class EsViewSet(viewsets.ViewSet):
             user.apps = json.dumps({"data":[]})
         oldapps = json.loads(user.apps)
         oldlist = oldapps["data"]
-        print(oldlist)
-        print(appdeleted)
+        # print(oldlist)
+        # print(appdeleted)
         for item in appdeleted:
             for i in oldlist:
                 if item == i["name"]:
@@ -489,3 +490,16 @@ class EsViewSet(viewsets.ViewSet):
             "code": 0,
             "info": "success"
         })
+        
+#获取某个资产管理员或员工应用
+@Check
+@api_view(['GET'])
+@authentication_classes([LoginAuthentication])
+@permission_classes([GeneralPermission])
+def getonesapp(req:Request,username:any):
+    admin = req.user
+    user = User.objects.filter(name=username).first()
+    if not user or admin.entity != user.entity:
+        raise Failure("该用户不在业务实体内")
+    apps = json.loads(user.apps)
+    return Response({"code": 0,"info": apps["data"]})
