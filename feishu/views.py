@@ -23,7 +23,7 @@ from rest_framework import viewsets
 from rest_framework.views import APIView
 from utils.decipher import AESCipher
 
-ENCRYPT_KEY = "fmX6uAwQeQj775zyo5Xt0e603RhBmEOb"
+ENCRYPT_KEY = "uJHwvC9MR6OL2m2gonsWadkVBdrqF1tN"
 
 class feishu(viewsets.ViewSet):
     authentication_classes = []
