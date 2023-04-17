@@ -1,3 +1,46 @@
+from utils import utils_time
 from django.db import models
+from utils.utils_request import return_field
+from department.models import Department, Entity
+from user.models import User
+from utils.exceptions import Failure
 
-# Create your models here.
+import json
+
+class Feishu(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    
+    user = models.ForeignKey("User.user", on_delete=models.CASCADE, null=True)
+    
+    token_create_time = models.FloatField(default=utils_time.get_timestamp)
+    
+    access_token = models.TextField()
+    
+    access_expires_in = models.PositiveIntegerField()
+    
+    refresh_token = models.TextField()
+    
+    refresh_expires_in = models.PositiveIntegerField()
+    
+    name = models.TextField()
+    
+    # 单一飞书应用内的唯一id
+    open_id = models.TextField()
+    
+    # 一个飞书企业内的唯一id
+    union_id = models.TextField()
+    
+    def serialize(self):
+        try:
+            ret = {
+                "id": self.id,
+                "user": self.user.name,
+                "create_time": self.create_time,
+                "access_token": self.access_token,
+                "access_expires_in": self.access_expires_in,
+                "refresh_token": self.refresh_token,
+                "refresh_expires_in": self.refresh_expires_in,
+            }
+            return ret
+        except Exception:
+            raise Failure("序列化失败")
