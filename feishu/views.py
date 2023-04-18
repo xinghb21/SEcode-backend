@@ -18,7 +18,8 @@ from utils.permission import GeneralPermission
 from utils.session import LoginAuthentication
 from utils.exceptions import Failure, ParamErr, Check
 
-from rest_framework.decorators import action, throttle_classes, permission_classes
+from rest_framework.decorators import authentication_classes as auth
+from rest_framework.decorators import action, throttle_classes, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
@@ -46,10 +47,10 @@ class feishu(viewsets.ViewSet):
         print(challenge)
         return Response({"challenge": challenge["challenge"]})
     
-    # 通过授权码判断该飞书用户是否已经绑定了帐号
+    # 通过授权码获得该飞书用户的token和个人信息，在后端保存
     @Check
-    @action(detail=False, methods=['get'], url_path="isbound")
-    def check_is_bound(self, req:Request):
+    @action(detail=False, methods=['get'], url_path="code")
+    def process_code(self, req:Request):
         code = require(req.query_params, "code", err_msg="Missing or Error type of [code]")
         redirect = require(req.query_params, "redirect", err_msg="Missing or Error type of [redirect]")
         body = {
@@ -76,7 +77,7 @@ class feishu(viewsets.ViewSet):
         if not fs:
             # 创建一个没有绑定帐号的飞书用户
             feishu = Feishu.objects.create(user=None, access_token=access_token, 
-                                  access_expires_in=resp['access_expires_in'],
+                                  access_expires_in=resp['expires_in'],
                                   refresh_token=resp['refresh_token'],
                                   refresh_expires_in=resp['refresh_expires_in'],
                                   name=userinfo['name'],
@@ -86,21 +87,38 @@ class feishu(viewsets.ViewSet):
             req._request.session['feishu_id'] = feishu.id
             return Response({
                 "code": 0,
-                "isbound": False,
+                "detail": "success",
             })
+        # 在当前会话中保存该飞书用户
         req._request.session['feishu_id'] = fs.id
+        # 该飞书用户已经存在于数据库中，则更新token
+        fs.token_create_time = get_timestamp()
+        fs.access_token = access_token
+        fs.access_expires_in=resp['expires_in']
+        fs.refresh_token=resp['refresh_token']
+        fs.refresh_expires_in=resp['refresh_expires_in']
+        fs.save()
+        return Response({
+            "code": 0,
+            "detail": "success",
+        })
+
+    # 通过授权码判断该飞书用户是否已经绑定了帐号
+    @Check
+    @action(detail=False, methods=['get'], url_path="isbound")
+    def check_is_bound(self, req:Request):
+        try:
+            feishu_id = req._request.session["feishu_id"]
+        except Exception:
+            raise Failure("无飞书用户登录")
+        fs = Feishu.objects.filter(id=feishu_id).first()
+        if not fs:
+            raise Failure("登录的飞书用户不存在于数据库中")
         if not fs.user:
             return Response({
                 "code": 0,
                 "isbound": False,
             })
-        # 绑定了帐号，则更新token
-        fs.token_create_time = get_timestamp()
-        fs.access_token = access_token
-        fs.access_expires_in=resp['access_expires_in']
-        fs.refresh_token=resp['refresh_token']
-        fs.refresh_expires_in=resp['refresh_expires_in']
-        fs.save()
         return Response({
             "code": 0,
             "isbound": True,
@@ -124,14 +142,16 @@ class feishu(viewsets.ViewSet):
         if fs.user.locked:
             raise Failure("该帐号已被系统管理员封禁")
         req._request.session["id"] = fs.user.id
+        req._request.session[fs.user.name] = True
         return Response({
             "code": 0,
             "detail": "success",
         })
         
-    # 绑定帐号
+    # 绑定系统中的帐号
     @Check
-    def post(self, req: Request):
+    @action(detail=False, methods=['post'], url_path="binduser")
+    def binduser(self, req: Request):
         try:
             feishu_id = req._request.session["feishu_id"]
         except Exception:
@@ -152,16 +172,24 @@ class feishu(viewsets.ViewSet):
             raise Failure("此用户已被管理员封禁")
         fs.user = user
         fs.save()
-        # 将绑定的帐号设置为登录状态
-        req._request.session['id'] = fs.user.id
         return Response({
             "code": 0,
             "detail": "success",
         })
+        
+    # 绑定飞书帐号
+    @Check
+    @action(detail=False, methods=['post'], url_path="bind")
+    def bind(self, req: Request):
+        pass
+        
     
-    # 
-    # @Check
-    # def delete(self, req: Request):
+    # 解除绑定
+    @Check
+    @action(detail=False, methods=['delete'], url_path="unbind")
+    def unbind(self, req: Request):
+        pass
+        
         
         
             
