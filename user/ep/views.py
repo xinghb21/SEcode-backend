@@ -147,3 +147,14 @@ class EpViewSet(viewsets.ViewSet):
             asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).first()
             returnlist.append({"id":asset.id,"assetname":assetname,"assetclass":asset.category.name,"assetcount":item[assetname]})
         return Response({"code":0,"info":returnlist})
+    
+    @Check
+    @action(detail=False, methods=['get'], url_path="istbd")
+    def istbd(self,req:Request):
+        ent = req.user.entity
+        dep = req.user.department
+        pendings = Pending.objects.filter(entity=ent,department=dep,result=0).first()
+        if pendings:
+            return Response({"code":0,"info":True})
+        else:
+            return Response({"code":0,"info":False})

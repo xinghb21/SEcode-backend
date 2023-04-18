@@ -1,4 +1,6 @@
-﻿from django.test import TestCase, Client
+﻿#hyx
+
+from django.test import TestCase, Client
 from user.models import User
 from department.models import Department, Entity
 from pending.models import Pending
@@ -93,9 +95,20 @@ class epTest(TestCase):
         et = Entity.objects.filter(id=1).first()
         dep = Department.objects.filter(id=1).first()
         class1 = AssetClass.objects.create(name="class1",entity=et,department=dep,type=True)
-        class2 = AssetClass.objects.create(name="class2",entity=et,department=dep,type=False)
         asset1 = Asset.objects.create(name="asset1",entity=et,department=dep,category=class1,type=True,number=100,number_idle=100,price=10)
         pending = Pending.objects.create(entity=1,department=1,initiator=3,description="I want these",
                                           asset=json.dumps([{"asset1":100}]))
         resp = self.client.get("/user/ep/assetsinapply?id=1",content_type="application/json")
         self.assertEqual(resp.json()["info"],[{'id': 1, 'assetname': 'asset1', 'assetclass': 'class1', 'assetcount': 100}])
+    
+    def test_stbd(self):
+        et = Entity.objects.filter(id=1).first()
+        dep = Department.objects.filter(id=1).first()
+        class1 = AssetClass.objects.create(name="class1",entity=et,department=dep,type=True)
+        resp = self.client.get("/user/ep/istbd",content_type="application/json")
+        self.assertEqual(resp.json()["info"],False)
+        asset1 = Asset.objects.create(name="asset1",entity=et,department=dep,category=class1,type=True,number=100,number_idle=100,price=10)
+        pending = Pending.objects.create(entity=1,department=1,initiator=3,description="I want these",
+                                          asset=json.dumps([{"asset1":100}]))
+        resp = self.client.get("/user/ep/istbd",content_type="application/json")
+        self.assertEqual(resp.json()["info"],True)
