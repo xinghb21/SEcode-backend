@@ -61,17 +61,17 @@ class EpViewSet(viewsets.ViewSet):
         if pen.result:
             raise Failure("此待办已审批完成")
         #更新待办信息
-        pen.result = 2 if status else 1
-        pen.review_time = utils_time.get_timestamp()
-        pen.reply = reply
-        pen.save()
         #检查所有资产是否都存在
         for assetdict in assets:
             assetname = list(assetdict.keys())[0]
             asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
-            if not asset:
+            if not asset and status == 0:
                 raise Failure("请求中包含已失效资产，请拒绝")
         assetlist = assets
+        pen.result = 2 if status else 1
+        pen.review_time = utils_time.get_timestamp()
+        pen.reply = reply
+        pen.save()
         #更新资产信息
         #领用
         if ptype == 1:
@@ -80,6 +80,7 @@ class EpViewSet(viewsets.ViewSet):
                 assetname = list(assetdict.keys())[0]
                 #待办单条资产
                 asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+                if not asset:continue
                 #数量型
                 if asset.type:
                     #本资产的所有预备条目
@@ -146,13 +147,3 @@ class EpViewSet(viewsets.ViewSet):
             asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).first()
             returnlist.append({"id":asset.id,"assetname":assetname,"assetclass":asset.category.name,"assetcount":item[assetname]})
         return Response({"code":0,"info":returnlist})
-    
-    '''
-    本地测试用，删除所有待办项
-    @Check
-    @action(detail=False, methods=['delete'], url_path="delete")
-    def delete(self,req:Request):
-        pen = Pending.objects.all()
-        for i in pen:
-            i.delete()
-        return Response({"code":0,"detail":"ok"})'''

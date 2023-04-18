@@ -125,4 +125,24 @@ class NsViewSet(viewsets.ViewSet):
             asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).first()
             returnlist.append({"id":asset.id,"assetname":assetname,"assetcount":item[assetname]})
         return Response({"code":0,"info":returnlist})
+    
+    #查看所有处于闲置状态的资产
+    @Check
+    @action(detail=False, methods=['get'], url_path="getassets")
+    def getassets(self,req:Request):
+        user = req.user
+        ent = Entity.objects.filter(id=user.entity).first()
+        dep = Department.objects.filter(id=user.department).first()
+        if not ent :
+            raise Failure("用户不属于任何业务实体")
+        if not dep:
+            raise Failure("用户不属于任何部门")
+        assets_num = Asset.objects.filter(entity=ent,department=dep,type=True).exclude(number_idle=0).all()
+        assets_item = Asset.objects.filter(entity=ent,department=dep,type=False,status=0).all()
+        returnlist = []
+        for asset in assets_num:
+            returnlist.append({"id":asset.id,"name":asset.name,"type":1,"count":asset.number_idle})
+        for asset in assets_item:
+            returnlist.append({"id":asset.id,"name":asset.name,"type":0,"count":1})
+        return Response({"code":0,"info":returnlist})
 
