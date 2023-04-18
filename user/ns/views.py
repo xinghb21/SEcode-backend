@@ -45,8 +45,6 @@ class NsViewSet(viewsets.ViewSet):
                 raise Failure("资产%s不存在" % item["assetname"])
             if asset.id != item["id"]:
                 raise Failure("资产id错误")
-            if asset.category.name != item["assetclass"]:
-                raise Failure("资产类别错误")
             #数量型
             if asset.type:
                 targetnum = item["assetcount"]
