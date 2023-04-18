@@ -77,3 +77,13 @@ class esTest(TestCase):
         resp = self.client.get("/user/ns/assetsinapply?id=1")
         # print(resp.json())
         self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'assetname': 'hutao', 'assetcount': 50}]})
+        
+    def test_deleteapply(self):
+        self.apply("hutao", 50, "yuanshen")
+        resp = self.client.delete("/user/ns/deleteapplys",{"id":1},content_type="application/json")
+        self.assertEqual(resp.json(), {'code': -1, 'detail': '不能删除资产管理员未处理的申请'})
+        pending = Pending.objects.filter(id=1).first()
+        pending.result = 1
+        pending.save()
+        resp = self.client.delete("/user/ns/deleteapplys",{"id":1},content_type="application/json")
+        self.assertEqual(resp.json(), {'code': 0, 'detail': 'ok'})
