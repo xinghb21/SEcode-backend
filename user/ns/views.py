@@ -145,4 +145,18 @@ class NsViewSet(viewsets.ViewSet):
         for asset in assets_item:
             returnlist.append({"id":asset.id,"name":asset.name,"type":0,"count":1})
         return Response({"code":0,"info":returnlist})
+    
+    #删除已经被处理的申请
+    @Check
+    @action(detail=False,methods=["delete"], url_path="deleteapplys")
+    def deleteapplys(self,req:Request):
+        user = req.user
+        id = require(req.data, "id", "int" , err_msg="Error type of [id]")
+        pending_to_del = Pending.objects.filter(id=id).first()
+        if not pending_to_del or pending_to_del.initiator != user.id:
+            raise Failure("申请不存在")
+        if pending_to_del.result == 0:
+            raise Failure("不能删除资产管理员未处理的申请")
+        pending_to_del.delete()
+        return Response({"code":0,"detail":"ok"})
 
