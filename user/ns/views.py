@@ -156,5 +156,5 @@ class NsViewSet(viewsets.ViewSet):
         if pending_to_del.result == 0:
             raise Failure("不能删除资产管理员未处理的申请")
         pending_to_del.delete()
-        return Response({"code":0,"detail":"ok"})
+        return Response({"code":0,"info":"ok"})
 
