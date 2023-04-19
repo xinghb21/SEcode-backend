@@ -45,8 +45,6 @@ class NsViewSet(viewsets.ViewSet):
                 raise Failure("资产%s不存在" % item["assetname"])
             if asset.id != item["id"]:
                 raise Failure("资产id错误")
-            if asset.category.name != item["assetclass"]:
-                raise Failure("资产类别错误")
             #数量型
             if asset.type:
                 targetnum = item["assetcount"]
@@ -158,5 +156,5 @@ class NsViewSet(viewsets.ViewSet):
         if pending_to_del.result == 0:
             raise Failure("不能删除资产管理员未处理的申请")
         pending_to_del.delete()
-        return Response({"code":0,"detail":"ok"})
+        return Response({"code":0,"info":"ok"})
 

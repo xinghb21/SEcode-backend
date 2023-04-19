@@ -86,4 +86,4 @@ class esTest(TestCase):
         pending.result = 1
         pending.save()
         resp = self.client.delete("/user/ns/deleteapplys",{"id":1},content_type="application/json")
-        self.assertEqual(resp.json(), {'code': 0, 'detail': 'ok'})
+        self.assertEqual(resp.json(), {'code': 0, 'info': 'ok'})
