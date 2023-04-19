@@ -16,7 +16,7 @@ from utils.permission import GeneralPermission
 from utils.session import LoginAuthentication
 from utils.exceptions import Failure, ParamErr, Check
 
-from rest_framework.decorators import action, throttle_classes, permission_classes
+from rest_framework.decorators import action, throttle_classes, permission_classes, authentication_classes, api_view
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
@@ -131,34 +131,26 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def alter(self, req:Request):
         user = self.get_target_user(req)
-        # department
-        old_dep = user.department
-        if old_dep == 0:
-            old_name = ""
-        else:
-            old_name = Department.objects.filter(id = old_dep).first().name
         new_name = require(req.data, "department", "string", "Missing or error type of [department]")
-        if len(new_name) == 0:
-            user.department = 0
-            user.save()
-        else:
-            olddep = Department.objects.filter(name=old_name).first()
-            dep = Department.objects.filter(name=new_name).first()
-            if not dep:
-                raise Failure("新部门不存在")
-            if dep.admin != 0 and user.identity == 3:
-                raise Failure("该部门已存在资产管理员")
-            if user.identity == 3:
-                olddep.admin = 0
-                dep.admin = user.id
-                olddep.save()
-                dep.save()
-            user.department = dep.id
-            user.save()
+        if not new_name:
+            raise Failure("新部门名称不能为空")
+        olddep = Department.objects.filter(id = user.department).first()
+        dep = Department.objects.filter(name=new_name).first()
+        if not dep:
+            raise Failure("新部门不存在")
+        if dep.admin != 0 and user.identity == 3:
+            raise Failure("该部门已存在资产管理员")
+        if user.identity == 3:
+            olddep.admin = 0
+            dep.admin = user.id
+            olddep.save()
+            dep.save()
+        user.department = dep.id
+        user.save()
         ret = {
             "code": 0,
             "name": user.name,
-            "old_department": old_name,
+            "old_department": olddep.name,
             "new_department": new_name,
         }
         return Response(ret)
@@ -231,6 +223,8 @@ class EsViewSet(viewsets.ViewSet):
         havedp = Department.objects.filter(entity=ent.id,name=depname).first()
         if havedp:
             raise Failure("部门已存在")
+        if depname == entname:
+            raise Failure("部门名称不可与业务实体名称相同")
         if req.user.id != ent.admin:
             raise Failure("无权创建部门")
         if not parentname:
@@ -317,6 +311,8 @@ class EsViewSet(viewsets.ViewSet):
         ent = Entity.objects.filter(admin=req.user.id).first()
         dep = Department.objects.filter(entity=ent.id,name=oldname).first()
         dep2 = Department.objects.filter(entity=ent.id,name=newname).first()
+        if newname == ent.name:
+            raise Failure("新名称不可与业务实体名相同")
         if not dep:
             raise Failure("待修改部门不存在")
         if dep2:
@@ -350,6 +346,7 @@ class EsViewSet(viewsets.ViewSet):
             "info" : info
         }
         return Response(ret)
+
     @Check
     @action(detail=False, methods=["delete"], url_path="deletealldeparts")
     def batch_delete(self, req:Request):
@@ -379,7 +376,7 @@ class EsViewSet(viewsets.ViewSet):
                 users = users.filter(identity=id)
         ret =[]
         for user in users:
-            tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked"])
+            tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked", "apps"])
             entity = user.entity
             entity = Entity.objects.filter(id=entity).first().name
             dep = user.department
@@ -429,4 +426,79 @@ class EsViewSet(viewsets.ViewSet):
             "code": 0,
             "detail": "success"
         })
-          
+    
+    #hyx 2023.4.15
+    #增加用户应用
+    @Check
+    @action(detail=False,methods=["post"])
+    def addapp(self,req:Request):
+        username = require(req.data, "username", err_msg="Missing or Error type of [username]")
+        # print(req.data['appadded'])
+        appadded = require(req.data, "appadded", "list", err_msg="Missing or Error type of [appadded]")
+        ent = req.user.entity
+        user = User.objects.filter(name=username).first()
+        if not user or user.entity != ent:
+            raise Failure("此用户不存在")
+        if user.identity != 3 and user.identity != 4:
+            raise Failure("此用户不是资产管理员或员工")
+        if not user.apps:
+            user.apps = json.dumps({"data":[]})
+        oldapps = json.loads(user.apps)
+        oldlist = oldapps["data"]
+        for item in appadded:
+            needupdate = True
+            for i in oldlist:
+                if item["name"] == i["name"]:
+                    i["urlvalue"] = item["urlvalue"]
+                    needupdate = False
+                    break
+            if needupdate:
+                oldlist.append(item)
+        user.apps = json.dumps({"data":oldlist})
+        user.save()
+        return Response({
+            "code": 0,
+            "info": "success"
+        })
+        
+    #删除用户应用
+    @Check
+    @action(detail=False,methods=["delete"])
+    def deleteapps(self,req:Request):
+        username = require(req.data, "username", err_msg="Missing or Error type of [username]")
+        appdeleted = require(req.data, "appdeleted", "list",err_msg="Missing or Error type of [appdeleted]")
+        ent = req.user.entity
+        user = User.objects.filter(name=username).first()
+        if not user or user.entity != ent:
+            raise Failure("此用户不存在")
+        if user.identity != 3 and user.identity != 4:
+            raise Failure("此用户不是资产管理员或员工")
+        if not user.apps:
+            user.apps = json.dumps({"data":[]})
+        oldapps = json.loads(user.apps)
+        oldlist = oldapps["data"]
+        # print(oldlist)
+        # print(appdeleted)
+        for item in appdeleted:
+            for i in oldlist:
+                if item == i["name"]:
+                    oldlist.remove(i)
+                    break
+        user.apps = json.dumps({"data":oldlist})
+        user.save()
+        return Response({
+            "code": 0,
+            "info": "success"
+        })
+
+#获取某个资产管理员或员工应用
+    @Check
+    @action(detail=False,methods=["get"])
+    def getonesapp(self,req:Request):
+        username = req.query_params["name"]
+        admin = req.user
+        user = User.objects.filter(name=username).first()
+        if not user or admin.entity != user.entity:
+            raise Failure("该用户不在业务实体内")
+        apps = json.loads(user.apps)
+        return Response({"code": 0,"info": apps["data"]})

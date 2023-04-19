@@ -9,7 +9,9 @@ pytest-django
 coverage
 pyyaml==6.0
 djangorestframework~=3.13.1
+requests
 
-# TODO Start: [Student] Add dependency on uWSGI
 uwsgi
-# TODO End: [Student] Add dependency on uWSGI
+
+# 解密飞书事件
+pycryptodome

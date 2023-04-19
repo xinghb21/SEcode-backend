@@ -3,6 +3,8 @@ from django.db import models
 from utils.utils_request import return_field
 from utils.utils_require import MAX_CHAR_LENGTH
 from django.contrib.auth.hashers import make_password, check_password
+import json
+from utils.exceptions import Failure
 # Create your models here.
 
 
@@ -32,21 +34,28 @@ class User(models.Model):
     #用户是否被锁定，只有既非超级管理员又非系统管理员的用户可被锁定
     locked = models.BooleanField(default=False)
     
+    #用户的额外应用，json格式字符串
+    apps = models.TextField(default="{\"data\":[]}")
 
     class Meta:
         db_table = "User"
 
     def serialize(self):
-        return{
-            "id":self.id,
-            "name":self.name,
-            "password":self.password,
-            "entity":self.entity,
-            "department":self.department,
-            "identity":self.identity,
-            "lockedapp":self.lockedapp,
-            "locked":self.locked
-        }
+        try:
+            ret = {
+                "id":self.id,
+                "name":self.name,
+                "password":self.password,
+                "entity":self.entity,
+                "department":self.department,
+                "identity":self.identity,
+                "lockedapp":self.lockedapp,
+                "locked":self.locked,
+                "apps":json.loads(self.apps)
+            }
+        except Exception as e:
+            raise Failure("对User", self.name, "的json序列化失败: ", e)
+        return ret
     
     def __str__(self) -> str:
         return self.name

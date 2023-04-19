@@ -3,7 +3,7 @@ from utils import utils_time
 from django.contrib.auth.hashers import make_password, check_password
 from django.http import HttpRequest, HttpResponse
 from django.contrib.sessions.models import Session
-
+from pending.models import Pending
 from user.models import User
 from logs.models import Logs
 from department.models import Entity,Department
@@ -35,6 +35,10 @@ def valid_user(body):
     #获取无默认值的用户名和密码，缺失则报错
     name = require(body, "name", "string", err_msg="Missing or error type of [name]")
     pwd = require(body, "password", "string", err_msg="Missing or error type of [password]")
+    if not name or " " in name:
+        raise Failure("姓名不可为空或有空格")
+    if not pwd or " " in pwd:
+        raise Failure("密码不可为空或有空格")
     #用户名不得长于128个字符
     if not 0 < len(name) <= 128:
         raise Failure("Bad length of [name]. The length should be no longer than 128.")
@@ -63,6 +67,7 @@ def valid_user(body):
         department = dep.id
         entity = ent.id
     return name,pwd,entity,department,identity,funclist
+
 
 
 class UserViewSet(viewsets.ViewSet):
@@ -127,7 +132,7 @@ class UserViewSet(viewsets.ViewSet):
             # cyh
             Logs(entity=user.entity,content="用户"+user.name+"登录",type=1).save()
             return Response({"code":0,"name":name,"entity":user.entity,"department":user.department,"identity":user.identity,"funclist":user.lockedapp})
-
+    
     #用户登出
     @Check
     @action(detail=False, methods=['post'])
@@ -138,8 +143,25 @@ class UserViewSet(viewsets.ViewSet):
             # case 1 : 用户不存在
             raise Failure("用户不存在")
         else:
+            # cyh 清除session
+            req._request.session.clear()
+            # cyh end
             req._request.session[name] = False
             return Response({"code":0,"name":name})
+
+    #2023.4.14  hyx
+    #获取用户额外应用
+    @Check
+    @action(detail=False, methods=['get'])
+    def getapplists(self,req:Request):
+        if "id" not in req._request.session:
+            raise Failure("用户未登录")
+        user = User.objects.filter(id=req._request.session.get("id")).first()
+        if not user.apps:
+            return Response({"code":0,"info":[]})
+        applist = json.loads(user.apps)["data"]
+        print(applist)
+        return Response({"code":0,"info":applist})
 
 #进入用户界面
 @Check

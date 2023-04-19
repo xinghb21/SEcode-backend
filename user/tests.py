@@ -8,6 +8,8 @@ from django.contrib.auth.hashers import make_password, check_password
 
 class userTest(TestCase):
     def setup(self)->None:
+        ent = Entity.objects.create(name="ent")
+        dep = Department.objects.create(name="dep",entity=1)
         alice = User.objects.create(name="alice",password=make_password("alice"),identity=1)
         self.login("alice","alice")
 
@@ -130,3 +132,9 @@ class userTest(TestCase):
             "username":"bob"
         }
         self.assertJSONEqual(resp.content,std)
+        
+    def test_get_apps(self):
+        bob = User.objects.create(name="bob",password=make_password("bob"),identity=3,department=1,entity=1,apps=json.dumps({"data":[{"name":"百度","urlvalue":"https://www.baidu.com"},{"name":"网络学堂","urlvalue":"https://learning.edu.cn"}]}))
+        self.login("bob","bob")
+        resp = self.client.get("/user/getapplists")
+        self.assertEqual(resp.json()["info"],[{'name': '百度', 'urlvalue': 'https://www.baidu.com'}, {'name': '网络学堂', 'urlvalue': 'https://learning.edu.cn'}])

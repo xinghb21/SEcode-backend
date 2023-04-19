@@ -30,6 +30,8 @@ def createEt(req:HttpRequest):
     body = json.loads(req.body.decode("utf-8"))
     if req.method == "POST":
         name = require(body, "name", "string", err_msg="Missing or error type of [name]")
+        if not name or " " in name:
+            raise Failure("业务实体名称不可为空或有空格")
         ent = Entity.objects.filter(name=name).first()
         if not ent:
             entity = Entity(name=name)
@@ -110,6 +112,10 @@ def assginES(req:HttpRequest):
         pwd = require(body, "password", "string", err_msg="Missing or error type of [password]")
         ent = Entity.objects.filter(name=entname).first()
         user = Entity.objects.filter(name=username).first()
+        if not username or " " in username:
+            raise Failure("系统管理员姓名不可为空或有空格")
+        if not pwd:
+            raise Failure("密码不可为空")
         if not ent:
             return request_failed(-1,"此业务实体不存在")
         if ent.admin != 0:

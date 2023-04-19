@@ -27,27 +27,36 @@ class asset(viewsets.ViewSet):
     permission_classes = [GeneralPermission]
     allowed_identity = [EP]
     #hyx
+    #创建新属性
+    
+    # 资产管理员查看自己的部门和业务实体
+    @Check
+    @action(detail=False, methods=['get'], url_path="getbelonging")
+    def get_belonging(self, req:Request):
+        return Response({
+            "code": 0,
+            "entity": Entity.objects.filter(id=req.user.entity).first().name,
+            "department": Department.objects.filter(id=req.user.department).first().name,
+        })
+    
     @Check
     @action(detail=False, methods=["post"], url_path="createattributes")
     def createattributes(self,req:Request):
         name = require(req.data,"name","string",err_msg="Missing or error type of [name]")
+        if not name or " " in name:
+            raise Failure("属性名不可为空或有空格")
         dep = Department.objects.filter(id=req.user.department).first()
-        attri = json.loads(dep.attributes)
-        if name in attri:
-            raise Failure("该属性已存在")
-        attri.update({name:0})
-        dep.attributes = json.dumps(attri)
+        attributes = dep.attributes
+        if not attributes:
+            attributes = name
+        else:
+            attri = dep.attributes.split(',')
+            if name in attri:
+                raise Failure("该属性已存在")
+            attributes += "," + name
+        dep.attributes = attributes
         dep.save()
         return Response({"code":0,"detail":"创建成功"})
-    
-    #获取当前部门额外可选标签项
-    @Check
-    @action(detail=False, methods=["get"], url_path="usedlabel")
-    def usedlabel(self,req:Request):
-        dep = Department.objects.filter(id=req.user.department).first()
-        labels = dep.label
-        label = labels.split(",") if labels else []
-        return Response({"code":0,"info":label})
     
     #更改部门额外可选标签项
     @Check
@@ -60,14 +69,27 @@ class asset(viewsets.ViewSet):
         dep.save()
         return Response({"code":0,"detail":"ok"})
     
+    #获取当前部门所有已选择标签项
+    @Check
+    @action(detail=False,methods=["get"],url_path="usedlabel")
+    def usedlabel(self,req:Request):
+        dep = Department.objects.filter(id=req.user.department).first()
+        if not dep.label:
+            return Response({"code":0,"info":[]})
+        else:
+            info = dep.label.split(',')
+            return Response({"code":0,"info":info})
+    
     #获取当前部门所有额外属性
     @Check
     @action(detail=False,methods=["get"],url_path="attributes")
     def attributes(self,req:Request):
         dep = Department.objects.filter(id=req.user.department).first()
-        attri = json.loads(dep.attributes)
-        info = [key for key in attri]
-        return Response({"code":0,"info":info})
+        if not dep.attributes:
+            return Response({"code":0,"info":[]})
+        else:
+            info = dep.attributes.split(',')
+            return Response({"code":0,"info":info})
     
     #递归构造类别树存储
     def classtree(self,ent,dep,parent):
@@ -228,19 +250,8 @@ class asset(viewsets.ViewSet):
                 if type(additional) is not dict:
                     raise Failure("Error type of [additional]")
                 additional = json.dumps(additional)
-                #hyx 更新部门中所有额外属性
-                attributes = json.loads(dep.attributes)
-                for key in json.loads(addi):
-                    if key in attributes:
-                        attributes.update({key:attributes[key] + 1})
-                    else:
-                        attributes.update({key:1})
-                dep.attributes = json.dumps(attributes)
-                dep.save()
-                #hyx end
             else:
                 additional = "{}"
-                
             if tp == True:
                 number = require(asset, "number", "int", "Missing or error type of [number]")
                 if number < 0:
@@ -299,16 +310,9 @@ class asset(viewsets.ViewSet):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         assets = Asset.objects.filter(entity=et, department=dep, name__in=names)
-        attr:dict = json.loads(dep.attributes)
         for asset in assets:
-            addi = json.loads(asset.additional)
-            for key in addi.keys():
-                attr[key] -= 1
             asset.delete()
-        dep.attributes = json.dumps(attr)
-        dep.save()
         return Response({"code": 0, "detail": "success"})
-  
   
 class assetclass(APIView):
     authentication_classes = [LoginAuthentication]
@@ -330,8 +334,12 @@ class assetclass(APIView):
     def put(self,req:Request):
         oldname = require(req.data, "oldname", err_msg="Error type of [oldname]")
         newname = require(req.data, "newname", err_msg="Error type of [newname]")
+        if not newname or " " in newname:
+            raise Failure("新的资产类别名不可为空或有空格")
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
+        if newname == dep.name:
+            raise Failure("新的资产类别名不可与部门名相同")
         ac = AssetClass.objects.filter(entity=et, department=dep, name=oldname).first()
         if not ac:
             raise Failure("该资产类别不存在")
@@ -351,8 +359,12 @@ class assetclass(APIView):
         else:
             parent = None
         name = require(req.data, "name", err_msg="Error type of [name]")
+        if not name or " " in name:
+            raise Failure("资产类别名不可为空或有空格")
         if len(name) > 128:
             raise Failure("名称过长")
+        if name == dep.name:
+            raise Failure("资产类别名不可与部门同名")
         if AssetClass.objects.filter(entity=et, department=dep, name=name).first():
             raise Failure("存在重名类别")
         tp = require(req.data, "type", "int", err_msg="Error type of [type]")

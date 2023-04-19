@@ -55,7 +55,7 @@ def CheckRequire(check_fn):
 
 #     else:
 #         raise NotImplementedError(f"Type `{type}` not implemented.", err_code)
-def require(body, key, type="string", err_msg=None):
+def require(body, key, tp="string", err_msg=None):
     
     if key not in body.keys():
         raise ParamErr(err_msg if err_msg is not None 
@@ -63,30 +63,34 @@ def require(body, key, type="string", err_msg=None):
     
     val = body[key]
     
-    err_msg = f"Invalid parameters. Expected `{key}` to be `{type}` type."\
+    err_msg = f"Invalid parameters. Expected `{key}` to be `{tp}` type."\
                 if err_msg is None else err_msg
     
-    if type == "int":
+    if tp == "int":
         try:
             val = int(val)
             return val
         except:
             raise ParamErr(err_msg)
     
-    elif type == "float":
+    elif tp == "float":
         try:
             val = float(val)
             return val
         except:
             raise ParamErr(err_msg)
     
-    elif type == "string":
+    elif tp == "string":
         try:
             val = str(val)
             return val
         except:
             raise ParamErr(err_msg)
     
+    elif tp == "list":
+        if type(val) is not list:
+            raise ParamErr(err_msg)
+        return val
 
     else:
-        raise Failure(f"Type `{type}` not implemented.")
+        raise Failure(f"Type `{tp}` not implemented.")
