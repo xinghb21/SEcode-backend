@@ -5,6 +5,7 @@
 # python3 manage.py makemigrations pending
 # python3 manage.py makemigrations logs
 # python3 manage.py makemigrations feishu
+# 远程仅migrate，本地将makemigration的文件上传
 python3 manage.py migrate
 
 # TODO Start: [Student] Run with uWSGI instead
