@@ -9,33 +9,20 @@ class esTest(TestCase):
     def setUp(self) -> None:
         op1 = User.objects.create(name="op1", password=make_password("op1"), 
                                  identity=4, entity=1, department=1)
-        op2 = User.objects.create(name="op2", password=make_password("op2"), 
-                                 identity=4, entity=1, department=1)
-        op3 = User.objects.create(name="op3", password=make_password("op3"), 
-                                 identity=4, entity=2, department=2)
-        ss = User.objects.create(name="ss", password=make_password("ss"), 
-                                 identity=1, entity=0, department=0)
         es = User.objects.create(name="es", password=make_password("es"), 
                                  identity=2, entity=1, department=0)
-        ep = User.objects.create(name="ep", password=make_password("ep"), 
-                                 identity=3, entity=1, department=1)
-        es2 = User.objects.create(name="es2", password=make_password("es2"), 
-                                 identity=2, entity=1, department=0)
         et1 = Entity.objects.create(name="et1", admin=5)
-        et2 = Entity.objects.create(name="et2", admin=5)
-        et3 = Entity.objects.create(name="et3",admin=7)
         dep1 = Department.objects.create(name="dep1", entity=1, parent=0, admin=6)
-        dep2 = Department.objects.create(name="dep2", entity=1, parent=0, admin=6)
-        self.login("es", "es")
+        self.eslogin("es", "es")
         
-    def login(self, name, pw):
+    def eslogin(self, name, pw):
         payload = {
             "name": name,
             "password": pw
         }
         return self.client.post("/user/login", data=payload, content_type="application/json")
     
-    def logout(self, name):
+    def eslogout(self, name):
         payload = {
             "name": name
         }
