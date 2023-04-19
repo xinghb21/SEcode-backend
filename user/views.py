@@ -143,6 +143,9 @@ class UserViewSet(viewsets.ViewSet):
             # case 1 : 用户不存在
             raise Failure("用户不存在")
         else:
+            # cyh 清除session
+            req._request.session.clear()
+            # cyh end
             req._request.session[name] = False
             return Response({"code":0,"name":name})
 
