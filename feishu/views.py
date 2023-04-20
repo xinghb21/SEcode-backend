@@ -45,12 +45,13 @@ class feishu(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['post'], url_path="answer")
     def answer_event(self, req:Request):
-        bytes_b1 = (req._request.headers['X-Lark-Request-Timestamp'] + req._request.headers['X-Lark-Request-Nonce'] + ENCRYPT_KEY).encode('utf-8')
-        bytes_b = bytes_b1 + req._request.body
-        h = hashlib.sha256(bytes_b)
-        signature = h.hexdigest()
-        if signature != req._request.headers['X-Lark-Signature']:
-            raise Failure("签名校验有误, 事件被拒绝处理")
+        if 'X-Lark-Request-Timestamp' in req._request.headers.keys() and 'X-Lark-Request-Nonce' in req._request.headers.keys() and 'X-Lark-Signature' in req._request.headers.keys():
+            bytes_b1 = (req._request.headers['X-Lark-Request-Timestamp'] + req._request.headers['X-Lark-Request-Nonce'] + ENCRYPT_KEY).encode('utf-8')
+            bytes_b = bytes_b1 + req._request.body
+            h = hashlib.sha256(bytes_b)
+            signature = h.hexdigest()
+            if signature != req._request.headers['X-Lark-Signature']:
+                raise Failure("签名校验有误, 事件被拒绝处理")
         if "challenge" in req.data.keys():
             return Response({"challenge": req.data["challenge"]})
         if "encrypt" in req.data.keys():

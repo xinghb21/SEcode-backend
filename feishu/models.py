@@ -52,5 +52,5 @@ class Event(models.Model):
     event_id = models.TextField(verbose_name="事件唯一标识", unique=True)
     
     # 整数，单位为秒
-    arrive_time = models.BigIntegerField(verbose_name="到达时间", default=utils_time.get_timestamp)
+    create_time = models.BigIntegerField(verbose_name="创建时间", default=utils_time.get_timestamp)
 
