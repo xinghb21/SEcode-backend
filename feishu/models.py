@@ -44,3 +44,13 @@ class Feishu(models.Model):
             return ret
         except Exception:
             raise Failure("序列化失败")
+        
+# 记录到达的事件以检测重复事件
+class Event(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    
+    event_id = models.TextField(verbose_name="事件唯一标识", unique=True)
+    
+    # 整数，单位为秒
+    arrive_time = models.BigIntegerField(verbose_name="到达时间", default=utils_time.get_timestamp)
+

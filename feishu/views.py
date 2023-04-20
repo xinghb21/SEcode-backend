@@ -3,6 +3,7 @@ import json
 import re
 import time
 import requests
+import hashlib
 
 from django.contrib.auth.hashers import make_password, check_password
 
@@ -25,11 +26,14 @@ from rest_framework.request import Request
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from utils.decipher import AESCipher
+
 from feishu.models import Feishu
+from feishu.events import dispatch_event
 
 ENCRYPT_KEY = "uJHwvC9MR6OL2m2gonsWadkVBdrqF1tN"
 APP_ID = "cli_a4b17e84d0f8900e"
 APP_SECRET = "bMrD4Rtx85VS0jiPhPgThdrohZTHR4Jo"
+VERIFICATION_TOKEN = "AOKjmM7RLNEw9pPck9zyNcF7KvshqL4F"
 
 class feishu(viewsets.ViewSet):
     authentication_classes = []
@@ -40,12 +44,34 @@ class feishu(viewsets.ViewSet):
     
     @Check
     @action(detail=False, methods=['post'], url_path="answer")
-    def answer_challenge(self, req:Request):
-        challenge = self.decipher.decrypt_string(req.data['encrypt'])
-        print(challenge)
-        challenge = json.loads(challenge)
-        print(challenge)
-        return Response({"challenge": challenge["challenge"]})
+    def answer_event(self, req:Request):
+        bytes_b1 = (req._request.headers['X-Lark-Request-Timestamp'] + req._request.headers['X-Lark-Request-Nonce'] + ENCRYPT_KEY).encode('utf-8')
+        bytes_b = bytes_b1 + req._request.body
+        h = hashlib.sha256(bytes_b)
+        signature = h.hexdigest()
+        if signature != req._request.headers['X-Lark-Signature']:
+            raise Failure("签名校验有误, 事件被拒绝处理")
+        if "challenge" in req.data.keys():
+            return Response({"challenge": req.data["challenge"]})
+        if "encrypt" in req.data.keys():
+            body = self.decipher.decrypt_string(req.data['encrypt'])
+            try:
+                body: dict = json.loads(body)
+            except:
+                raise Failure("解密后信息非json格式")
+            if "schema" in body:
+                token = body["header"]["token"]
+            else:
+                token = body["token"]
+            if token != VERIFICATION_TOKEN:
+                raise Failure("token校验有误, 事件被拒绝处理")
+            if "challenge" in body.keys():
+                return Response({"challenge": body["challenge"]})
+            dispatch_event(body)
+            return Response({
+                "code": 0,
+                "detail": "successfully handled",
+            })
     
     # 通过授权码获得该飞书用户的token和个人信息，在后端保存
     @Check
