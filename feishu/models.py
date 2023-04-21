@@ -24,11 +24,14 @@ class Feishu(models.Model):
     
     name = models.TextField()
     
+    # 用户在企业内的唯一标识
+    userid = models.TextField(default="")
+    
     # 单一飞书应用内的唯一id
-    open_id = models.TextField()
+    openid = models.TextField(default="")
     
     # 一个飞书企业内的唯一id
-    union_id = models.TextField()
+    unionid = models.TextField()
     
     def serialize(self):
         try:
