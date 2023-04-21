@@ -52,7 +52,7 @@ class Feishu(models.Model):
 class Event(models.Model):
     id = models.BigAutoField(primary_key=True)
     
-    eventid = models.TextField(verbose_name="事件唯一标识", unique=True, max_length=255)
+    eventid = models.TextField(verbose_name="事件唯一标识")
     
     # 整数，单位为秒
     create_time = models.BigIntegerField(verbose_name="创建时间", default=utils_time.get_timestamp)
