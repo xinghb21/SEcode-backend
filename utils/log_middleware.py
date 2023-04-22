@@ -25,7 +25,7 @@ class LogMiddle(MiddlewareMixin):
         :param request: 请求对象
         :return:
         """
-        print("hello request")
+        # print("hello request")
         # 存放请求过来时的时间
         self.start_time = time.time()
         re_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
@@ -62,7 +62,7 @@ class LogMiddle(MiddlewareMixin):
         )
 
     def process_response(self, request, response):
-        print("hello response")
+        # print("hello response")
         """
         响应返回
         :param request: 请求对象

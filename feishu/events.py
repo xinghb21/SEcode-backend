@@ -16,10 +16,10 @@ def dispatch_event(body: dict):
     Event.objects.filter(create_time__lt=expire_time).delete()
     # 检测此次事件是否重复，不重复则存下此次事件
     if "schema" in body.keys():
-        event_id = body["header"]["event_id"]
-        if Event.objects.filter(event_id=event_id).first():
+        eventid = body["header"]["event_id"]
+        if Event.objects.filter(eventid=eventid).first():
             return
-        e = Event(event_id=event_id, create_time=body["header"]["create_time"])
+        e = Event(eventid=eventid, create_time=body["header"]["create_time"])
         e.save()
         event_type = body["header"]["event_type"]
         if event_type == "contact.user.created_v3":
