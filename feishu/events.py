@@ -1,11 +1,12 @@
 # cyh 2023.4.20
 # 处理飞书事件
-from multiprocessing import Process, Queue, Lock, Pool 
+import requests
 
 from utils.exceptions import Check, Failure
 from utils.utils_time import get_timestamp
 
 from feishu.models import Event
+from feishu.event.user import createUser, updateUser, deleteUser
 
 @Check
 def dispatch_event(body: dict):
@@ -24,15 +25,15 @@ def dispatch_event(body: dict):
         event_type = body["header"]["event_type"]
         if event_type == "contact.user.created_v3":
             # 员工入职
-            p = createUser(body["event"])
+            p = createUser(body["event"], e)
             p.start()
         elif event_type == "contact.user.deleted_v3":
             # 员工离职
-            p = deleteUser(body["event"])
+            p = deleteUser(body["event"], e)
             p.start()
         elif event_type == "contact.user.updated_v3":
             # 员工信息变更
-            p = updateUser(body["event"])
+            p = updateUser(body["event"], e)
             p.start()
     else:
         event_id = body["uuid"]
@@ -41,29 +42,4 @@ def dispatch_event(body: dict):
         e = Event(event_id=event_id, create_time=int(body["ts"]))
         e.save()
         event_type = body["event"]["type"]
-            
-        
-class createUser(Process):
-    def __init__(self, event:dict):
-        super.__init__()
-        self.event = event
-    @Check
-    def run(self):
-        pass
-    
-class deleteUser(Process):
-    def __init__(self, event:dict):
-        super.__init__()
-        self.event = event
-    @Check
-    def run(self):
-        pass
-    
-class updateUser(Process):
-    def __init__(self, event:dict):
-        super.__init__()
-        self.event = event
-    @Check
-    def run(self):
-        pass
             

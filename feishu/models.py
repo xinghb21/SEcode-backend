@@ -14,13 +14,13 @@ class Feishu(models.Model):
     
     token_create_time = models.FloatField(default=utils_time.get_timestamp)
     
-    access_token = models.TextField()
+    access_token = models.TextField(default="")
     
-    access_expires_in = models.PositiveIntegerField()
+    access_expires_in = models.PositiveIntegerField(default=0)
     
-    refresh_token = models.TextField()
+    refresh_token = models.TextField(default="")
     
-    refresh_expires_in = models.PositiveIntegerField()
+    refresh_expires_in = models.PositiveIntegerField(default=0)
     
     name = models.TextField()
     
@@ -56,4 +56,12 @@ class Event(models.Model):
     
     # 整数，单位为秒
     create_time = models.BigIntegerField(verbose_name="创建时间", default=utils_time.get_timestamp)
+    
+# 记录处理事件时的异常情况
+class EventException(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    
+    event = models.OneToOneField(Event, on_delete=models.CASCADE)
+    
+    msg = models.TextField(verbose_name="报错信息")
 
