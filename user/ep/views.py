@@ -118,6 +118,7 @@ class EpViewSet(viewsets.ViewSet):
                     if status == 0:
                         asset.status = 1
                         asset.user = staff
+                        asset.belonging = staff
                     else:
                         asset.status = 0
                 asset.save()
