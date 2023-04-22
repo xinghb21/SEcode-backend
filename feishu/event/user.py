@@ -86,6 +86,7 @@ class deleteUser(Process):
         self.event = event
         self.e = e
         
+    @CatchException  
     def run(self):
         openid = self.event["object"]["open_id"]
         fs = Feishu.objects.filter(openid=openid).first()
@@ -104,6 +105,7 @@ class updateUser(Process):
         self.event = event
         self.e = e
     
+    @CatchException  
     def run(self):
         old_obj = self.event["old_object"]
         obj = self.event["object"]
