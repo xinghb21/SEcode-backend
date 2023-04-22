@@ -29,7 +29,60 @@ class NsViewSet(viewsets.ViewSet):
     permission_classes = [GeneralPermission]
     
     allowed_identity = [EN]
-    #发起代办申请
+    
+    #员工名下资产列表
+    def staffassets(self,name):
+        user = User.objects.filter(name=name).first()
+        ent = Entity.objects.filter(id=user.entity).first()
+        dep = Department.objects.filter(id=user.department).first()
+        asset_item = Asset.objects.filter(entity=ent,department=dep,type=False,user=user).all()
+        asset_num_all = Asset.objects.filter(entity=ent,department=dep,type=True).all()
+        return_list = [{"id":i.id,"name":i.name,"type":0,"number":1} for i in asset_item]
+        for i in asset_num_all:
+            users = json.loads(i.usage)
+            for dict in users:
+                if user.name in list(dict.keys())[0]:
+                    return_list.append({"id":i.id,"name":i.name,"type":1,"number":dict[user.name]})
+        return return_list
+
+    #转移,维保和退库的有效检查
+    def validasset(self,assets,username):
+        assetlist = []
+        #错误检查
+        for assetdict in assets:
+            id = assetdict["id"]
+            name = assetdict["assetname"]
+            number = assetdict["assetnumber"]
+            asset = Asset.objects.filter(id=id).first()
+            if not asset or asset.name != name:
+                raise Failure("资产信息错误")
+            if asset.type:
+                numbers = json.loads(asset.usage)
+                for i in numbers:
+                    if list(i.keys())[0] == username and i[username] < number:
+                        raise Failure("资产数量错误")
+            else:
+                if asset.user.name != username:
+                    raise Failure("资产不属于该用户")
+            assetlist.append({name:number})
+        return assetlist
+    
+    #获取所有申请
+    @Check
+    @action(detail=False, methods=['get'], url_path="getallapply")
+    def getallapply(self,req:Request):
+        user = req.user
+        ent = Entity.objects.filter(id=user.entity).first()
+        dep = Department.objects.filter(id=user.department).first()
+        if not ent :
+            raise Failure("用户不属于任何业务实体")
+        if not dep:
+            raise Failure("用户不属于任何部门")
+        pendings = Pending.objects.filter(entity=ent.id,department=dep.id,initiator=user.id).all()
+        returnlist = [{"id":item.id,"reason":item.description,"status":item.result,"message":item.reply,"type":item.type} for item in pendings]
+        return Response({"code":0,"info":returnlist})
+
+    #申请资产领用
     @Check
     @action(detail=False, methods=['post'], url_path="userapply")
     def userapply(self,req:Request):
@@ -83,23 +136,63 @@ class NsViewSet(viewsets.ViewSet):
         pending = Pending(entity=ent.id,department=dep.id,initiator=user.id,asset=json.dumps(assetlist),type=1,description=reason)
         pending.save()
         return Response({"code":0,"info":"success"})
-    
-    #获取所有领用申请
-    @Check
-    @action(detail=False, methods=['get'], url_path="getallapply")
-    def getallapply(self,req:Request):
-        user = req.user
-        ent = Entity.objects.filter(id=user.entity).first()
-        dep = Department.objects.filter(id=user.department).first()
-        if not ent :
-            raise Failure("用户不属于任何业务实体")
-        if not dep:
-            raise Failure("用户不属于任何部门")
-        pendings = Pending.objects.filter(entity=ent.id,department=dep.id,initiator=user.id,type=1).all()
-        returnlist = [{"id":item.id,"reason":item.description,"status":item.result,"message":item.reply} for item in pendings]
-        return Response({"code":0,"info":returnlist})
 
-    #获取所有领用涉及的资产
+    #申请资产转移
+    @Check
+    @action(detail=False, methods=['post'], url_path="exchange")
+    def exchange(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        fromdep = Department.objects.filter(id=req.user.department).first()
+        assets = require(req.data, "exchange", "list" , err_msg="Error type of [exchange]")
+        reason = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
+        username = require(req.data, "username", "string" , err_msg="Error type of [username]")
+        dest = User.objects.filter(entity=req.user.entity,name=username).first()
+        if not dest:
+            raise Failure("目标用户不存在")
+        todep = Department.objects.filter(id=dest.department).first()
+        if not todep:
+            raise Failure("目标部门不存在")
+        assetlist = self.validasset(assets,req.user.name)
+        pending = Pending(entity=ent.id,department=fromdep.id,initiator=req.user.id,destination=dest.id,asset=json.dumps(assetlist),type=2,description=reason)
+        pending.save()
+        return Response({"code":0,"info":"success"})
+
+    #申请资产维保
+    @Check
+    @action(detail=False, methods=['post'], url_path="applymainten")
+    def applymainten(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        assets = require(req.data, "assets", "list" , err_msg="Error type of [assets]")
+        reason = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
+        #错误检查
+        assetlist = self.validasset(assets,req.user.name)
+        pending = Pending(entity=ent.id,department=dep.id,initiator=req.user.id,asset=json.dumps(assetlist),type=3,description=reason)
+        pending.save()
+        return Response({"code":0,"info":"success"})
+    
+    #申请资产退库
+    @Check
+    @action(detail=False, methods=['post'], url_path="returnasset")
+    def returnasset(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        assets = require(req.data, "assets", "list" , err_msg="Error type of [assets]")
+        reason = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
+        #错误检查
+        assetlist = self.validasset(assets,req.user.name)
+        pending = Pending(entity=ent.id,department=dep.id,initiator=req.user.id,asset=json.dumps(assetlist),type=4,description=reason)
+        pending.save()
+        return Response({"code":0,"info":"success"})
+    
+    #查看员工自己名下的所有资产
+    @Check
+    @action(detail=False,methods=['get'],url_path="possess")
+    def possess(self,req:Request):
+        list = self.staffassets(req.user.name)
+        return Response({"code":0,"assets":list})
+
+    #获取申请中涉及的的资产
     @Check
     @action(detail=False, methods=['get'], url_path="assetsinapply")
     def assetsinapply(self,req:Request):
@@ -112,6 +205,7 @@ class NsViewSet(viewsets.ViewSet):
         if not dep:
             raise Failure("用户不属于任何部门")
         pending = Pending.objects.filter(id=id).first()
+        dest = User.objects.filter(name=pending.destination).first()
         if not pending:
             raise Failure("待办项不存在")
         if pending.initiator != user.id:
@@ -122,7 +216,7 @@ class NsViewSet(viewsets.ViewSet):
             assetname = list(item.keys())[0]
             asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).first()
             returnlist.append({"id":asset.id,"assetname":assetname,"assetcount":item[assetname]})
-        return Response({"code":0,"info":returnlist})
+        return Response({"code":0,"info":returnlist,"user":dest.name}) if dest else Response({"code":0,"info":returnlist,"user":""})
     
     #查看所有处于闲置状态的资产
     @Check
