@@ -76,7 +76,7 @@ class esTest(TestCase):
         self.apply("hutao", 50, "yuanshen")
         resp = self.client.get("/user/ns/assetsinapply?id=1")
         # print(resp.json())
-        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'assetname': 'hutao', 'assetcount': 50}]})
+        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'assetname': 'hutao', 'assetcount': 50}],'user':''})
         
     def test_deleteapply(self):
         self.apply("hutao", 50, "yuanshen")
