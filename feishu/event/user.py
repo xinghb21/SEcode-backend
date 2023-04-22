@@ -73,7 +73,10 @@ class createUser(Process):
         if user:
             raise Exception(self.e, "用户已经存在")
         else:
-            password = random.sample('zyxwvutsrqponmlkjihgfedcba',10)
+            r = random.sample('zyxwvutsrqponmlkjihgfedcba',10)
+            password = ""
+            for ch in r:
+                password += ch
             m = md5()
             m.update(password.encode(encoding='utf8'))
             m = m.hexdigest()

@@ -1,5 +1,5 @@
 from functools import wraps
-from feishu.models import EventException
+from feishu.models import EventException, Event
 
 def CatchException(check_fn):
     @wraps(check_fn)
@@ -7,6 +7,7 @@ def CatchException(check_fn):
         try:
             return check_fn(*args, **kwargs)
         except Exception as e:
-            EventException.objects.create(event=e.args[0], msg=e.args[1])
+            if type(e.args[0]) == Event:
+                EventException.objects.create(event=e.args[0], msg=e.args[1])
             return None
     return decorated
