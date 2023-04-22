@@ -96,7 +96,7 @@ class feishu(viewsets.ViewSet):
             raise Failure("获取用户信息失败")
         userinfo = userinfo.json()
         union_id = userinfo['union_id']
-        fs = Feishu.objects.filter(union_id=union_id).first()
+        fs = Feishu.objects.filter(unionid=union_id).first()
         if not fs:
             # 创建一个没有绑定帐号的飞书用户
             feishu = Feishu.objects.create(user=None, access_token=access_token, 
@@ -104,8 +104,9 @@ class feishu(viewsets.ViewSet):
                                   refresh_token=resp['refresh_token'],
                                   refresh_expires_in=resp['refresh_expires_in'],
                                   name=userinfo['name'],
-                                  open_id=userinfo['open_id'],
-                                  union_id=union_id)
+                                  openid=userinfo['open_id'],
+                                  unionid=union_id,
+                                  userid=userinfo["user_id"])
             # 在当前会话中保存该飞书用户
             req._request.session['feishu_id'] = feishu.id
             return Response({
