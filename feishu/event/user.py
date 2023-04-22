@@ -82,18 +82,21 @@ class createUser(Process):
             user = User.objects.create(name=username, entity=et.id, department=dep.id, password=make_password(m))
         fs = Feishu.objects.create(user=user, name=username, userid=obj["user_id"], unionid=obj["union_id"], openid=obj["open_id"])
         
-            
-        
-            
-        
-    
 class deleteUser(Process):
     def __init__(self, event:dict):
         super().__init__()
         self.event = event
         
     def run(self):
-        pass
+        openid = self.event["object"]["open_id"]
+        fs = Feishu.objects.filter(openid=openid).first()
+        if not fs:
+            raise Exception(self.e, "被删除的飞书用户不存在")
+        user = fs.user
+        if not user:
+            fs.delete()
+        user.delete()
+        fs.delete()
     
 class updateUser(Process):
     def __init__(self, event:dict):
