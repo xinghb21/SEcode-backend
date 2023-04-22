@@ -70,7 +70,7 @@ class esTest(TestCase):
         # print(resp.json())
         resp = self.client.get("/user/ns/getallapply")
         # print(resp.json())
-        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'reason': 'abab', 'status': 0, 'message': ''}]})
+        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'reason': 'abab', 'status': 0, 'message': '','type':1}]})
         
     def test_assetsinapply(self):
         self.apply("hutao", 50, "yuanshen")

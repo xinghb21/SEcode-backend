@@ -95,8 +95,8 @@ class NsViewSet(viewsets.ViewSet):
             raise Failure("用户不属于任何业务实体")
         if not dep:
             raise Failure("用户不属于任何部门")
-        pendings = Pending.objects.filter(entity=ent.id,department=dep.id,initiator=user.id,type=1).all()
-        returnlist = [{"id":item.id,"reason":item.description,"status":item.result,"message":item.reply} for item in pendings]
+        pendings = Pending.objects.filter(entity=ent.id,department=dep.id,initiator=user.id).all()
+        returnlist = [{"id":item.id,"reason":item.description,"status":item.result,"message":item.reply,"type":item.type} for item in pendings]
         return Response({"code":0,"info":returnlist})
 
     #获取所有领用涉及的资产
