@@ -122,6 +122,28 @@ class EpViewSet(viewsets.ViewSet):
                         asset.status = 0
                 asset.save()
         #TODO if ptype == 2:
+                #资产转移
+        '''for asset in assetlist:
+            id = assetdict["id"]
+            number = assetdict["assetnumber"]
+            asset = Asset.objects.filter(id=id).first()
+            #数量型
+            if asset.type:
+                users = json.loads(asset.usage)
+                needupdate = True
+                for i in users:
+                    if list(i.keys())[0] == req.user.name:
+                        i[req.user.name] -= number
+                    if list(i.keys())[0] == username:
+                        i[username] += number
+                        needupdate = False
+                if needupdate:
+                    #同一部门
+                    if fromdep == todep:
+                        users.append({username:number})
+                    #不同部门，创建新资产
+                    else:
+                        Asset.objects.create(department=todep,entity=ent,)'''
         #TODO if ptype == 3:
         #TODO if ptype == 4:
         return Response({"code":0,"detail":"ok"})
