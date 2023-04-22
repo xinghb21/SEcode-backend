@@ -60,7 +60,7 @@ class feishu(viewsets.ViewSet):
                 body: dict = json.loads(body)
             except:
                 raise Failure("解密后信息非json格式")
-            if "schema" in body:
+            if "schema" in body.keys():
                 token = body["header"]["token"]
             else:
                 token = body["token"]
