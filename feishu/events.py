@@ -8,6 +8,8 @@ from utils.utils_time import get_timestamp
 from feishu.models import Event
 from feishu.event.user import createUser, updateUser, deleteUser
 
+from django import db
+
 @Check
 def dispatch_event(body: dict):
     # 清理超时事件
@@ -23,6 +25,8 @@ def dispatch_event(body: dict):
         event_type = body["header"]["event_type"]
         e = Event(eventid=eventid, create_time=body["header"]["create_time"], eventtype=event_type)
         e.save()
+        # 关闭主进程与数据库的连接，让子进程重新尝试连接数据库
+        db.close_old_connections()
         if event_type == "contact.user.created_v3":
             # 员工入职
             p = createUser(body["event"], e)
@@ -42,4 +46,6 @@ def dispatch_event(body: dict):
         event_type = body["event"]["type"]
         e = Event(event_id=event_id, create_time=int(body["ts"]), eventtype=event_type)
         e.save()
+        # 关闭主进程与数据库的连接，让子进程重新尝试连接数据库
+        db.close_old_connections()
             
