@@ -20,9 +20,9 @@ def dispatch_event(body: dict):
         eventid = body["header"]["event_id"]
         if Event.objects.filter(eventid=eventid).first():
             return
-        e = Event(eventid=eventid, create_time=body["header"]["create_time"])
-        e.save()
         event_type = body["header"]["event_type"]
+        e = Event(eventid=eventid, create_time=body["header"]["create_time"], eventtype=event_type)
+        e.save()
         if event_type == "contact.user.created_v3":
             # 员工入职
             p = createUser(body["event"], e)
@@ -39,7 +39,7 @@ def dispatch_event(body: dict):
         event_id = body["uuid"]
         if Event.objects.filter(event_id=event_id).first():
             return
-        e = Event(event_id=event_id, create_time=int(body["ts"]))
-        e.save()
         event_type = body["event"]["type"]
+        e = Event(event_id=event_id, create_time=int(body["ts"]), eventtype=event_type)
+        e.save()
             

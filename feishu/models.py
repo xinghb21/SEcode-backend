@@ -48,14 +48,22 @@ class Feishu(models.Model):
         except Exception:
             raise Failure("序列化失败")
         
+    class Meta:
+        db_table = "FeishuUser"
+        
 # 记录到达的事件以检测重复事件
 class Event(models.Model):
     id = models.BigAutoField(primary_key=True)
     
-    eventid = models.TextField(verbose_name="事件唯一标识")
+    eventid = models.CharField(verbose_name="事件唯一标识", max_length=255)
+    
+    eventtype = models.CharField(verbose_name="事件类型", max_length=255, default="")
     
     # 整数，单位为秒
     create_time = models.BigIntegerField(verbose_name="创建时间", default=utils_time.get_timestamp)
+    
+    class Meta:
+        db_table = "Event"
     
 # 记录处理事件时的异常情况
 class EventException(models.Model):
@@ -64,4 +72,7 @@ class EventException(models.Model):
     event = models.OneToOneField(Event, on_delete=models.CASCADE)
     
     msg = models.TextField(verbose_name="报错信息")
+    
+    class Meta:
+        db_table = "EventException"
 

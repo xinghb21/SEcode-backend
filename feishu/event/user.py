@@ -12,8 +12,6 @@ from hashlib import md5
 from feishu.tokens import get_tenant_token
 from feishu.event.event_exception import CatchException
 from feishu.models import Event, Feishu
-   
-
 
 class createUser(Process):
     def __init__(self, event:dict, e:Event):
