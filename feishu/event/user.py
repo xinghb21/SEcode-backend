@@ -17,7 +17,7 @@ from feishu.models import Event, Feishu
 
 class createUser(Process):
     def __init__(self, event:dict, e:Event):
-        super.__init__()
+        super().__init__()
         self.event = event
         self.e = e
     
@@ -89,7 +89,7 @@ class createUser(Process):
     
 class deleteUser(Process):
     def __init__(self, event:dict):
-        super.__init__()
+        super().__init__()
         self.event = event
         
     def run(self):
@@ -97,7 +97,7 @@ class deleteUser(Process):
     
 class updateUser(Process):
     def __init__(self, event:dict):
-        super.__init__()
+        super().__init__()
         self.event = event
     
     def run(self):
