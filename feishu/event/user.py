@@ -83,9 +83,10 @@ class createUser(Process):
         fs = Feishu.objects.create(user=user, name=username, userid=obj["user_id"], unionid=obj["union_id"], openid=obj["open_id"])
         
 class deleteUser(Process):
-    def __init__(self, event:dict):
+    def __init__(self, event:dict, e:Event):
         super().__init__()
         self.event = event
+        self.e = e
         
     def run(self):
         openid = self.event["object"]["open_id"]
@@ -99,9 +100,10 @@ class deleteUser(Process):
         fs.delete()
     
 class updateUser(Process):
-    def __init__(self, event:dict):
+    def __init__(self, event:dict, e:Event):
         super().__init__()
         self.event = event
+        self.e = e
     
     def run(self):
         pass
