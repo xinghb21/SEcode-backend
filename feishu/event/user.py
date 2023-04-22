@@ -7,6 +7,7 @@ from user.models import User
 from multiprocessing import Process, Queue, Lock, Pool
 import requests 
 import random
+import json
 from hashlib import md5
 
 from feishu.tokens import get_tenant_token
@@ -77,6 +78,21 @@ class createUser(Process):
             password = ""
             for ch in r:
                 password += ch
+            # 通过飞书告知用户初始密码
+            r = requests.post("https://open.feishu.cn/open-apis/im/v1/messages",
+                              data={
+                                  "receive_id": obj["open_id"],
+                                  "msg_type": "text",
+                                  "content": json.dumps({"text": "账号: "+username+"\n密码: "+password})
+                              },
+                              params={
+                                  "receive_id_type": "open_id",
+                              },
+                              headers={
+                                  "Authorization": "Bearer "+get_tenant_token(),
+                                  "Content-Type": "application/json; charset=utf-8",
+                              },
+                              )
             m = md5()
             m.update(password.encode(encoding='utf8'))
             m = m.hexdigest()
