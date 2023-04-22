@@ -2,7 +2,7 @@
 import requests
 import json
 
-from feishu.views import APP_ID, APP_SECRET
+from feishu.constants import *
 from utils.exceptions import Failure
 from utils.utils_time import get_timestamp
 

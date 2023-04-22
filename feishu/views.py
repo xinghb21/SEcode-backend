@@ -29,11 +29,7 @@ from utils.decipher import AESCipher
 
 from feishu.models import Feishu
 from feishu.events import dispatch_event
-
-ENCRYPT_KEY = "uJHwvC9MR6OL2m2gonsWadkVBdrqF1tN"
-APP_ID = "cli_a4b17e84d0f8900e"
-APP_SECRET = "bMrD4Rtx85VS0jiPhPgThdrohZTHR4Jo"
-VERIFICATION_TOKEN = "AOKjmM7RLNEw9pPck9zyNcF7KvshqL4F"
+from feishu.constants import *
 
 class feishu(viewsets.ViewSet):
     authentication_classes = []
