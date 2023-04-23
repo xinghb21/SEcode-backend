@@ -91,11 +91,13 @@ class createUser(Process):
         for ch in r:
             password += ch
         # 通过飞书告知用户初始密码
+        content = json.dumps({"text": "账号: "+username+"\n密码: "+password})
+        
         r = requests.post("https://open.feishu.cn/open-apis/im/v1/messages",
                             data={
                                 "receive_id": obj["open_id"],
                                 "msg_type": "text",
-                                "content": json.dumps({"text": "账号: "+username+"\n密码: "+password})
+                                "content": "{\"text\": \"账号: "+username+"\"\n\"密码: "+password+"\"}"
                             },
                             params={
                                 "receive_id_type": "open_id",
