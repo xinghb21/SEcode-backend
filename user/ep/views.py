@@ -7,7 +7,7 @@ from django.contrib.auth.hashers import make_password
 
 from user.models import User
 from department.models import Department,Entity
-from asset.models import Asset
+from asset.models import Asset,AssetClass
 from logs.models import Logs
 from pending.models import Pending,Message
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
@@ -372,3 +372,134 @@ class EpViewSet(viewsets.ViewSet):
             raise Failure("资产尚未报废或达到年限")
         asset.delete()
         return Response({"code":0,"info":"success"})
+    
+    def getparse(self,body, key, tp):
+        if key not in body.keys():
+            return ""
+        val = body[key]
+        err_msg = f"Invalid parameters. Expected `{key}` to be `{tp}` type."
+        if tp == "int":
+            try:
+                val = int(val)
+                return val
+            except:
+                raise Failure(err_msg)
+        elif tp == "float":
+            try:
+                val = float(val)
+                return val
+            except:
+                raise Failure(err_msg)
+        elif tp == "string":
+            try:
+                val = str(val)
+                return val
+            except:
+                raise Failure(err_msg)
+    
+    #条件查询资产
+    @Check
+    @action(detail=False, methods=['get'], url_path="queryasset")
+    def queryasset(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        parent = self.getparse(req.data,"parent","string")
+        assetclass = self.getparse(req.data,"assetclass","string")
+        name = self.getparse(req.data,"name","string")
+        belonging = self.getparse(req.data,"belonging","string")
+        time_from = self.getparse(req.data,"from","float")
+        time_to = self.getparse(req.data,"to","float")
+        user = self.getparse(req.data,"user","string")
+        status = self.getparse(req.data,"status","int")
+        price_from = self.getparse(req.data,"pricefrom","float")
+        price_to = self.getparse(req.data,"priceto","float")
+        id = self.getparse(req.data,"id","int")
+        custom = self.getparse(req.data,"custom","string")
+        print(not parent,not assetclass,not name,not belonging,not time_from,not time_to,not user,not status,not price_from,not price_to,not id,not custom)
+        assets = Asset.objects.filter(entity=ent,department=dep).all()
+        if parent:
+            parentasset = Asset.objects.filter(entity=ent,department=dep,name=parent).first()
+            assets = assets.filter(parent=parentasset).all()
+        if assetclass:
+            cat = AssetClass.objects.filter(entity=ent,department=dep,name=cat).first()
+            assets = assets.filter(category=cat).all()
+        if name:
+            assets = assets.filter(name=name).all()
+        if belonging:
+            belong_user = User.objects.filter(name=belonging).first()
+            assets = assets.filter(belonging=belong_user).all()
+        if id:
+            assets = assets.filter(id=id).all()
+        if time_from:
+            assets = assets.filter(create_time__gte=time_from).all()
+        if time_to:
+            assets = assets.filter(create_time__lte=time_to).all()
+        if price_from:
+            assets = assets.filter(price__gte=price_from).all()
+        if price_to:
+            assets = assets.filter(price__lte=price_to).all()
+        return_list = list(assets)
+        assets = list(assets)
+        if user:
+            for item in assets:
+                if item.type:
+                    have = False
+                    usage = json.loads(item.usage)
+                    for assetdict in usage:
+                        if list(assetdict.keys())[0] == user:
+                            have = True
+                            break
+                    if not have:
+                        return_list.remove(item)
+                else:
+                    if not item.user or item.user.name != user:
+                        return_list.remove(item)
+            assets = list(return_list)
+        if status:
+            for item in assets:
+                flag = False
+                if item.type:
+                    if status == 0 and item.number_idle == item.number: 
+                        flag = True
+                    if status == 1 and item.number_idle == 0:
+                        maintain = json.loads(item.maintain)
+                        process = json.loads(item.process)
+                        if not (maintain or process): 
+                            flag = True
+                    if status == 2 and item.number_idle == 0:
+                        using = json.loads(item.usage)
+                        process = json.loads(item.process)
+                        if not (using or process): 
+                            flag = True
+                    if status == 3 and (item.expire or utils_time.get_timestamp() - item.create_time > item.life * 31536000):
+                        flag = True
+                    if status == 4:
+                        using = json.loads(item.usage)
+                        if using:
+                            flag = True
+                    if status == 5:
+                        maintain = json.loads(item.maintain)
+                        if maintain:
+                            flag = True
+                else:
+                    if item.status == status and status != 5:
+                        flag = True
+                if flag:
+                    return_list.remove(item)
+            assets = list(return_list)
+        if custom:
+            cst= json.loads(custom)
+            key = list(cst.keys())[0]
+            for item in assets:
+                add = json.loads(item.additional)
+                if key not in add:
+                    return_list.remove(item)
+                    continue
+                else:
+                    if cst[key]:
+                        if add[key] != cst[key]:
+                            return_list.remove(item)
+                            continue
+        print(return_list)
+        return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name,"type":item.type}for item in return_list]})
+        

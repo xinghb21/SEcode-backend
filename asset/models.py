@@ -20,7 +20,7 @@ class Asset(models.Model):
     #资产id，主键自增
     id = models.BigAutoField(primary_key=True)
     
-    #上级资产id，可以没有上级资产
+    #上级资产，可以没有上级资产
     parent = models.ForeignKey('Asset', null=True, on_delete=models.SET_NULL)
     
     # 资产所属的部门
