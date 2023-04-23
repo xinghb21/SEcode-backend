@@ -75,33 +75,42 @@ class createUser(Process):
         username = obj["name"]
         user = User.objects.filter(name=username, entity=et.id, department=dep.id).first()
         if user:
-            raise Exception(self.e, "用户已经存在")
-        else:
-            r = random.sample('zyxwvutsrqponmlkjihgfedcba',10)
-            password = ""
+            r = random.sample('0123456789', 4)
+            username = obj["name"]
             for ch in r:
-                password += ch
-            # 通过飞书告知用户初始密码
-            r = requests.post("https://open.feishu.cn/open-apis/im/v1/messages",
-                              data={
-                                  "receive_id": obj["open_id"],
-                                  "msg_type": "text",
-                                  "content": json.dumps({"text": "账号: "+username+"\n密码: "+password})
-                              },
-                              params={
-                                  "receive_id_type": "open_id",
-                              },
-                              headers={
-                                  "Authorization": "Bearer "+get_tenant_token(),
-                                  "Content-Type": "application/json; charset=utf-8",
-                              },
-                              )
-            if r.status_code != 200:
-                raise Exception(self.e, res["msg"])
-            m = md5()
-            m.update(password.encode(encoding='utf8'))
-            m = m.hexdigest()
-            user = User.objects.create(name=username, entity=et.id, department=dep.id, password=make_password(m))
+                username += ch
+            user = User.objects.filter(name=username, entity=et.id, department=dep.id).first()
+            while user:
+                r = random.sample('0123456789abcdefghijklmnopqrstuvwxyz', 4)
+                username = obj["name"]
+                for ch in r:
+                    username += ch
+                user = User.objects.filter(name=username, entity=et.id, department=dep.id).first()    
+        r = random.sample('zyxwvutsrqponmlkjihgfedcba',10)
+        password = ""
+        for ch in r:
+            password += ch
+        # 通过飞书告知用户初始密码
+        r = requests.post("https://open.feishu.cn/open-apis/im/v1/messages",
+                            data={
+                                "receive_id": obj["open_id"],
+                                "msg_type": "text",
+                                "content": json.dumps({"text": "账号: "+username+"\n密码: "+password})
+                            },
+                            params={
+                                "receive_id_type": "open_id",
+                            },
+                            headers={
+                                "Authorization": "Bearer "+get_tenant_token(),
+                                "Content-Type": "application/json; charset=utf-8",
+                            },
+                            )
+        if r.status_code != 200:
+            raise Exception(self.e, res["msg"])
+        m = md5()
+        m.update(password.encode(encoding='utf8'))
+        m = m.hexdigest()
+        user = User.objects.create(name=username, entity=et.id, department=dep.id, password=make_password(m))
         fs = Feishu.objects.create(user=user, name=username, userid=obj["user_id"], unionid=obj["union_id"], openid=obj["open_id"])
         
 class deleteUser(Process):
