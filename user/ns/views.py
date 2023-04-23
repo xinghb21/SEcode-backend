@@ -192,6 +192,13 @@ class NsViewSet(viewsets.ViewSet):
         if not todep:
             raise Failure("目标部门不存在")
         assetlist = self.valid_asset(assets,req.user.name)
+        #如果跨部门，检查目标部门是否有重名资产
+        if fromdep != todep:
+            for asset in assetlist:
+                assetname = list(asset.keys())[0]
+                sameasset = Asset.objects.filter(entity=ent,department=todep,name=assetname).first()
+                if sameasset:
+                    raise Failure("资产%s在目标用户所在部门存在同名资产" % assetname)
         self.asset_in_process(assets,req.user.name)
         pending = Pending(entity=ent.id,department=fromdep.id,initiator=req.user.id,destination=dest.id,asset=json.dumps(assetlist),type=2,description=reason)
         pending.save()

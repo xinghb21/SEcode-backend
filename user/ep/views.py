@@ -43,16 +43,47 @@ class EpViewSet(viewsets.ViewSet):
             returnList.append({"id":item.id,"name":username,"reason":item.description,"oper":item.type})
         return Response({"code":0,"info":returnList})
     
+    #对于转移、维保、退库的拒绝
+    def reject(self,assetlist,username):
+        user = User.objects.filter(name=username).first()
+        for assetdict in assetlist:
+            assetname = list(assetdict.keys())[0]
+            #待办单条资产
+            asset = Asset.objects.filter(entity=user.entity,department=user.department,name=assetname).first()
+            #数量型
+            if asset.type:
+                use = json.loads(asset.usage)
+                if not use:
+                    asset.usage = json.dumps([{username:assetdict[assetname]}])
+                else:
+                    needupdate = True
+                    for term in use:
+                        if username in term:
+                            term.update({username:term[username] + assetdict[assetname]})
+                            needupdate = False
+                            break
+                    if needupdate:
+                        use.append({username:assetdict[assetname]})
+                    asset.usage = json.dumps(use)
+            #条目型
+            else:
+                asset.status = 1
+            asset.save()
+    
+    
     #资产管理员审批请求
     @Check
     @action(detail=False, methods=['post'], url_path="reapply")
     def reapply(self,req:Request):
         ent = req.user.entity
+        entity = Entity.objects.filter(id=ent).first()
         dep = req.user.department
+        depart = Department.objects.filter(id=dep).first()
         id = require(req.data, "id", "int" , err_msg="Error type of [id]")
         status = require(req.data, "status", "int" , err_msg="Error type of [status]")
         reply = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
         pen = Pending.objects.filter(entity=ent,department=dep,id=id).first()
+        #检查待办项合法
         if not pen:
             raise Failure("待办项不存在")
         ptype = pen.type
@@ -60,7 +91,6 @@ class EpViewSet(viewsets.ViewSet):
         assets = json.loads(pen.asset)
         if pen.result:
             raise Failure("此待办已审批完成")
-        #更新待办信息
         #检查所有资产是否都存在
         for assetdict in assets:
             assetname = list(assetdict.keys())[0]
@@ -68,12 +98,13 @@ class EpViewSet(viewsets.ViewSet):
             if not asset and status == 0:
                 raise Failure("请求中包含已失效资产，请拒绝")
         assetlist = assets
+        #更新待办信息
         pen.result = 2 if status else 1
         pen.review_time = utils_time.get_timestamp()
         pen.reply = reply
         pen.save()
         #更新资产信息
-        #领用
+        #资产领用，与其他三类差异较大
         if ptype == 1:
             #该待办中的所有资产项目
             for assetdict in assetlist:
@@ -122,30 +153,67 @@ class EpViewSet(viewsets.ViewSet):
                     else:
                         asset.status = 0
                 asset.save()
-        #TODO if ptype == 2:
         #资产转移
-            
-        '''for asset in assetlist:
-            id = assetdict["id"]
-            number = assetdict["assetnumber"]
-            asset = Asset.objects.filter(id=id).first()
-            #数量型
-            if asset.type:
-                users = json.loads(asset.usage)
-                needupdate = True
-                for i in users:
-                    if list(i.keys())[0] == req.user.name:
-                        i[req.user.name] -= number
-                    if list(i.keys())[0] == username:
-                        i[username] += number
-                        needupdate = False
-                if needupdate:
-                    #同一部门
-                    if fromdep == todep:
-                        users.append({username:number})
-                    #不同部门，创建新资产
+        if ptype == 2:
+            #拒绝
+            if status == 1:
+                self.reject(assetlist,staff.name)
+                return Response({"code":0,"detail":"ok"})
+            destuser = User.objects.filter(id=pen.destination).first()
+            destdep = Department.objects.filter(id=destuser.department).first()
+            for assetdict in assetlist:
+                assetname = list(assetdict.keys())[0]
+                #待办单条资产
+                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+                #数量型
+                if asset.type:
+                    #本资产的所有预备条目
+                    pro = json.loads(asset.process)
+                    #资产待审批数量减少
+                    for i in pro:
+                        if list(i.keys())[0] == staff.name:
+                            if assetdict[assetname] < i[staff.name]:
+                                i[staff.name] -= assetdict[assetname]
+                            else:
+                                pro.remove(i)
+                            break
+                    asset.process = json.dumps(pro)
+                    #跨部门
+                    if destdep != depart:
+                        asset.number -= assetdict[assetname]
+                        destlist = [{destuser.name:assetdict[assetname]}]
+                        Asset.objects.create(entity=entity,department=destdep,name=assetname,type=1,belonging=destuser,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,number=assetdict[assetname],number_idle=0,usage=json.dumps(destlist))
+                    #同部门
                     else:
-                        Asset.objects.create(department=todep,entity=ent,)'''
+                        use = json.loads(asset.usage)
+                        if not use:
+                            asset.usage = json.dumps([{destuser.name:assetdict[assetname]}])
+                        else:
+                            needupdate = True
+                            for term in use:
+                                if destuser.name in term:
+                                    term.update({destuser.name:term[destuser.name] + assetdict[assetname]})
+                                    needupdate = False
+                                    break
+                            if needupdate:
+                                use.append({destuser.name:assetdict[assetname]})
+                            asset.usage = json.dumps(use)
+                    asset.save()
+                #条目型
+                else:
+                    #跨部门
+                    if destdep != depart:
+                        Asset.objects.create(entity=entity,department=destdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,belonging=destuser,user=destuser,status=1)
+                        asset.delete()
+                    #同部门
+                    else:
+                        asset.belonging = destuser
+                        asset.user = destuser
+                        asset.status = 1
+                        asset.save()
+            #跨部门还需要向接受方发起类型确认的消息
+            if destdep != depart:
+                Pending.objects.create(entity=ent,department=destdep.id,initiator=pen.initiator,destination=pen.destination,asset=pen.asset,type=5)
         #TODO if ptype == 3:
         #TODO if ptype == 4:
         return Response({"code":0,"detail":"ok"})
