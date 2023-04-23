@@ -97,7 +97,7 @@ class createUser(Process):
                             data={
                                 "receive_id": obj["open_id"],
                                 "msg_type": "text",
-                                "content": "{\"text\": \"账号: "+username+"\"\n\"密码: "+password+"\"}"
+                                "content": "{\"text\": \"账号: "+username+"\\n密码: "+password+"\"}"
                             },
                             params={
                                 "receive_id_type": "open_id",
