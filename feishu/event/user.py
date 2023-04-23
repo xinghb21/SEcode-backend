@@ -67,7 +67,7 @@ class createUser(Process):
                             })
         res = resp.json()
         if res["code"] != 0:
-            raise Exception(self.e, res["msg"])
+            raise Exception(self.e, str(res["code"]) + res["msg"])
         dep_name = res["data"]["department"]["name"]
         dep = Department.objects.filter(entity=et.id, name=dep_name).first()
         if not dep:
@@ -106,7 +106,7 @@ class createUser(Process):
                             },
                             )
         if r.json()["code"] != 0:
-            raise Exception(self.e, r.json()["msg"])
+            raise Exception(self.e, str(r.json()["code"]) + r.json()["msg"])
         m = md5()
         m.update(password.encode(encoding='utf8'))
         m = m.hexdigest()
@@ -159,7 +159,7 @@ class updateUser(Process):
                                 })
             res = resp.json()
             if res["code"] != 0:
-                raise Exception(self.e, res["msg"])
+                raise Exception(self.e, str(res["code"]) + res["msg"])
             items = res["data"]["items"]
             for item in items:
                 parent_dept.append(item["name"])
@@ -185,7 +185,7 @@ class updateUser(Process):
                                 })
             res = resp.json()
             if res["code"] != 0:
-                raise Exception(self.e, res["msg"])
+                raise Exception(self.e, res["code"] + res["msg"])
             dep_name = res["data"]["department"]["name"]
             dep = Department.objects.filter(entity=et.id, name=dep_name).first()
             if not dep:
