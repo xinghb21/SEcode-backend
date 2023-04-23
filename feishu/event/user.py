@@ -90,17 +90,14 @@ class createUser(Process):
         password = ""
         for ch in r:
             password += ch
-        # 通过飞书告知用户初始密码
-        content = json.dumps({"text": "账号: "+username+"\n密码: "+password})
-        
-        r = requests.post("https://open.feishu.cn/open-apis/im/v1/messages",
+        # 通过飞书告知用户初始密码, 单独发送消息的接口极其不好用，改成批量发送算了
+        content = {"text": "账号: "+username+"\n密码: "+password}
+        # content = "{\"text\": \"账号: "+username+"\\n密码: "+password+"\"}"
+        r = requests.post("https://open.feishu.cn/open-apis/message/v4/batch_send/",
                             data={
-                                "receive_id": obj["open_id"],
+                                "open_ids": [obj["open_id"]],
                                 "msg_type": "text",
                                 "content": content,
-                            },
-                            params={
-                                "receive_id_type": "open_id",
                             },
                             headers={
                                 "Authorization": "Bearer "+get_tenant_token(),
