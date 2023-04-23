@@ -214,8 +214,73 @@ class EpViewSet(viewsets.ViewSet):
             #跨部门还需要向接受方发起类型确认的消息
             if destdep != depart:
                 Pending.objects.create(entity=ent,department=destdep.id,initiator=pen.initiator,destination=pen.destination,asset=pen.asset,type=5)
-        #TODO if ptype == 3:
-        #TODO if ptype == 4:
+        #维保
+        if ptype == 3:
+            #拒绝
+            if status == 1:
+                self.reject(assetlist,staff.name)
+                return Response({"code":0,"detail":"ok"})
+            for assetdict in assetlist:
+                assetname = list(assetdict.keys())[0]
+                #待办单条资产
+                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+                if asset.type:
+                    #本资产的所有预备条目
+                    pro = json.loads(asset.process)
+                    #资产待审批数量减少
+                    for i in pro:
+                        if list(i.keys())[0] == staff.name:
+                            if assetdict[assetname] < i[staff.name]:
+                                i[staff.name] -= assetdict[assetname]
+                            else:
+                                pro.remove(i)
+                            break
+                    asset.process = json.dumps(pro)
+                    maintain = json.loads(asset.maintain)
+                    if not maintain:
+                        asset.maintain = json.dumps([{staff.name:assetdict[assetname]}])
+                    else:
+                        needupdate = True
+                        for term in maintain:
+                            if staff.name in term:
+                                term.update({staff.name:term[staff.name] + assetdict[assetname]})
+                                needupdate = False
+                                break
+                        if needupdate:
+                            maintain.append({staff.name:assetdict[assetname]})
+                        asset.maintain = json.dumps(maintain)
+                else:
+                    asset.status = 2
+                asset.save()
+        #资产退库
+        if ptype == 4:
+            #拒绝
+            admin = User.objects.filter(id=depart.admin).first()
+            if status == 1:
+                self.reject(assetlist,staff.name)
+                return Response({"code":0,"detail":"ok"})
+            for assetdict in assetlist:
+                assetname = list(assetdict.keys())[0]
+                #待办单条资产
+                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+                if asset.type:
+                    #本资产的所有预备条目
+                    pro = json.loads(asset.process)
+                    #资产待审批数量减少
+                    for i in pro:
+                        if list(i.keys())[0] == staff.name:
+                            if assetdict[assetname] < i[staff.name]:
+                                i[staff.name] -= assetdict[assetname]
+                            else:
+                                pro.remove(i)
+                            break
+                    asset.process = json.dumps(pro)
+                    asset.number_idle += assetdict[assetname]
+                else:
+                    asset.status = 0
+                    asset.user = None
+                    asset.belonging = admin
+                asset.save()
         return Response({"code":0,"detail":"ok"})
     
     @Check

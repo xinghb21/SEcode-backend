@@ -254,7 +254,7 @@ class NsViewSet(viewsets.ViewSet):
         if not dep:
             raise Failure("用户不属于任何部门")
         pending = Pending.objects.filter(id=id).first()
-        dest = User.objects.filter(name=pending.destination).first()
+        dest = User.objects.filter(id=pending.destination).first()
         if not pending:
             raise Failure("待办项不存在")
         if pending.initiator != user.id:
