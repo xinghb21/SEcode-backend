@@ -123,7 +123,8 @@ class EpViewSet(viewsets.ViewSet):
                         asset.status = 0
                 asset.save()
         #TODO if ptype == 2:
-                #资产转移
+        #资产转移
+            
         '''for asset in assetlist:
             id = assetdict["id"]
             number = assetdict["assetnumber"]

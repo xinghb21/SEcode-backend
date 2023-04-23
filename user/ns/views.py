@@ -46,7 +46,7 @@ class NsViewSet(viewsets.ViewSet):
         return return_list
 
     #转移,维保和退库的有效检查
-    def validasset(self,assets,username):
+    def valid_asset(self,assets,username):
         assetlist = []
         #错误检查
         for assetdict in assets:
@@ -58,14 +58,54 @@ class NsViewSet(viewsets.ViewSet):
                 raise Failure("资产信息错误")
             if asset.type:
                 numbers = json.loads(asset.usage)
+                possess = False
                 for i in numbers:
-                    if list(i.keys())[0] == username and i[username] < number:
-                        raise Failure("资产数量错误")
+                    if list(i.keys())[0] == username:
+                        possess = True
+                        if i[username] < number:
+                            raise Failure("资产数量错误")
+                if not possess:
+                    raise Failure("资产不属于该用户")
             else:
                 if asset.user.name != username:
                     raise Failure("资产不属于该用户")
             assetlist.append({name:number})
         return assetlist
+    
+    #转移，维保和退库的资产状态改变
+    def asset_in_process(self,assets,username):
+        for assetdict in assets:
+            id = assetdict["id"]
+            number = assetdict["assetnumber"]
+            asset = Asset.objects.filter(id=id).first()
+            #数量型
+            if asset.type:
+                using = json.loads(asset.usage)
+                for term in using:
+                    if list(term.keys())[0] == username:
+                        if term[username] == number:
+                            using.remove(term)
+                        else:
+                            term[username] -= number
+                        break
+                asset.usage = json.dumps(using)
+                process = json.loads(asset.process)
+                if not process:
+                    asset.process = json.dumps([{username:number}])
+                else:
+                    needupdate = True
+                    for term in process:
+                        if username in term:
+                            term.update({username:term[username]+number})
+                            needupdate = False
+                            break
+                    if needupdate:
+                        process.append({username:number})
+                    asset.process = json.dumps(process)
+            #条目型
+            else:
+                asset.status = 5
+            asset.save()
     
     #获取所有申请
     @Check
@@ -130,7 +170,6 @@ class NsViewSet(viewsets.ViewSet):
                     asset.process = json.dumps(process)
             else:
                 asset.status = 5
-                asset.user = user
             asset.save()
         assetlist = [{key:assetdict[key]} for key in assetdict]
         pending = Pending(entity=ent.id,department=dep.id,initiator=user.id,asset=json.dumps(assetlist),type=1,description=reason)
@@ -152,7 +191,8 @@ class NsViewSet(viewsets.ViewSet):
         todep = Department.objects.filter(id=dest.department).first()
         if not todep:
             raise Failure("目标部门不存在")
-        assetlist = self.validasset(assets,req.user.name)
+        assetlist = self.valid_asset(assets,req.user.name)
+        self.asset_in_process(assets,req.user.name)
         pending = Pending(entity=ent.id,department=fromdep.id,initiator=req.user.id,destination=dest.id,asset=json.dumps(assetlist),type=2,description=reason)
         pending.save()
         return Response({"code":0,"info":"success"})
@@ -166,7 +206,8 @@ class NsViewSet(viewsets.ViewSet):
         assets = require(req.data, "assets", "list" , err_msg="Error type of [assets]")
         reason = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
         #错误检查
-        assetlist = self.validasset(assets,req.user.name)
+        assetlist = self.valid_asset(assets,req.user.name)
+        self.asset_in_process(assets,req.user.name)
         pending = Pending(entity=ent.id,department=dep.id,initiator=req.user.id,asset=json.dumps(assetlist),type=3,description=reason)
         pending.save()
         return Response({"code":0,"info":"success"})
@@ -180,7 +221,8 @@ class NsViewSet(viewsets.ViewSet):
         assets = require(req.data, "assets", "list" , err_msg="Error type of [assets]")
         reason = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
         #错误检查
-        assetlist = self.validasset(assets,req.user.name)
+        assetlist = self.valid_asset(assets,req.user.name)
+        self.asset_in_process(assets,req.user.name)
         pending = Pending(entity=ent.id,department=dep.id,initiator=req.user.id,asset=json.dumps(assetlist),type=4,description=reason)
         pending.save()
         return Response({"code":0,"info":"success"})
