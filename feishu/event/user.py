@@ -106,7 +106,7 @@ class createUser(Process):
                             },
                             )
         if r.json()["code"] != 0:
-            raise Exception(self.e, r["msg"])
+            raise Exception(self.e, r.json()["msg"])
         m = md5()
         m.update(password.encode(encoding='utf8'))
         m = m.hexdigest()
