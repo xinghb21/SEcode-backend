@@ -45,7 +45,10 @@ class createUser(Process):
         for item in items:
             parent_dept.append(item["name"])
         parent_dept.reverse()
+        if len(parent_dept) == 0:
+            raise Exception(self.e, "该用户没有所属部门")
         entity = parent_dept[0]
+        
         et = Entity.objects.filter(name=entity).first()
         if not et:
             et = Entity.objects.create(name=entity)
@@ -93,6 +96,8 @@ class createUser(Process):
                                   "Content-Type": "application/json; charset=utf-8",
                               },
                               )
+            if r.status_code != 200:
+                raise Exception(self.e, res["msg"])
             m = md5()
             m.update(password.encode(encoding='utf8'))
             m = m.hexdigest()
@@ -150,6 +155,8 @@ class updateUser(Process):
             for item in items:
                 parent_dept.append(item["name"])
             parent_dept.reverse()
+            if len(parent_dept) == 0:
+                raise Exception(self.e, "该用户没有所属部门")
             entity = parent_dept[0]
             et = Entity.objects.filter(name=entity).first()
             if not et:
