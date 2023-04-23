@@ -105,7 +105,7 @@ class createUser(Process):
                                 "Content-Type": "application/json; charset=utf-8",
                             },
                             )
-        if r.status_code != 200:
+        if r.json()["code"] != 0:
             raise Exception(self.e, res["msg"])
         m = md5()
         m.update(password.encode(encoding='utf8'))
