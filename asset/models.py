@@ -85,7 +85,7 @@ class Asset(models.Model):
     # 清退数量
     number_expire = models.IntegerField(null=False, default=0)
     
-    # 是否清退
+    # 是否报废
     expire = models.BooleanField(null=False, default=False)
     # ---------数量型资产使用----------------
     

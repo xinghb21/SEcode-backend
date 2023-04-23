@@ -7,7 +7,7 @@ from django.contrib.auth.hashers import make_password
 
 from user.models import User
 from department.models import Department,Entity
-from asset.models import Asset
+from asset.models import Asset,AssetClass
 from logs.models import Logs
 from pending.models import Pending,Message
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
@@ -337,3 +337,23 @@ class NsViewSet(viewsets.ViewSet):
             msg.read = True
             msg.save()
         return Response({"code":0,"info":"ok"})
+    
+    #跨部门获得转移资产的员工指定类型
+    @Check
+    @action(detail=False,methods=["post"], url_path="exchange")
+    def exchange(self,req:Request):
+        assetname = require(req.data, "assetname", "string" , err_msg="Error type of [assetname]")
+        label = require(req.data, "label", "string" , err_msg="Error type of [label]")
+        dep = Department.objects.filter(id=req.user.department).first()
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+        assetclass = AssetClass.objects.filter(entity=ent,department=dep,name=label).first()
+        if not asset:
+            raise Failure("资产不存在")
+        if not assetclass:
+            raise Failure("资产类别不存在")
+        if asset.type != assetclass.type:
+            raise Failure("资产与资产类别类型不符")
+        asset.category = assetclass
+        asset.save()
+        return Response({"code":0,"info":"success"})

@@ -303,6 +303,7 @@ class EpViewSet(viewsets.ViewSet):
                 asset.save()
         return Response({"code":0,"detail":"ok"})
     
+    #查看待办项中所有资产信息
     @Check
     @action(detail=False, methods=['get'], url_path="assetsinapply")
     def assetsinapply(self,req:Request):
@@ -325,6 +326,7 @@ class EpViewSet(viewsets.ViewSet):
             returnlist.append({"id":asset.id,"assetname":assetname,"assetclass":asset.category.name,"assetcount":item[assetname]})
         return Response({"code":0,"info":returnlist})
     
+    #是否有未审批的代办项目
     @Check
     @action(detail=False, methods=['get'], url_path="istbd")
     def istbd(self,req:Request):
@@ -335,3 +337,38 @@ class EpViewSet(viewsets.ViewSet):
             return Response({"code":0,"info":True})
         else:
             return Response({"code":0,"info":False})
+        
+    #资产清退名单
+    @Check
+    @action(detail=False, methods=['get'], url_path="assetstbc")
+    def assetstbc(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        broken_assets = Asset.objects.filter(entity=ent,department=dep,expire=True).all()
+        find_old_assets = Asset.objects.filter(entity=ent,department=dep,expire=False).all()
+        old_assets = []
+        for item in find_old_assets:
+            if utils_time.get_timestamp() - item.create_time > item.life * 31536000:
+                old_assets.append(item)
+        return_list = []
+        for i in broken_assets:
+            return_list.append({"id":i.id,"assetname":i.name,"assetclass":i.category.name,"department":dep.name,"number":i.number if i.type else 1})
+        for i in old_assets:
+            return_list.append({"id":i.id,"assetname":i.name,"assetclass":i.category.name,"department":dep.name,"number":i.number if i.type else 1})
+        return Response({"code":0,"info":return_list})
+    
+    #清退资产
+    @Check
+    @action(detail=False, methods=['post'], url_path="assetclear")
+    def assetclear(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        id = require(req.data, "id", "int" , err_msg="Error type of [id]")
+        assetname = require(req.data, "assetname", "string" , err_msg="Error type of [assetname]")
+        asset = Asset.objects.filter(id=id,entity=ent,department=dep,name=assetname).first()
+        if not asset:
+            raise Failure("资产不存在")
+        if not (utils_time.get_timestamp() - asset.create_time > asset.life * 31536000 or asset.expire):
+            raise Failure("资产尚未报废或达到年限")
+        asset.delete()
+        return Response({"code":0,"info":"success"})
