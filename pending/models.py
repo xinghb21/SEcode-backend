@@ -58,3 +58,31 @@ class Pending(models.Model):
             "request_time":self.request_time,
             "review_time":self.review_time
         }
+        
+class Message(models.Model):
+    #信息id
+    id = models.BigAutoField(primary_key=True)
+    
+    #信息所属的用户id
+    user = models.BigIntegerField(default=0)
+    
+    #信息内容
+    content = models.TextField(default="")
+    
+    #是否已读
+    read = models.BooleanField(default=False)
+    
+    #发送时间
+    time = models.FloatField(default=utils_time.get_timestamp)
+    
+    class Meta:
+        db_table = "Message"
+
+    def serialize(self):
+        return{
+            "id":self.id,
+            "user":self.user,
+            "content":self.content,
+            "read":self.read,
+            "time":self.time
+        }
