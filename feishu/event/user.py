@@ -97,7 +97,7 @@ class createUser(Process):
                             data={
                                 "receive_id": obj["open_id"],
                                 "msg_type": "text",
-                                "content": "{\"text\": \"账号: "+username+"\\n密码: "+password+"\"}"
+                                "content": content,
                             },
                             params={
                                 "receive_id_type": "open_id",
@@ -107,14 +107,13 @@ class createUser(Process):
                                 "Content-Type": "application/json; charset=utf-8",
                             },
                             )
-        if r.json()["code"] != 0:
-            raise Exception(self.e, str(r.json()["code"]) + r.json()["msg"])
         m = md5()
         m.update(password.encode(encoding='utf8'))
         m = m.hexdigest()
         user = User.objects.create(name=username, entity=et.id, department=dep.id, password=make_password(m))
         fs = Feishu.objects.create(user=user, name=username, userid=obj["user_id"], unionid=obj["union_id"], openid=obj["open_id"])
-        
+        if r.json()["code"] != 0:
+            raise Exception(self.e, str(r.json()["code"]) + r.json()["msg"])
 class deleteUser(Process):
     def __init__(self, event:dict, e:Event):
         super().__init__()
