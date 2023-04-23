@@ -214,7 +214,7 @@ class EpViewSet(viewsets.ViewSet):
             #跨部门还需要向接受方发起类型确认的消息
             if destdep != depart:
                 Pending.objects.create(entity=ent,department=destdep.id,initiator=pen.initiator,destination=pen.destination,asset=pen.asset,type=5)
-        #维保
+        #资产维保
         if ptype == 3:
             #拒绝
             if status == 1:
