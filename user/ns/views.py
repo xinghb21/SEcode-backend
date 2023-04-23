@@ -9,7 +9,7 @@ from user.models import User
 from department.models import Department,Entity
 from asset.models import Asset
 from logs.models import Logs
-from pending.models import Pending
+from pending.models import Pending,Message
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
@@ -188,6 +188,8 @@ class NsViewSet(viewsets.ViewSet):
         dest = User.objects.filter(entity=req.user.entity,name=username).first()
         if not dest:
             raise Failure("目标用户不存在")
+        if dest.identity != 4:
+            raise Failure("目标用户不是员工")
         todep = Department.objects.filter(id=dest.department).first()
         if not todep:
             raise Failure("目标部门不存在")
@@ -300,4 +302,38 @@ class NsViewSet(viewsets.ViewSet):
             raise Failure("不能删除资产管理员未处理的申请")
         pending_to_del.delete()
         return Response({"code":0,"info":"ok"})
-
+    
+    #员工获取自己所有信息
+    @Check
+    @action(detail=False,methods=["get"], url_path="getmessage")
+    def getmessage(self,req:Request):
+        user = req.user
+        msgs = Message.objects.filter(user=user.id).order_by('read','-time')
+        msglist = []
+        for msg in msgs:
+            pending = Pending.objects.filter(id=msg.pending).first()
+            assets = [list(item.keys())[0] for item in json.loads(pending.asset)]
+            msglist.append({"id":msg.id,"type":msg.type,"assetname":assets,"status":pending.result,"message":msg.content})
+        return Response({"code":0,"info":msglist})
+    
+    #员工是否存在未读信息
+    @Check
+    @action(detail=False,methods=["get"], url_path="hasmessage")
+    def hasmessage(self,req:Request):
+        user = req.user
+        msg = Message.objects.filter(user=user.id,read=False).first()
+        if msg:
+            return Response({"code":0,"info":True})
+        else:
+            return Response({"code":0,"info":False})
+    
+    #员工信息已读,不设置报错信息
+    @Check
+    @action(detail=False,methods=["post"], url_path="read")
+    def read(self,req:Request):
+        id = require(req.data, "id", "int" , err_msg="Error type of [id]")
+        msg = Message.objects.filter(user=req.user.id,id=id).first()
+        if msg:
+            msg.read = True
+            msg.save()
+        return Response({"code":0,"info":"ok"})

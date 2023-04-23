@@ -9,7 +9,7 @@ from user.models import User
 from department.models import Department,Entity
 from asset.models import Asset
 from logs.models import Logs
-from pending.models import Pending
+from pending.models import Pending,Message
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
@@ -70,6 +70,21 @@ class EpViewSet(viewsets.ViewSet):
                 asset.status = 1
             asset.save()
     
+    #产生消息
+    def create_message(self,result,pending_id,type,reply):
+        operate = ""
+        if type == 1:
+            operate = "资产领用"
+        elif type == 2:
+            operate = "资产转移"
+        elif type == 3:
+            operate = "资产维保"
+        else:
+            operate = "资产退库"
+        if result == False:
+            return "您编号为%d的%s请求已通过审批" % (pending_id,operate)
+        else:
+            return "您编号为%d的%s请求未通过审批\n拒绝理由:%s" % (pending_id,operate,reply)
     
     #资产管理员审批请求
     @Check
@@ -103,6 +118,9 @@ class EpViewSet(viewsets.ViewSet):
         pen.review_time = utils_time.get_timestamp()
         pen.reply = reply
         pen.save()
+        #给员工发送消息
+        msg = self.create_message(status,id,ptype,reply)
+        Message.objects.create(user=pen.initiator,content=msg,type=ptype,pending=id)
         #更新资产信息
         #资产领用，与其他三类差异较大
         if ptype == 1:
@@ -213,7 +231,9 @@ class EpViewSet(viewsets.ViewSet):
                         asset.save()
             #跨部门还需要向接受方发起类型确认的消息
             if destdep != depart:
-                Pending.objects.create(entity=ent,department=destdep.id,initiator=pen.initiator,destination=pen.destination,asset=pen.asset,type=5)
+                pd = Pending(entity=ent,department=destdep.id,initiator=pen.initiator,destination=pen.destination,asset=pen.asset,type=5)
+                pd.save()
+                Message.objects.create(user=pen.destination,type=5,pending=pd.id,content="请为转移资产选择类别")
         #资产维保
         if ptype == 3:
             #拒绝

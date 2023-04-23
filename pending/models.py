@@ -66,6 +66,12 @@ class Message(models.Model):
     #信息所属的用户id
     user = models.BigIntegerField(default=0)
     
+    #关联申请id
+    pending = models.BigIntegerField(default=0)
+    
+    #1为领用，2为转移，3为维保，4为退库，5为被转移
+    type = models.BigIntegerField(default=0)
+    
     #信息内容
     content = models.TextField(default="")
     
@@ -83,6 +89,8 @@ class Message(models.Model):
             "id":self.id,
             "user":self.user,
             "content":self.content,
+            "pending":self.pending,
+            "type":self.type,
             "read":self.read,
             "time":self.time
         }
