@@ -37,12 +37,32 @@ class NsViewSet(viewsets.ViewSet):
         dep = Department.objects.filter(id=user.department).first()
         asset_item = Asset.objects.filter(entity=ent,department=dep,type=False,user=user).all()
         asset_num_all = Asset.objects.filter(entity=ent,department=dep,type=True).all()
-        return_list = [{"id":i.id,"name":i.name,"type":0,"number":1} for i in asset_item]
+        return_list = [{"id":i.id,"name":i.name,"type":0,"state":{str(i.status):1}} for i in asset_item]
         for i in asset_num_all:
+            statedict = {}
             users = json.loads(i.usage)
+            maintains = json.loads(i.maintain)
+            process = json.loads(i.process)
+            return_dict = {"id":i.id,"name":i.name,"type":1,"state":statedict}
+            belong = False
             for dict in users:
                 if user.name in list(dict.keys())[0]:
-                    return_list.append({"id":i.id,"name":i.name,"type":1,"number":dict[user.name]})
+                    belong = True
+                    statedict.update({"1":dict[user.name]})
+                    break
+            for dict in maintains:
+                if user.name in list(dict.keys())[0]:
+                    belong = True
+                    statedict.update({"2":dict[user.name]})
+                    break
+            for dict in process:
+                if user.name in list(dict.keys())[0]:
+                    belong = True
+                    statedict.update({"5":dict[user.name]})
+                    break
+            if belong:
+                return_dict.update({"state":statedict})
+                return_list.append(return_dict)
         return return_list
 
     #转移,维保和退库的有效检查

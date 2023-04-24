@@ -1,6 +1,7 @@
 ﻿from django.test import TestCase, Client
 from user.models import User
 from department.models import Department, Entity
+from asset.models import Asset,AssetClass
 import json
 from django.contrib.auth.hashers import make_password
 from pending.models import Pending
@@ -28,8 +29,10 @@ class esTest(TestCase):
         dep2 = Department.objects.create(name="dep2", entity=1, parent=0, admin=6)
         self.login("ep", "ep")
         resp = self.addassetclass("yuanshen", 1)
+        resp = self.addassetclass("yuanshen2",0)
         # print(resp.json())
         resp = self.addasset("hutao", "yuanshen", 100)
+        resp = self.addasset("hutao2", "yuanshen2", 1)
         # print(resp.json())
         self.logout("ep")
         self.login("op1", "op1")
@@ -57,14 +60,21 @@ class esTest(TestCase):
     def apply(self, assetname, assetcount, assetclass, reason="abab"):
         return self.client.post("/user/ns/userapply", {"assetsapply": [{"id":1, "assetname":assetname, "assetcount":assetcount, "assetclass":assetclass}], "reason":reason}, content_type="application/json")
     
-    def test_apply(self):
+    def reply(self,id,status,reply):
+        return self.client.post("/user/ep/reapply",{"id":id,"status":status,"reason":reply}, content_type="application/json")
+    
+    def test_apply_and_reply(self):
         resp = self.apply("hutao", 50, "yuanshen")
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         p = Pending.objects.filter(initiator=1)
         # print(p.first().serialize())
         self.assertNotEqual(p.first(), None)
-        
+        self.logout("op1")
+        self.login("ep","ep")
+        resp = self.reply(1,0,"ok")
+        print(resp.json)
+    
     def test_getapply(self):
         self.apply("hutao", 50, "yuanshen")
         # print(resp.json())
