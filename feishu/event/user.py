@@ -90,15 +90,17 @@ class createUser(Process):
         password = ""
         for ch in r:
             password += ch
-        # 通过飞书告知用户初始密码, 单独发送消息的接口极其不好用，改成批量发送算了
+        # 通过飞书告知用户初始密码
         content = {"text": "账号: "+username+"\n密码: "+password}
-        # content = "{\"text\": \"账号: "+username+"\\n密码: "+password+"\"}"
-        r = requests.post("https://open.feishu.cn/open-apis/message/v4/batch_send/",
-                            data={
-                                "open_ids": [obj["open_id"]],
-                                "msg_type": "text",
-                                "content": content,
-                            },
+        req = {
+            "receive_id": "on_f6f75bf8348ec96444840ab3f9542791", # chat id
+            "msg_type": "text",
+            "content": json.dumps(content)
+        }
+        payload = json.dumps(req)
+        r = requests.post("https://open.feishu.cn/open-apis/im/v1/messages",
+                            data=payload,
+                            params={"receive_id_type":"union_id"},
                             headers={
                                 "Authorization": "Bearer "+get_tenant_token(),
                                 "Content-Type": "application/json; charset=utf-8",
