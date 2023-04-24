@@ -30,7 +30,7 @@ class NsViewSet(viewsets.ViewSet):
     
     allowed_identity = [EN]
     
-    #员工名下资产列表
+    #查看员工名下资产列表
     def staffassets(self,name):
         user = User.objects.filter(name=name).first()
         ent = Entity.objects.filter(id=user.entity).first()
