@@ -237,6 +237,7 @@ class asset(viewsets.ViewSet):
             else:
                 belonging = req.user
             price = require(asset, "price", "float", "Missing or error type of [price]")
+
             life = require(asset, "life", "int", "error type of [life]")
             if life < 0:
                 raise Failure("使用年限不能为负数")
@@ -244,11 +245,12 @@ class asset(viewsets.ViewSet):
                 description = require(asset, 'description', 'string', "Error type of [description]")
             else:
                 description = ""
-            if "additional" in asset.keys() and asset["additional"] != "" and asset["additional"] != None:
-                addi = asset["additional"]
-                additional = json.loads(addi)
-                if type(additional) is not dict:
-                    raise Failure("Error type of [additional]")
+            if "addtional" in asset.keys() and asset["addtional"] != "" and asset["addtional"] != None:
+                addi = asset["addtional"]
+                additional = {}
+                for item in addi:
+                    if "value" in item:
+                        additional.update({item["key"]:item["value"]})
                 additional = json.dumps(additional)
             else:
                 additional = "{}"

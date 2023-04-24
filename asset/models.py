@@ -20,7 +20,7 @@ class Asset(models.Model):
     #资产id，主键自增
     id = models.BigAutoField(primary_key=True)
     
-    #上级资产id，可以没有上级资产
+    #上级资产，可以没有上级资产
     parent = models.ForeignKey('Asset', null=True, on_delete=models.SET_NULL)
     
     # 资产所属的部门
@@ -85,7 +85,7 @@ class Asset(models.Model):
     # 清退数量
     number_expire = models.IntegerField(null=False, default=0)
     
-    # 是否清退
+    # 是否报废
     expire = models.BooleanField(null=False, default=False)
     # ---------数量型资产使用----------------
     
