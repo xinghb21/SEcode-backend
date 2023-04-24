@@ -323,17 +323,17 @@ class NsViewSet(viewsets.ViewSet):
         pending_to_del.delete()
         return Response({"code":0,"info":"ok"})
     
-    #员工获取自己所有信息
+    #员工获取自己所有未读信息
     @Check
     @action(detail=False,methods=["get"], url_path="getmessage")
     def getmessage(self,req:Request):
         user = req.user
-        msgs = Message.objects.filter(user=user.id).order_by('read','-time')
+        msgs = Message.objects.filter(user=user.id,read=False).order_by('-time')
         msglist = []
         for msg in msgs:
             pending = Pending.objects.filter(id=msg.pending).first()
-            assets = [list(item.keys())[0] for item in json.loads(pending.asset)]
-            msglist.append({"id":msg.id,"type":msg.type,"assetname":assets,"status":pending.result,"message":msg.content})
+            assets = [{list(item.keys())[0]:item[list(item.keys())[0]]} for item in json.loads(pending.asset)]
+            msglist.append({"id":msg.id,"type":msg.type,"status":pending.result,"message":msg.content,"info":assets})
         return Response({"code":0,"info":msglist})
     
     #员工是否存在未读信息
@@ -360,8 +360,8 @@ class NsViewSet(viewsets.ViewSet):
     
     #跨部门获得转移资产的员工指定类型
     @Check
-    @action(detail=False,methods=["post"], url_path="exchange")
-    def exchange(self,req:Request):
+    @action(detail=False,methods=["post"], url_path="setcat")
+    def setcat(self,req:Request):
         assetname = require(req.data, "assetname", "string" , err_msg="Error type of [assetname]")
         label = require(req.data, "label", "string" , err_msg="Error type of [label]")
         dep = Department.objects.filter(id=req.user.department).first()

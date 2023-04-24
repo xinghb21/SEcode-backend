@@ -84,7 +84,7 @@ class EpViewSet(viewsets.ViewSet):
         if result == False:
             return "您编号为%d的%s请求已通过审批" % (pending_id,operate)
         else:
-            return "您编号为%d的%s请求未通过审批\n拒绝理由:%s" % (pending_id,operate,reply)
+            return "您编号为%d的%s请求未通过审批,拒绝理由:%s" % (pending_id,operate,reply)
     
     #资产管理员审批请求
     @Check
@@ -399,7 +399,7 @@ class EpViewSet(viewsets.ViewSet):
     
     #条件查询资产
     @Check
-    @action(detail=False, methods=['get'], url_path="queryasset")
+    @action(detail=False, methods=['get','post'], url_path="queryasset")
     def queryasset(self,req:Request):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
