@@ -421,7 +421,7 @@ class EpViewSet(viewsets.ViewSet):
             parentasset = Asset.objects.filter(entity=ent,department=dep,name=parent).first()
             assets = assets.filter(parent=parentasset).all()
         if assetclass:
-            cat = AssetClass.objects.filter(entity=ent,department=dep,name=cat).first()
+            cat = AssetClass.objects.filter(entity=ent,department=dep,name=assetclass).first()
             assets = assets.filter(category=cat).all()
         if name:
             assets = assets.filter(name=name).all()
@@ -455,7 +455,7 @@ class EpViewSet(viewsets.ViewSet):
                     if not item.user or item.user.name != user:
                         return_list.remove(item)
             assets = list(return_list)
-        if status:
+        if status or status == 0:
             for item in assets:
                 flag = False
                 if item.type:
@@ -484,7 +484,7 @@ class EpViewSet(viewsets.ViewSet):
                 else:
                     if item.status == status and status != 5:
                         flag = True
-                if flag:
+                if not flag:
                     return_list.remove(item)
             assets = list(return_list)
         if custom:
@@ -500,6 +500,5 @@ class EpViewSet(viewsets.ViewSet):
                         if add[key] != cst[key]:
                             return_list.remove(item)
                             continue
-        print(return_list)
         return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name,"type":item.type}for item in return_list]})
         
