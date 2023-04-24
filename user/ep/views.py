@@ -488,7 +488,7 @@ class EpViewSet(viewsets.ViewSet):
                     return_list.remove(item)
             assets = list(return_list)
         if custom:
-            cst= json.loads(custom)
+            cst= eval(custom)
             key = list(cst.keys())[0]
             for item in assets:
                 add = json.loads(item.additional)
