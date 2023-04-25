@@ -126,5 +126,4 @@ class esTest(TestCase):
         resp = self.client.get("/asset/getbelonging")
         # print(resp.json())
         self.assertEqual(resp.json(), {'code': 0, 'entity': 'et', 'department': 'dep'})
-        
-        
+

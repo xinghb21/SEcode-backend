@@ -3,6 +3,7 @@ import json
 import re
 import time
 import requests
+import hashlib
 
 from django.contrib.auth.hashers import make_password, check_password
 
@@ -25,11 +26,10 @@ from rest_framework.request import Request
 from rest_framework import viewsets
 from rest_framework.views import APIView
 from utils.decipher import AESCipher
-from feishu.models import Feishu
 
-ENCRYPT_KEY = "uJHwvC9MR6OL2m2gonsWadkVBdrqF1tN"
-APP_ID = "cli_a4b17e84d0f8900e"
-APP_SECRET = "bMrD4Rtx85VS0jiPhPgThdrohZTHR4Jo"
+from feishu.models import Feishu
+from feishu.events import dispatch_event
+from feishu.constants import *
 
 class feishu(viewsets.ViewSet):
     authentication_classes = []
@@ -40,12 +40,36 @@ class feishu(viewsets.ViewSet):
     
     @Check
     @action(detail=False, methods=['post'], url_path="answer")
-    def answer_challenge(self, req:Request):
-        challenge = self.decipher.decrypt_string(req.data['encrypt'])
-        print(challenge)
-        challenge = json.loads(challenge)
-        print(challenge)
-        return Response({"challenge": challenge["challenge"]})
+    def answer_event(self, req:Request):
+        if 'X-Lark-Request-Timestamp' in req._request.headers.keys() and 'X-Lark-Request-Nonce' in req._request.headers.keys() and 'X-Lark-Signature' in req._request.headers.keys():
+            bytes_b1 = (req._request.headers['X-Lark-Request-Timestamp'] + req._request.headers['X-Lark-Request-Nonce'] + ENCRYPT_KEY).encode('utf-8')
+            bytes_b = bytes_b1 + req._request.body
+            h = hashlib.sha256(bytes_b)
+            signature = h.hexdigest()
+            if signature != req._request.headers['X-Lark-Signature']:
+                raise Failure("签名校验有误, 事件被拒绝处理")
+        if "challenge" in req.data.keys():
+            return Response({"challenge": req.data["challenge"]})
+        if "encrypt" in req.data.keys():
+            body = self.decipher.decrypt_string(req.data['encrypt'])
+            print(body)
+            try:
+                body: dict = json.loads(body)
+            except:
+                raise Failure("解密后信息非json格式")
+            if "schema" in body.keys():
+                token = body["header"]["token"]
+            else:
+                token = body["token"]
+            if token != VERIFICATION_TOKEN:
+                raise Failure("token校验有误, 事件被拒绝处理")
+            if "challenge" in body.keys():
+                return Response({"challenge": body["challenge"]})
+            dispatch_event(body)
+            return Response({
+                "code": 0,
+                "detail": "successfully handled",
+            })
     
     # 通过授权码获得该飞书用户的token和个人信息，在后端保存
     @Check
@@ -73,7 +97,7 @@ class feishu(viewsets.ViewSet):
             raise Failure("获取用户信息失败")
         userinfo = userinfo.json()
         union_id = userinfo['union_id']
-        fs = Feishu.objects.filter(union_id=union_id).first()
+        fs = Feishu.objects.filter(unionid=union_id).first()
         if not fs:
             # 创建一个没有绑定帐号的飞书用户
             feishu = Feishu.objects.create(user=None, access_token=access_token, 
@@ -81,8 +105,9 @@ class feishu(viewsets.ViewSet):
                                   refresh_token=resp['refresh_token'],
                                   refresh_expires_in=resp['refresh_expires_in'],
                                   name=userinfo['name'],
-                                  open_id=userinfo['open_id'],
-                                  union_id=union_id)
+                                  openid=userinfo['open_id'],
+                                  unionid=union_id,
+                                  userid=userinfo["user_id"])
             # 在当前会话中保存该飞书用户
             req._request.session['feishu_id'] = feishu.id
             return Response({
