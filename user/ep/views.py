@@ -4,6 +4,7 @@ import json
 import re
 
 from django.contrib.auth.hashers import make_password
+from django import db
 
 from user.models import User
 from department.models import Department,Entity
@@ -305,6 +306,7 @@ class EpViewSet(viewsets.ViewSet):
                 asset.save()
         # cyh
         # 通知员工审批结果,审批人的回复
+        db.close_old_connections()
         newprocess = applyOutcome(req.data)
         newprocess.start()
         # cyh

@@ -34,6 +34,7 @@ class applySubmit(Process):
     @CatchException  
     def run(self):
         print(hasattr(self.user, 'feishu'))
+        print(self.user)
         print(self.user.feishu.serialize())
         print(self.user.serialize())
         print(self.data)

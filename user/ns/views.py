@@ -4,6 +4,7 @@ import json
 import re
 
 from django.contrib.auth.hashers import make_password
+from django import db
 
 from user.models import User
 from department.models import Department,Entity
@@ -178,6 +179,7 @@ class NsViewSet(viewsets.ViewSet):
         pending.save()
         # cyh
         # 消息同步
+        db.close_old_connections()
         newprocess = applySubmit(req.user, req.data)
         newprocess.start()
         # cyh
