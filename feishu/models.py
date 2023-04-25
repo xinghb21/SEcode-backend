@@ -62,6 +62,9 @@ class Event(models.Model):
     # 整数，单位为秒
     create_time = models.BigIntegerField(verbose_name="创建时间", default=utils_time.get_timestamp)
     
+    # 整数，单位为秒
+    create_time_format = models.DateTimeField(verbose_name="创建时间", auto_now=True)
+    
     class Meta:
         db_table = "Event"
     
