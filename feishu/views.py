@@ -52,6 +52,7 @@ class feishu(viewsets.ViewSet):
             return Response({"challenge": req.data["challenge"]})
         if "encrypt" in req.data.keys():
             body = self.decipher.decrypt_string(req.data['encrypt'])
+            print(body)
             try:
                 body: dict = json.loads(body)
             except:
