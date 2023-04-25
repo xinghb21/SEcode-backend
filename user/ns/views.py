@@ -332,7 +332,7 @@ class NsViewSet(viewsets.ViewSet):
         msglist = []
         for msg in msgs:
             pending = Pending.objects.filter(id=msg.pending).first()
-            assets = [{list(item.keys())[0]:item[list(item.keys())[0]]} for item in json.loads(pending.asset)]
+            assets = [{"assetname":list(item.keys())[0],"number":item[list(item.keys())[0]]} for item in json.loads(pending.asset)]
             msglist.append({"id":msg.id,"type":msg.type,"status":pending.result,"message":msg.content,"info":assets})
         return Response({"code":0,"info":msglist})
     

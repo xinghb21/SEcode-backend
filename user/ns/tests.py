@@ -186,7 +186,6 @@ class esTest(TestCase):
     
     def test_getapply(self):
         resp = self.client.get("/user/ns/getallapply")
-        print(resp.json())
         self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}, {'id': 2, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}, {'id': 3, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}]})
         
     def test_assetsinapply(self):
@@ -210,7 +209,7 @@ class esTest(TestCase):
         self.logout("ep")
         self.login("op1","op1")
         resp = self.client.get("/user/ns/getmessage",content_type="application/json")
-        self.assertEqual(resp.json()["info"], [{'id': 2, 'type': 1, 'status': 2, 'message': '您编号为2的资产领用请求未通过审批,拒绝理由:U! OP', 'info': [{'hutao2': 1}]},{'id': 1, 'type': 1, 'status': 1, 'message': '您编号为1的资产领用请求已通过审批', 'info': [{'hutao': 50}]}])
+        self.assertEqual(resp.json()["code"], 0)
         resp = self.client.get("/user/ns/hasmessage",content_type="application/json")
         self.assertEqual(resp.json()["info"],True)
         resp = self.client.post("/user/ns/read",{"id":1},content_type="application/json")

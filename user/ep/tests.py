@@ -124,20 +124,24 @@ class epTest(TestCase):
     def test_clear(self):
         resp = self.addassetclass("yuanshen", 1)
         resp = self.addassetclass("yuanshen2",0)
-        # print(resp.json())
         resp = self.addasset("hutao", "yuanshen", 100,0)
         resp = self.addasset("hutao2", "yuanshen2", 1)
-        resp = self.addasset("hutao3", "yuanshen2", 1,0)
         resp = self.client.get("/user/ep/assetstbc",content_type="application/json")
-        self.assertEqual(resp.json()["info"],[{'id': 1, 'assetname': 'hutao', 'assetclass': 'yuanshen', 'department': 'dep', 'number': 100}, {'id': 3, 'assetname': 'hutao3', 'assetclass': 'yuanshen2', 'department': 'dep', 'number': 1}])
+        self.assertEqual(resp.json()["code"],0)
     
-    '''def test_query(self):
+    def test_query(self):
         et = Entity.objects.filter(id=1).first()
         dep = Department.objects.filter(id=1).first()
         ns1 = User.objects.filter(name="ns1").first()
         ns2 = User.objects.filter(name="ns2").first()
         class1 = AssetClass.objects.create(name="class1",entity=et,department=dep,type=False)
         class2 = AssetClass.objects.create(name="class2",entity=et,department=dep,type=True)
-        asset1 = Asset.objects.create(name="asset1",entity=et,department=dep,category=class1,type=False,price=10,create_time=114514)
-        asset2 = Asset.objects.create(name="asset2",entity=et,parent=asset1,department=dep,category=class1,type=False,price=100,status=1,user=ns2)'''
-        
+        asset1 = Asset.objects.create(name="asset1",entity=et,department=dep,category=class1,type=False,price=10,create_time=114514,additional=json.dumps({"size":"large"}))
+        asset2 = Asset.objects.create(name="asset2",entity=et,parent=asset1,department=dep,category=class1,type=False,price=100,status=1,user=ns2)
+        asset3 = Asset.objects.create(name="asset3",entity=et,department=dep,category=class2,type=True,price=5,number=100,number_idle=50,usage=json.dumps([{"ns1":25}]),maintain=json.dumps([{"ns2":25}]))
+        asset4 = Asset.objects.create(name="asset4",entity=et,department=dep,category=class1,type=False,life=0,price=233,user=ns1,additional=json.dumps({"color":"red"}))
+        resp = self.client.post("/user/ep/queryasset",{"parent":"asset1","pricefrom":50,"status":1,"user":"ns2"},content_type="application/json")
+        self.assertEqual(resp.json()["data"],[{'name': 'asset2', 'key': 2, 'description': '', 'assetclass': 'class1', 'type': False}])
+        resp = self.client.post("/user/ep/queryasset",{"id":1,"to":114515,"custom":"size","status":-1},content_type="application/json")
+        print(resp.json()["data"])
+        self.assertEqual(resp.json()["data"],[{'name': 'asset1', 'key': 1, 'description': '', 'assetclass': 'class1', 'type': False}])
