@@ -71,12 +71,12 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'utils.log_middleware.LogMiddle',
     # Remove CSRF middleware to make it happy, although insecure :(
     # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'utils.log_middleware.LogMiddle',
 ]
 
 ROOT_URLCONF = 'Aplus.urls'
