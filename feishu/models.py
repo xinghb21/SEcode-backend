@@ -11,7 +11,7 @@ import json
 class Feishu(models.Model):
     id = models.BigAutoField(primary_key=True)
     
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
+    user = models.OneToOneField("user.User", on_delete=models.CASCADE, null=True, related_name="feishu")
     
     token_create_time = models.FloatField(default=utils_time.get_timestamp)
     
