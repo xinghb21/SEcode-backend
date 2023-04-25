@@ -417,6 +417,8 @@ class EpViewSet(viewsets.ViewSet):
         id = self.getparse(req.data,"id","int")
         custom = self.getparse(req.data,"custom","string")
         content = self.getparse(req.data,"content","string")
+        if content and not custom:
+            raise Failure("请先选择属性")
         print(not parent,not assetclass,not name,not belonging,not time_from,not time_to,not user,not status,not price_from,not price_to,not id,not custom)
         assets = Asset.objects.filter(entity=ent,department=dep).all()
         if parent:

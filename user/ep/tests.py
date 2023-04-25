@@ -130,3 +130,14 @@ class epTest(TestCase):
         resp = self.addasset("hutao3", "yuanshen2", 1,0)
         resp = self.client.get("/user/ep/assetstbc",content_type="application/json")
         self.assertEqual(resp.json()["info"],[{'id': 1, 'assetname': 'hutao', 'assetclass': 'yuanshen', 'department': 'dep', 'number': 100}, {'id': 3, 'assetname': 'hutao3', 'assetclass': 'yuanshen2', 'department': 'dep', 'number': 1}])
+    
+    '''def test_query(self):
+        et = Entity.objects.filter(id=1).first()
+        dep = Department.objects.filter(id=1).first()
+        ns1 = User.objects.filter(name="ns1").first()
+        ns2 = User.objects.filter(name="ns2").first()
+        class1 = AssetClass.objects.create(name="class1",entity=et,department=dep,type=False)
+        class2 = AssetClass.objects.create(name="class2",entity=et,department=dep,type=True)
+        asset1 = Asset.objects.create(name="asset1",entity=et,department=dep,category=class1,type=False,price=10,create_time=114514)
+        asset2 = Asset.objects.create(name="asset2",entity=et,parent=asset1,department=dep,category=class1,type=False,price=100,status=1,user=ns2)'''
+        
