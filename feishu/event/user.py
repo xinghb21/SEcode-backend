@@ -93,14 +93,14 @@ class createUser(Process):
         # 通过飞书告知用户初始密码
         content = {"text": "账号: "+username+"\n密码: "+password}
         req = {
-            "receive_id": "on_f6f75bf8348ec96444840ab3f9542791", # chat id
+            "receive_id": obj["open_id"], # chat id
             "msg_type": "text",
             "content": json.dumps(content)
         }
         payload = json.dumps(req)
         r = requests.post("https://open.feishu.cn/open-apis/im/v1/messages",
                             data=payload,
-                            params={"receive_id_type":"union_id"},
+                            params={"receive_id_type":"open_id"},
                             headers={
                                 "Authorization": "Bearer "+get_tenant_token(),
                                 "Content-Type": "application/json; charset=utf-8",
