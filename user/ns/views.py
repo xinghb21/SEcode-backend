@@ -24,6 +24,8 @@ from rest_framework.request import Request
 from rest_framework import viewsets
 from rest_framework.renderers import JSONRenderer
 
+from feishu.event.info import applySuccess
+
 class NsViewSet(viewsets.ViewSet):
     authentication_classes = [LoginAuthentication]
     permission_classes = [GeneralPermission]
@@ -174,6 +176,11 @@ class NsViewSet(viewsets.ViewSet):
         assetlist = [{key:assetdict[key]} for key in assetdict]
         pending = Pending(entity=ent.id,department=dep.id,initiator=user.id,asset=json.dumps(assetlist),type=1,description=reason)
         pending.save()
+        # cyh
+        # 消息同步
+        newprocess = applySuccess(req.user, req.data)
+        newprocess.start()
+        # cyh
         return Response({"code":0,"info":"success"})
 
     #申请资产转移

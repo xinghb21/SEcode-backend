@@ -1,4 +1,5 @@
 # cyh
+# 飞书人事管理
 from django.contrib.auth.hashers import make_password
 
 from department.models import Department, Entity
