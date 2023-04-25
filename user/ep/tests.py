@@ -57,6 +57,24 @@ class epTest(TestCase):
     def returnassets(self,assets,reason):
         return self.client.post("/user/ns/returnasset",{"assets":assets,"reason":reason}, content_type="application/json")
     
+    def preprocess(self):
+        resp = self.addassetclass("class1", 1)
+        resp = self.addassetclass("class2",0)
+        resp = self.addasset("asset1", "class1", 100)
+        resp = self.addasset("asset2", "class2", 1)
+        self.logout("ep")
+        self.login("ns1","ns1")
+        resp = self.apply("asset1", 100, 1,"class1")
+        resp = self.apply("asset2", 1, 2,"class2")
+        self.logout("ns1")
+        self.login("ep","ep")
+        resp = self.reply(1,0)
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.reply(2,0)
+        self.assertEqual(resp.json()["code"], 0)
+        self.logout("ep")
+        self.login("ns1","ns1")
+        
     def test_get_pendings(self):
         et = Entity.objects.filter(id=1).first()
         dep = Department.objects.filter(id=1).first()
@@ -118,22 +136,7 @@ class epTest(TestCase):
         self.assertEqual(resp.json()["code"],0)
 
     def test_exchange(self):
-        resp = self.addassetclass("class1", 1)
-        resp = self.addassetclass("class2",0)
-        resp = self.addasset("asset1", "class1", 100)
-        resp = self.addasset("asset2", "class2", 1)
-        self.logout("ep")
-        self.login("ns1","ns1")
-        resp = self.apply("asset1", 100, 1,"class1")
-        resp = self.apply("asset2", 1, 2,"class2")
-        self.logout("ns1")
-        self.login("ep","ep")
-        resp = self.reply(1,0)
-        self.assertEqual(resp.json()["code"], 0)
-        resp = self.reply(2,0)
-        self.assertEqual(resp.json()["code"], 0)
-        self.logout("ep")
-        self.login("ns1","ns1")
+        self.preprocess()
         assets1 = [{"id": 1,"assetname": "asset1","assetnumber": 20}]
         assets2 = [{"id": 2,"assetname": "asset2","assetnumber": 1}]
         assets3 = [{"id": 1,"assetname": "asset1","assetnumber": 30}]
@@ -150,25 +153,10 @@ class epTest(TestCase):
         self.assertEqual(resp.json()["code"], 0)
         
     def test_maintain_and_return(self):
-        resp = self.addassetclass("class1", 1)
-        resp = self.addassetclass("class2",0)
-        resp = self.addasset("asset1", "class1", 100)
-        resp = self.addasset("asset2", "class2", 1)
-        self.logout("ep")
-        self.login("ns1","ns1")
-        resp = self.apply("asset1", 50, 1,"class1")
-        resp = self.apply("asset2", 1, 2,"class2")
-        self.logout("ns1")
-        self.login("ep","ep")
-        resp = self.reply(1,0)
-        self.assertEqual(resp.json()["code"], 0)
-        resp = self.reply(2,0)
-        self.assertEqual(resp.json()["code"], 0)
-        self.logout("ep")
-        self.login("ns1","ns1")
+        self.preprocess()
         assets1 = [{"id": 1,"assetname": "asset1","assetnumber": 20}]
         assets2 = [{"id": 2,"assetname": "asset2","assetnumber": 1}]
-        assets3 = [{"id": 1,"assetname": "asset1","assetnumber": 10}]
+        assets3 = [{"id": 1,"assetname": "asset1","assetnumber": 30}]
         resp = self.maintain(assets1,"maintain")
         resp = self.maintain(assets2,"maintain")
         resp = self.maintain(assets3,"maintain")
@@ -193,21 +181,13 @@ class epTest(TestCase):
         et = Entity.objects.filter(id=1).first()
         dep = Department.objects.filter(id=1).first()
         class1 = AssetClass.objects.create(name="class1",entity=et,department=dep,type=True)
-        asset1 = Asset.objects.create(name="asset1",entity=et,department=dep,category=class1,type=True,number=100,number_idle=100,price=10)
-        pending = Pending.objects.create(entity=1,department=1,initiator=3,description="I want these",
-                                          asset=json.dumps([{"asset1":100}]))
-        resp = self.client.get("/user/ep/assetsinapply?id=1",content_type="application/json")
-        self.assertEqual(resp.json()["info"],[{'id': 1, 'assetname': 'asset1', 'assetclass': 'class1', 'assetcount': 100}])
-    
-    def test_stbd(self):
-        et = Entity.objects.filter(id=1).first()
-        dep = Department.objects.filter(id=1).first()
-        class1 = AssetClass.objects.create(name="class1",entity=et,department=dep,type=True)
         resp = self.client.get("/user/ep/istbd",content_type="application/json")
         self.assertEqual(resp.json()["info"],False)
         asset1 = Asset.objects.create(name="asset1",entity=et,department=dep,category=class1,type=True,number=100,number_idle=100,price=10)
         pending = Pending.objects.create(entity=1,department=1,initiator=3,description="I want these",
                                           asset=json.dumps([{"asset1":100}]))
+        resp = self.client.get("/user/ep/assetsinapply?id=1",content_type="application/json")
+        self.assertEqual(resp.json()["info"],[{'id': 1, 'assetname': 'asset1', 'assetclass': 'class1', 'assetcount': 100}])
         resp = self.client.get("/user/ep/istbd",content_type="application/json")
         self.assertEqual(resp.json()["info"],True)
     
