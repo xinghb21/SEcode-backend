@@ -84,7 +84,7 @@ class EpViewSet(viewsets.ViewSet):
         if result == False:
             return "您编号为%d的%s请求已通过审批" % (pending_id,operate)
         else:
-            return "您编号为%d的%s请求未通过审批\n拒绝理由:%s" % (pending_id,operate,reply)
+            return "您编号为%d的%s请求未通过审批,拒绝理由:%s" % (pending_id,operate,reply)
     
     #资产管理员审批请求
     @Check
@@ -363,14 +363,15 @@ class EpViewSet(viewsets.ViewSet):
     def assetclear(self,req:Request):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        id = require(req.data, "id", "int" , err_msg="Error type of [id]")
-        assetname = require(req.data, "assetname", "string" , err_msg="Error type of [assetname]")
-        asset = Asset.objects.filter(id=id,entity=ent,department=dep,name=assetname).first()
-        if not asset:
-            raise Failure("资产不存在")
-        if not (utils_time.get_timestamp() - asset.create_time > asset.life * 31536000 or asset.expire):
-            raise Failure("资产尚未报废或达到年限")
-        asset.delete()
+        assetnames = require(req.data, "name", "list" , err_msg="Error type of [name]")
+        assets = [Asset.objects.filter(id=id,entity=ent,department=dep,name=assetname).first() for assetname in assetnames]
+        for asset in assets:
+            if not asset:
+                raise Failure("资产不存在")
+            if not (utils_time.get_timestamp() - asset.create_time > asset.life * 31536000 or asset.expire):
+                raise Failure("资产尚未报废或达到年限")
+        for asset in assets:
+            asset.delete()
         return Response({"code":0,"info":"success"})
     
     def getparse(self,body, key, tp):
@@ -399,7 +400,7 @@ class EpViewSet(viewsets.ViewSet):
     
     #条件查询资产
     @Check
-    @action(detail=False, methods=['get'], url_path="queryasset")
+    @action(detail=False, methods=['get','post'], url_path="queryasset")
     def queryasset(self,req:Request):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()

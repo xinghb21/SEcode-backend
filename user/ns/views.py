@@ -30,19 +30,39 @@ class NsViewSet(viewsets.ViewSet):
     
     allowed_identity = [EN]
     
-    #员工名下资产列表
+    #查看员工名下资产列表
     def staffassets(self,name):
         user = User.objects.filter(name=name).first()
         ent = Entity.objects.filter(id=user.entity).first()
         dep = Department.objects.filter(id=user.department).first()
         asset_item = Asset.objects.filter(entity=ent,department=dep,type=False,user=user).all()
         asset_num_all = Asset.objects.filter(entity=ent,department=dep,type=True).all()
-        return_list = [{"id":i.id,"name":i.name,"type":0,"number":1} for i in asset_item]
+        return_list = [{"id":i.id,"name":i.name,"type":0,"state":{str(i.status):1}} for i in asset_item]
         for i in asset_num_all:
+            statedict = {}
             users = json.loads(i.usage)
+            maintains = json.loads(i.maintain)
+            process = json.loads(i.process)
+            return_dict = {"id":i.id,"name":i.name,"type":1,"state":statedict}
+            belong = False
             for dict in users:
                 if user.name in list(dict.keys())[0]:
-                    return_list.append({"id":i.id,"name":i.name,"type":1,"number":dict[user.name]})
+                    belong = True
+                    statedict.update({"1":dict[user.name]})
+                    break
+            for dict in maintains:
+                if user.name in list(dict.keys())[0]:
+                    belong = True
+                    statedict.update({"2":dict[user.name]})
+                    break
+            for dict in process:
+                if user.name in list(dict.keys())[0]:
+                    belong = True
+                    statedict.update({"5":dict[user.name]})
+                    break
+            if belong:
+                return_dict.update({"state":statedict})
+                return_list.append(return_dict)
         return return_list
 
     #转移,维保和退库的有效检查
@@ -303,17 +323,17 @@ class NsViewSet(viewsets.ViewSet):
         pending_to_del.delete()
         return Response({"code":0,"info":"ok"})
     
-    #员工获取自己所有信息
+    #员工获取自己所有未读信息
     @Check
     @action(detail=False,methods=["get"], url_path="getmessage")
     def getmessage(self,req:Request):
         user = req.user
-        msgs = Message.objects.filter(user=user.id).order_by('read','-time')
+        msgs = Message.objects.filter(user=user.id,read=False).order_by('-time')
         msglist = []
         for msg in msgs:
             pending = Pending.objects.filter(id=msg.pending).first()
-            assets = [list(item.keys())[0] for item in json.loads(pending.asset)]
-            msglist.append({"id":msg.id,"type":msg.type,"assetname":assets,"status":pending.result,"message":msg.content})
+            assets = [{list(item.keys())[0]:item[list(item.keys())[0]]} for item in json.loads(pending.asset)]
+            msglist.append({"id":msg.id,"type":msg.type,"status":pending.result,"message":msg.content,"info":assets})
         return Response({"code":0,"info":msglist})
     
     #员工是否存在未读信息
@@ -340,8 +360,8 @@ class NsViewSet(viewsets.ViewSet):
     
     #跨部门获得转移资产的员工指定类型
     @Check
-    @action(detail=False,methods=["post"], url_path="exchange")
-    def exchange(self,req:Request):
+    @action(detail=False,methods=["post"], url_path="setcat")
+    def setcat(self,req:Request):
         assetname = require(req.data, "assetname", "string" , err_msg="Error type of [assetname]")
         label = require(req.data, "label", "string" , err_msg="Error type of [label]")
         dep = Department.objects.filter(id=req.user.department).first()
