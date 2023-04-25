@@ -39,7 +39,7 @@ class Feishu(models.Model):
             ret = {
                 "id": self.id,
                 "user": self.user.name,
-                "create_time": self.create_time,
+                "token_create_time": self.token_create_time,
                 "access_token": self.access_token,
                 "access_expires_in": self.access_expires_in,
                 "refresh_token": self.refresh_token,
@@ -73,7 +73,7 @@ class Event(models.Model):
 class EventException(models.Model):
     id = models.BigAutoField(primary_key=True)
     
-    event = models.OneToOneField(Event, on_delete=models.CASCADE)
+    event = models.OneToOneField(Event, on_delete=models.CASCADE, null=True)
     
     msg = models.TextField(verbose_name="报错信息")
     

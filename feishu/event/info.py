@@ -35,9 +35,9 @@ class applySubmit(Process):
     def run(self):
         print(hasattr(self.user, 'feishu'))
         print(self.user)
-        print(self.user.feishu.serialize())
-        print(self.user.serialize())
-        print(self.data)
+        # print(self.user.feishu.serialize())
+        # print(self.user.serialize())
+        # print(self.data)
         if not hasattr(self.user, 'feishu'):
             raise Exception(self.e, "用户%s没有绑定飞书用户" % self.user.name)
         fs:Feishu = self.user.feishu
@@ -57,6 +57,7 @@ class applySubmit(Process):
                 }
             }
         }
+        print(content)
         req = {
             "receive_id": fs.openid,
             "msg_type": "interactive",
@@ -98,6 +99,8 @@ class applyOutcome(Process):
         user = User.objects.filter(id=pen.initiator).first()
         if not user:
             raise Exception(self.e, "所请求的审批结果对应的发起人不存在")
+        print(hasattr(user, 'feishu'))
+        print(user)
         if not hasattr(user, 'feishu'):
             raise Exception(self.e, "用户%s没有绑定飞书用户" % user.name)
         fs:Feishu = user.feishu
