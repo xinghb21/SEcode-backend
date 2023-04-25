@@ -31,3 +31,49 @@ class Logs(models.Model):
             "time":self.time,
             "type":self.type
         }
+    
+# cyh
+# 记录http请求的日志
+class httpLogs(models.Model):
+    #主键自增
+    id = models.BigAutoField(primary_key=True)
+    
+    re_time = models.CharField(verbose_name="请求时间", max_length=255)
+    
+    re_url = models.TextField(verbose_name="请求url")
+    
+    re_method = models.CharField(verbose_name="请求方法", max_length=20)
+    
+    re_ip = models.CharField(max_length=32, verbose_name='请求IP')
+    
+    re_content = models.TextField(null=True, verbose_name="请求参数")
+    
+    rp_content = models.TextField(null=True, verbose_name="响应内容")
+    
+    access_time = models.FloatField(verbose_name="耗时/ms")
+    
+    class Meta:
+        db_table = 'httpLogs'
+    
+# 超时请求单独记录
+class accessTimeOutLogs(models.Model):
+    #主键自增
+    id = models.BigAutoField(primary_key=True)
+    
+    re_time = models.CharField(verbose_name="请求时间", max_length=255)
+    
+    re_url = models.TextField(verbose_name="请求url")
+    
+    re_method = models.CharField(verbose_name="请求方法", max_length=20)
+    
+    re_ip = models.CharField(max_length=32, verbose_name='请求IP')
+    
+    re_content = models.TextField(verbose_name="请求参数")
+    
+    rp_content = models.TextField(verbose_name="响应内容")
+    
+    access_time = models.FloatField(verbose_name="耗时/ms")
+    class Meta:
+        db_table = 'accessTimeOutLogs'
+    
+    
