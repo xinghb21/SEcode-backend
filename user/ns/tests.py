@@ -23,7 +23,9 @@ class esTest(TestCase):
         ep = User.objects.create(name="ep", password=make_password("ep"), 
                                  identity=3, entity=1, department=1)
         es2 = User.objects.create(name="es2", password=make_password("es2"), 
-                                 identity=2, entity=1, department=0)
+                                 identity=2, entity=1, department=0),
+        ep2 = User.objects.create(name="ep2", password=make_password("ep2"), 
+                                 identity=3, entity=1, department=3)
         et1 = Entity.objects.create(name="et1", admin=5)
         et2 = Entity.objects.create(name="et2", admin=5)
         et3 = Entity.objects.create(name="et3",admin=7)
@@ -39,7 +41,14 @@ class esTest(TestCase):
         resp = self.addasset("hutao3", "yuanshen2", 1)
         # print(resp.json())
         self.logout("ep")
+        self.login("ep2","ep2")
+        resp = self.addassetclass("ys", 1)
+        resp = self.addassetclass("ys2",0)
+        self.logout("ep2")
         self.login("op1", "op1")
+        resp = self.apply("hutao", 50, 1,"yuanshen")
+        resp = self.apply("hutao2", 1, 2,"yuanshen2")
+        resp = self.apply("hutao3", 1, 3,"yuanshen2")
         
     def login(self, name, pw):
         payload = {
@@ -70,11 +79,16 @@ class esTest(TestCase):
     def exchange(self,assets,reason,username):
         return self.client.post("/user/ns/exchange",{"exchange":assets,"reason":reason,"username":username}, content_type="application/json")
     
+    def maintain(self,assets,reason):
+        return self.client.post("/user/ns/applymainten",{"assets":assets,"reason":reason}, content_type="application/json")
+    
+    def returnassets(self,assets,reason):
+        return self.client.post("/user/ns/returnasset",{"assets":assets,"reason":reason}, content_type="application/json")
+    
+    def setcat(self,assetname,label):
+        return self.client.post("/user/ns/setcat",{"assetname":assetname,"label":label}, content_type="application/json")
+    
     def test_apply_and_reply(self):
-        resp = self.apply("hutao", 50, 1,"yuanshen")
-        resp = self.apply("hutao2", 1, 2,"yuanshen2")
-        resp = self.apply("hutao3", 1, 3,"yuanshen2")
-        self.assertEqual(resp.json()["code"], 0)
         p = Pending.objects.filter(initiator=1)
         self.assertNotEqual(p.first(), None)
         self.logout("op1")
@@ -99,8 +113,6 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["assets"], [{'id': 3, 'name': 'hutao3', 'type': 0, 'state': {'1': 1}}, {'id': 1, 'name': 'hutao', 'type': 1, 'state': {'1': 50}}])
     
     def test_exchange_and_reply(self):
-        resp = self.apply("hutao", 70, 1,"yuanshen")
-        resp = self.apply("hutao2", 1, 2,"yuanshen2")
         self.logout("op1")
         self.login("ep","ep")
         resp = self.reply(1,0)
@@ -127,23 +139,61 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["code"], 0)
         resp = self.reply(5,1,"U! OP")
         self.assertEqual(resp.json()["code"], 0)
-        
+
+    def test_maintain_and_reply(self):
+        self.logout("op1")
+        self.login("ep","ep")
+        resp = self.reply(1,0)
+        resp = self.reply(2,0)
+        self.logout("ep")
+        self.login("op1","op1")
+        assets1 = [{"id": 1,"assetname": "hutao","assetnumber": 20}]
+        assets2 = [{"id": 2,"assetname": "hutao2","assetnumber": 1}]
+        resp = self.maintain(assets1,"I'm OP")
+        resp = self.maintain(assets2,"I'm OP")
+        self.assertEqual(resp.json()["code"], 0)
+        self.logout("op1")
+        self.login("ep","ep")
+        resp = self.reply(3,0)
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.reply(4,1,"U! OP")
+        self.assertEqual(resp.json()["code"], 0)
+    
+    def test_return_and_reply(self):
+        self.logout("op1")
+        self.login("ep","ep")
+        resp = self.reply(1,0)
+        resp = self.reply(2,0)
+        self.logout("ep")
+        self.login("op1","op1")
+        assets1 = [{"id": 1,"assetname": "hutao","assetnumber": 20}]
+        assets2 = [{"id": 2,"assetname": "hutao2","assetnumber": 1}]
+        resp = self.returnassets(assets1,"I'm OP")
+        resp = self.maintain(assets2,"I'm OP")
+        self.assertEqual(resp.json()["code"], 0)
+        bad_assets1 = [{"id": 114514,"assetname": "hutao114514","assetnumber": 1}]
+        bad_assets2 = [{"id": 1,"assetname": "hutao","assetnumber": 114514}]
+        resp = self.maintain(bad_assets1,"bad")
+        self.assertEqual(resp.json()["detail"], "资产信息错误")
+        resp = self.maintain(bad_assets2,"bad")
+        self.assertEqual(resp.json()["detail"], "资产数量错误")
+        self.logout("op1")
+        self.login("ep","ep")
+        resp = self.reply(3,0)
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.reply(4,1,"U! OP")
+        self.assertEqual(resp.json()["code"], 0)
     
     def test_getapply(self):
-        self.apply("hutao", 50,1, "yuanshen")
-        # print(resp.json())
         resp = self.client.get("/user/ns/getallapply")
-        # print(resp.json())
-        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'reason': 'abab', 'status': 0, 'message': '','type':1}]})
+        print(resp.json())
+        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}, {'id': 2, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}, {'id': 3, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}]})
         
     def test_assetsinapply(self):
-        self.apply("hutao", 50,1, "yuanshen")
         resp = self.client.get("/user/ns/assetsinapply?id=1")
-        # print(resp.json())
         self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'assetname': 'hutao', 'assetcount': 50}],'user':''})
         
     def test_deleteapply(self):
-        self.apply("hutao", 50,1, "yuanshen")
         resp = self.client.delete("/user/ns/deleteapplys",{"id":1},content_type="application/json")
         self.assertEqual(resp.json(), {'code': -1, 'detail': '不能删除资产管理员未处理的申请'})
         pending = Pending.objects.filter(id=1).first()
@@ -151,3 +201,27 @@ class esTest(TestCase):
         pending.save()
         resp = self.client.delete("/user/ns/deleteapplys",{"id":1},content_type="application/json")
         self.assertEqual(resp.json(), {'code': 0, 'info': 'ok'})
+    
+    def test_message(self):
+        self.logout("op1")
+        self.login("ep","ep")
+        resp = self.reply(1,0)
+        resp = self.reply(2,1,"U! OP")
+        self.logout("ep")
+        self.login("op1","op1")
+        resp = self.client.get("/user/ns/getmessage",content_type="application/json")
+        self.assertEqual(resp.json()["info"], [{'id': 2, 'type': 1, 'status': 2, 'message': '您编号为2的资产领用请求未通过审批,拒绝理由:U! OP', 'info': [{'hutao2': 1}]},{'id': 1, 'type': 1, 'status': 1, 'message': '您编号为1的资产领用请求已通过审批', 'info': [{'hutao': 50}]}])
+        resp = self.client.get("/user/ns/hasmessage",content_type="application/json")
+        self.assertEqual(resp.json()["info"],True)
+        resp = self.client.post("/user/ns/read",{"id":1},content_type="application/json")
+        self.assertEqual(resp.json()["code"],0)
+        
+    def test_setcat(self):
+        resp = self.setcat("hutao114514","yuanshen")
+        self.assertEqual(resp.json()["detail"], "资产不存在")
+        resp = self.setcat("hutao","yuanshen114514")
+        self.assertEqual(resp.json()["detail"], "资产类别不存在")
+        resp = self.setcat("hutao","yuanshen2")
+        self.assertEqual(resp.json()["detail"], "资产与资产类别类型不符")
+        resp = self.setcat("hutao","yuanshen")
+        self.assertEqual(resp.json()["code"], 0)
