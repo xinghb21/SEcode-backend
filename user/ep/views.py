@@ -308,6 +308,7 @@ class EpViewSet(viewsets.ViewSet):
         # 通知员工审批结果,审批人的回复
         db.close_old_connections()
         newprocess = applyOutcome(req.data)
+        db.close_old_connections()
         newprocess.start()
         # cyh
         return Response({"code":0,"detail":"ok"})

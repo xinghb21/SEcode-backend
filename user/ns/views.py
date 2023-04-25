@@ -181,6 +181,7 @@ class NsViewSet(viewsets.ViewSet):
         # 消息同步
         db.close_old_connections()
         newprocess = applySubmit(req.user, req.data)
+        db.close_old_connections()
         newprocess.start()
         # cyh
         return Response({"code":0,"info":"success"})

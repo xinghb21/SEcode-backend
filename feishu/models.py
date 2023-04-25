@@ -50,7 +50,7 @@ class Feishu(models.Model):
             raise Failure("序列化失败")
         
     class Meta:
-        db_table = "FeishuUser"
+        db_table = "feishu"
         
 # 记录到达的事件以检测重复事件
 class Event(models.Model):
@@ -64,7 +64,7 @@ class Event(models.Model):
     create_time = models.BigIntegerField(verbose_name="创建时间", default=utils_time.get_timestamp)
     
     # 整数，单位为秒
-    create_time_format = models.DateTimeField(verbose_name="创建时间", default=utils_time.get_time)
+    create_time_format = models.CharField(verbose_name="创建时间", default=utils_time.get_time, max_length=255)
     
     class Meta:
         db_table = "Event"
