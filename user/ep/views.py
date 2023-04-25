@@ -363,14 +363,15 @@ class EpViewSet(viewsets.ViewSet):
     def assetclear(self,req:Request):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        id = require(req.data, "id", "int" , err_msg="Error type of [id]")
-        assetname = require(req.data, "assetname", "string" , err_msg="Error type of [assetname]")
-        asset = Asset.objects.filter(id=id,entity=ent,department=dep,name=assetname).first()
-        if not asset:
-            raise Failure("资产不存在")
-        if not (utils_time.get_timestamp() - asset.create_time > asset.life * 31536000 or asset.expire):
-            raise Failure("资产尚未报废或达到年限")
-        asset.delete()
+        assetnames = require(req.data, "name", "list" , err_msg="Error type of [name]")
+        assets = [Asset.objects.filter(id=id,entity=ent,department=dep,name=assetname).first() for assetname in assetnames]
+        for asset in assets:
+            if not asset:
+                raise Failure("资产不存在")
+            if not (utils_time.get_timestamp() - asset.create_time > asset.life * 31536000 or asset.expire):
+                raise Failure("资产尚未报废或达到年限")
+        for asset in assets:
+            asset.delete()
         return Response({"code":0,"info":"success"})
     
     def getparse(self,body, key, tp):
