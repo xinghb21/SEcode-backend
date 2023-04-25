@@ -10,6 +10,6 @@ def CatchException(check_fn):
             if type(e.args[0]) == Event:
                 EventException.objects.create(event=e.args[0], msg=e.args[1])
             else:
-                EventException.objects.create(event=e.args[0])
+                EventException.objects.create(msg=e.args[0])
             return None
     return decorated

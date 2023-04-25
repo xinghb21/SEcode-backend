@@ -24,7 +24,7 @@ from rest_framework.request import Request
 from rest_framework import viewsets
 from rest_framework.renderers import JSONRenderer
 
-from feishu.event.info import applySuccess
+from feishu.event.info import applySubmit
 
 class NsViewSet(viewsets.ViewSet):
     authentication_classes = [LoginAuthentication]
@@ -178,7 +178,7 @@ class NsViewSet(viewsets.ViewSet):
         pending.save()
         # cyh
         # 消息同步
-        newprocess = applySuccess(req.user, req.data)
+        newprocess = applySubmit(req.user, req.data)
         newprocess.start()
         # cyh
         return Response({"code":0,"info":"success"})

@@ -22,17 +22,19 @@ APPLY_SUBMIT_ID = "ctp_AArTmUIuqcZL"
 OUTCOME_ID = "ctp_AArT847gbmi2"
 
 
-class applySuccess(Process):
+class applySubmit(Process):
     def __init__(self, user:User, data:dict):
         super().__init__()
         self.data = data
         self.user = user
+        self.e = Event(eventid="self-freated", eventtype="applySubmitSuccess")
+        self.e.save()
     
     # 给用户发送成功提交申请消息
     @CatchException  
     def run(self):
         if not hasattr(self.user, 'feishu'):
-            raise Exception("用户%s没有绑定飞书用户" % self.user.name)
+            raise Exception(self.e, "用户%s没有绑定飞书用户" % self.user.name)
         fs:Feishu = self.user.feishu
         content = {
             "type": "template",
@@ -79,18 +81,20 @@ class applyOutcome(Process):
     def __init__(self, data:dict):
         super().__init__()
         self.data = data
+        self.e = Event(eventid="self-freated", eventtype="applySubmitSuccess")
+        self.e.save()
     
     # 给用户发送审批结果
     @CatchException  
     def run(self):
         pen = Pending.objects.filter(id=self.data["id"]).first()
         if not pen:
-            raise Exception("所请求的审批结果对应的待办项不存在")
+            raise Exception(self.e, "所请求的审批结果对应的待办项不存在")
         user = User.objects.filter(id=pen.initiator).first()
         if not user:
-            raise Exception("所请求的审批结果对应的发起人不存在")
+            raise Exception(self.e, "所请求的审批结果对应的发起人不存在")
         if not hasattr(user, "feishu"):
-            raise Exception("审批发起人%s未绑定飞书账号" % user.name)
+            raise Exception(self.e, "审批发起人%s未绑定飞书账号" % user.name)
         fs:Feishu = user.feishu
         outcome = get_outcome(self.data["status"],self.data["reason"])
         content = {
