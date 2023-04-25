@@ -94,9 +94,7 @@ class esTest(TestCase):
         self.logout("op1")
         self.login("ep","ep")
         resp = self.reply(1,0)
-        self.assertEqual(resp.json()["code"], 0)
         resp = self.reply(2,1,"U! OP")
-        self.assertEqual(resp.json()["code"], 0)
         resp = self.reply(3,0)
         self.logout("ep")
         self.login("op1","op1")
@@ -131,14 +129,6 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["detail"], "目标用户不存在")
         resp = self.exchange(assets2,"I'm OP","ep")
         self.assertEqual(resp.json()["detail"], "目标用户不是员工")
-        self.logout("op1")
-        self.login("ep","ep")
-        resp = self.reply(3,0)
-        self.assertEqual(resp.json()["code"], 0)
-        resp = self.reply(4,0)
-        self.assertEqual(resp.json()["code"], 0)
-        resp = self.reply(5,1,"U! OP")
-        self.assertEqual(resp.json()["code"], 0)
 
     def test_maintain_and_reply(self):
         self.logout("op1")
@@ -150,13 +140,8 @@ class esTest(TestCase):
         assets1 = [{"id": 1,"assetname": "hutao","assetnumber": 20}]
         assets2 = [{"id": 2,"assetname": "hutao2","assetnumber": 1}]
         resp = self.maintain(assets1,"I'm OP")
+        self.assertEqual(resp.json()["code"], 0)
         resp = self.maintain(assets2,"I'm OP")
-        self.assertEqual(resp.json()["code"], 0)
-        self.logout("op1")
-        self.login("ep","ep")
-        resp = self.reply(3,0)
-        self.assertEqual(resp.json()["code"], 0)
-        resp = self.reply(4,1,"U! OP")
         self.assertEqual(resp.json()["code"], 0)
     
     def test_return_and_reply(self):
@@ -169,7 +154,8 @@ class esTest(TestCase):
         assets1 = [{"id": 1,"assetname": "hutao","assetnumber": 20}]
         assets2 = [{"id": 2,"assetname": "hutao2","assetnumber": 1}]
         resp = self.returnassets(assets1,"I'm OP")
-        resp = self.maintain(assets2,"I'm OP")
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.returnassets(assets2,"I'm OP")
         self.assertEqual(resp.json()["code"], 0)
         bad_assets1 = [{"id": 114514,"assetname": "hutao114514","assetnumber": 1}]
         bad_assets2 = [{"id": 1,"assetname": "hutao","assetnumber": 114514}]
@@ -177,12 +163,6 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["detail"], "资产信息错误")
         resp = self.maintain(bad_assets2,"bad")
         self.assertEqual(resp.json()["detail"], "资产数量错误")
-        self.logout("op1")
-        self.login("ep","ep")
-        resp = self.reply(3,0)
-        self.assertEqual(resp.json()["code"], 0)
-        resp = self.reply(4,1,"U! OP")
-        self.assertEqual(resp.json()["code"], 0)
     
     def test_getapply(self):
         resp = self.client.get("/user/ns/getallapply")

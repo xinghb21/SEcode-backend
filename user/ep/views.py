@@ -231,7 +231,7 @@ class EpViewSet(viewsets.ViewSet):
                         asset.save()
             #跨部门还需要向接受方发起类型确认的消息
             if destdep != depart:
-                pd = Pending(entity=ent,department=destdep.id,initiator=pen.initiator,destination=pen.destination,asset=pen.asset,type=5)
+                pd = Pending(entity=ent,department=destdep.id,initiator=pen.initiator,destination=pen.destination,asset=pen.asset,type=5,result=1)
                 pd.save()
                 Message.objects.create(user=pen.destination,type=5,pending=pd.id,content="请为转移资产选择类别")
         #资产维保
@@ -364,7 +364,7 @@ class EpViewSet(viewsets.ViewSet):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         assetnames = require(req.data, "name", "list" , err_msg="Error type of [name]")
-        assets = [Asset.objects.filter(id=id,entity=ent,department=dep,name=assetname).first() for assetname in assetnames]
+        assets = [Asset.objects.filter(entity=ent,department=dep,name=assetname).first() for assetname in assetnames]
         for asset in assets:
             if not asset:
                 raise Failure("资产不存在")
