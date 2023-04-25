@@ -1,5 +1,6 @@
 from utils import utils_time
 from django.db import models
+import django.utils.timezone as timezone
 from utils.utils_request import return_field
 from department.models import Department, Entity
 from user.models import User
@@ -63,7 +64,7 @@ class Event(models.Model):
     create_time = models.BigIntegerField(verbose_name="创建时间", default=utils_time.get_timestamp)
     
     # 整数，单位为秒
-    create_time_format = models.DateTimeField(verbose_name="创建时间", auto_now=True)
+    create_time_format = models.DateTimeField(verbose_name="创建时间", default=timezone.now)
     
     class Meta:
         db_table = "Event"
