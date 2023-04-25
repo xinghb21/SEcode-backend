@@ -416,6 +416,7 @@ class EpViewSet(viewsets.ViewSet):
         price_to = self.getparse(req.data,"priceto","float")
         id = self.getparse(req.data,"id","int")
         custom = self.getparse(req.data,"custom","string")
+        content = self.getparse(req.data,"content","string")
         print(not parent,not assetclass,not name,not belonging,not time_from,not time_to,not user,not status,not price_from,not price_to,not id,not custom)
         assets = Asset.objects.filter(entity=ent,department=dep).all()
         if parent:
@@ -456,7 +457,7 @@ class EpViewSet(viewsets.ViewSet):
                     if not item.user or item.user.name != user:
                         return_list.remove(item)
             assets = list(return_list)
-        if status or status == 0:
+        if status >= 0:
             for item in assets:
                 flag = False
                 if item.type:
@@ -489,17 +490,16 @@ class EpViewSet(viewsets.ViewSet):
                     return_list.remove(item)
             assets = list(return_list)
         if custom:
-            cst= eval(custom)
-            key = list(cst.keys())[0]
             for item in assets:
                 add = json.loads(item.additional)
-                if key not in add:
+                flag = False
+                if custom in add:
+                    if not content:
+                        flag = True
+                    else:
+                        if add[custom] == content:
+                            flag = True
+                if not flag:
                     return_list.remove(item)
-                    continue
-                else:
-                    if cst[key]:
-                        if add[key] != cst[key]:
-                            return_list.remove(item)
-                            continue
         return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name,"type":item.type}for item in return_list]})
         

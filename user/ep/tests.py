@@ -31,6 +31,14 @@ class epTest(TestCase):
         }
         return self.client.post("/user/logout", data=payload, content_type="application/json")
     
+    def addassetclass(self, name, type):
+        return self.client.post("/asset/assetclass", {"name": name, "type": type})
+    
+    def addasset(self, name, cate, number,life=10,expire = False):
+        return self.client.post("/asset/post", [{"name": name, "category": cate,
+                                                "life": life, "number": number, "price": 10000,"expire" : expire,
+                                                }], content_type="application/json")
+    
     def test_get_pendings(self):
         et = Entity.objects.filter(id=1).first()
         dep = Department.objects.filter(id=1).first()
@@ -112,3 +120,13 @@ class epTest(TestCase):
                                           asset=json.dumps([{"asset1":100}]))
         resp = self.client.get("/user/ep/istbd",content_type="application/json")
         self.assertEqual(resp.json()["info"],True)
+    
+    def test_clear(self):
+        resp = self.addassetclass("yuanshen", 1)
+        resp = self.addassetclass("yuanshen2",0)
+        # print(resp.json())
+        resp = self.addasset("hutao", "yuanshen", 100,0)
+        resp = self.addasset("hutao2", "yuanshen2", 1)
+        resp = self.addasset("hutao3", "yuanshen2", 1,0)
+        resp = self.client.get("/user/ep/assetstbc",content_type="application/json")
+        self.assertEqual(resp.json()["info"],[{'id': 1, 'assetname': 'hutao', 'assetclass': 'yuanshen', 'department': 'dep', 'number': 100}, {'id': 3, 'assetname': 'hutao3', 'assetclass': 'yuanshen2', 'department': 'dep', 'number': 1}])
