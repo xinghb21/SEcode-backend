@@ -33,9 +33,9 @@ class applySubmit(Process):
     # 给用户发送成功提交申请消息
     @CatchException  
     def run(self):
-        if not hasattr(self.user, 'feishu'):
+        fs:Feishu = Feishu.objects.filter(user=self.user).first()
+        if not fs:
             raise Exception(self.e, "用户%s没有绑定飞书用户" % self.user.name)
-        fs:Feishu = self.user.feishu
         content = {
             "type": "template",
             "data": {
@@ -93,9 +93,9 @@ class applyOutcome(Process):
         user = User.objects.filter(id=pen.initiator).first()
         if not user:
             raise Exception(self.e, "所请求的审批结果对应的发起人不存在")
-        if not hasattr(user, "feishu"):
-            raise Exception(self.e, "审批发起人%s未绑定飞书账号" % user.name)
-        fs:Feishu = user.feishu
+        fs:Feishu = Feishu.objects.filter(user=user).first()
+        if not fs:
+            raise Exception(self.e, "用户%s没有绑定飞书用户" % user.name)
         outcome = get_outcome(self.data["status"],self.data["reason"])
         content = {
             "type": "template",
