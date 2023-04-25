@@ -33,6 +33,10 @@ class applySubmit(Process):
     # 给用户发送成功提交申请消息
     @CatchException  
     def run(self):
+        print(hasattr(self.user, 'feishu'))
+        print(self.user.feishu.serialize())
+        print(self.user.serialize())
+        print(self.data)
         if not hasattr(self.user, 'feishu'):
             raise Exception(self.e, "用户%s没有绑定飞书用户" % self.user.name)
         fs:Feishu = self.user.feishu
@@ -81,7 +85,7 @@ class applyOutcome(Process):
     def __init__(self, data:dict):
         super().__init__()
         self.data = data
-        self.e = Event(eventid="self-freated", eventtype="applySubmitSuccess")
+        self.e = Event(eventid="self-created", eventtype="applyOutcome")
         self.e.save()
     
     # 给用户发送审批结果
