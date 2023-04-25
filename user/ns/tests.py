@@ -70,13 +70,20 @@ class esTest(TestCase):
         # print(resp.json())
         resp = self.client.get("/user/ns/getallapply")
         # print(resp.json())
-        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'reason': 'abab', 'status': 0, 'message': ''}]})
+        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'reason': 'abab', 'status': 0, 'message': '','type':1}]})
         
     def test_assetsinapply(self):
         self.apply("hutao", 50, "yuanshen")
-        resp = self.client.get("/user/ns/assetsinapply/1")
+        resp = self.client.get("/user/ns/assetsinapply?id=1")
         # print(resp.json())
-        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'assetname': 'hutao', 'assetcount': 50}]})
+        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'assetname': 'hutao', 'assetcount': 50}],'user':''})
         
-        
-        
+    def test_deleteapply(self):
+        self.apply("hutao", 50, "yuanshen")
+        resp = self.client.delete("/user/ns/deleteapplys",{"id":1},content_type="application/json")
+        self.assertEqual(resp.json(), {'code': -1, 'detail': '不能删除资产管理员未处理的申请'})
+        pending = Pending.objects.filter(id=1).first()
+        pending.result = 1
+        pending.save()
+        resp = self.client.delete("/user/ns/deleteapplys",{"id":1},content_type="application/json")
+        self.assertEqual(resp.json(), {'code': 0, 'info': 'ok'})

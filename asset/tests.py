@@ -127,3 +127,4 @@ class esTest(TestCase):
         # print(resp.json())
         self.assertEqual(resp.json(), {'code': 0, 'entity': 'et', 'department': 'dep'})
         
+        

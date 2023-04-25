@@ -5,6 +5,4 @@ import user.es.views as views
 router = DefaultRouter(trailing_slash=False)
 router.register("", EsViewSet, basename="es")
 
-urlpatterns = router.urls+[
-    path('getonesapp/<username>', views.getonesapp)
-]
+urlpatterns = router.urls
