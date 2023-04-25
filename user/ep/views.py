@@ -24,6 +24,8 @@ from rest_framework.request import Request
 from rest_framework import viewsets
 from rest_framework.renderers import JSONRenderer
 
+from feishu.event.info import applyOutcome
+
 class EpViewSet(viewsets.ViewSet):
     authentication_classes = [LoginAuthentication]
     permission_classes = [GeneralPermission]
@@ -301,6 +303,11 @@ class EpViewSet(viewsets.ViewSet):
                     asset.user = None
                     asset.belonging = admin
                 asset.save()
+        # cyh
+        # 通知员工审批结果,审批人的回复
+        newprocess = applyOutcome(req.data)
+        newprocess.start()
+        # cyh
         return Response({"code":0,"detail":"ok"})
     
     #查看待办项中所有资产信息
