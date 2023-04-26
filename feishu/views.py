@@ -84,15 +84,25 @@ class feishu(viewsets.ViewSet):
             "code": code,
             "redirect_uri": redirect,
         }
+        print(body)
         resp = requests.post("https://passport.feishu.cn/suite/passport/oauth/token", 
                              body, 
                              headers={"Content-Type": "application/x-www-form-urlencoded"})
+        try:
+            print(resp.json())
+        except Exception:
+            print(resp.content)
         if resp.status_code != 200:
             raise Failure("请求token失败，授权码可能失效")
         resp = resp.json()
         access_token = resp['access_token']
+        print(access_token)
         userinfo = requests.get("https://passport.feishu.cn/suite/passport/oauth/userinfo",
                                 headers={"Authorization": "Bearer " + access_token})
+        try:
+            print(userinfo.json())
+        except Exception:
+            print(userinfo.content)
         if userinfo.status_code != 200:
             raise Failure("获取用户信息失败")
         userinfo = userinfo.json()

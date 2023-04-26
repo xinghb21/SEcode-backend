@@ -4,6 +4,7 @@ import json
 import re
 
 from django.contrib.auth.hashers import make_password
+from django import db
 
 from user.models import User
 from department.models import Department,Entity
@@ -23,6 +24,8 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
 from rest_framework.renderers import JSONRenderer
+
+from feishu.event.info import applyOutcome
 
 class EpViewSet(viewsets.ViewSet):
     authentication_classes = [LoginAuthentication]
@@ -275,6 +278,13 @@ class EpViewSet(viewsets.ViewSet):
                     asset.user = None
                     asset.belonging = admin
                 asset.save()
+        # cyh
+        # 通知员工审批结果,审批人的回复
+        db.close_old_connections()
+        newprocess = applyOutcome(req.data)
+        db.close_old_connections()
+        newprocess.start()
+        # cyh
         return Response({"code":0,"detail":"ok"})
     
     #查看待办项中所有资产信息
