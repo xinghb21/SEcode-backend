@@ -88,6 +88,17 @@ class esTest(TestCase):
     def setcat(self,assetname,label):
         return self.client.post("/user/ns/setcat",{"assetname":assetname,"label":label}, content_type="application/json")
     
+    def preprocess(self):
+        self.logout("op1")
+        self.login("ep","ep")
+        resp = self.reply(1,0)
+        resp = self.reply(2,0)
+        self.logout("ep")
+        self.login("op1","op1")
+        assets1 = [{"id": 1,"assetname": "hutao","assetnumber": 20}]
+        assets2 = [{"id": 2,"assetname": "hutao2","assetnumber": 1}]
+        return assets1,assets2
+    
     def test_apply_and_reply(self):
         p = Pending.objects.filter(initiator=1)
         self.assertNotEqual(p.first(), None)
@@ -111,14 +122,7 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["assets"], [{'id': 3, 'name': 'hutao3', 'type': 0, 'state': {'1': 1}}, {'id': 1, 'name': 'hutao', 'type': 1, 'state': {'1': 50}}])
     
     def test_exchange_and_reply(self):
-        self.logout("op1")
-        self.login("ep","ep")
-        resp = self.reply(1,0)
-        resp = self.reply(2,0)
-        self.logout("ep")
-        self.login("op1","op1")
-        assets1 = [{"id": 1,"assetname": "hutao","assetnumber": 20}]
-        assets2 = [{"id": 2,"assetname": "hutao2","assetnumber": 1}]
+        assets1,assets2 = self.preprocess()
         resp = self.exchange(assets1,"I'm OP","op2")
         self.assertEqual(resp.json()["code"], 0)
         resp = self.exchange(assets1,"I'm OP","op4")
@@ -131,28 +135,14 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["detail"], "目标用户不是员工")
 
     def test_maintain_and_reply(self):
-        self.logout("op1")
-        self.login("ep","ep")
-        resp = self.reply(1,0)
-        resp = self.reply(2,0)
-        self.logout("ep")
-        self.login("op1","op1")
-        assets1 = [{"id": 1,"assetname": "hutao","assetnumber": 20}]
-        assets2 = [{"id": 2,"assetname": "hutao2","assetnumber": 1}]
+        assets1,assets2 = self.preprocess()
         resp = self.maintain(assets1,"I'm OP")
         self.assertEqual(resp.json()["code"], 0)
         resp = self.maintain(assets2,"I'm OP")
         self.assertEqual(resp.json()["code"], 0)
     
     def test_return_and_reply(self):
-        self.logout("op1")
-        self.login("ep","ep")
-        resp = self.reply(1,0)
-        resp = self.reply(2,0)
-        self.logout("ep")
-        self.login("op1","op1")
-        assets1 = [{"id": 1,"assetname": "hutao","assetnumber": 20}]
-        assets2 = [{"id": 2,"assetname": "hutao2","assetnumber": 1}]
+        assets1,assets2 = self.preprocess()
         resp = self.returnassets(assets1,"I'm OP")
         self.assertEqual(resp.json()["code"], 0)
         resp = self.returnassets(assets2,"I'm OP")

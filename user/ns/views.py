@@ -332,8 +332,9 @@ class NsViewSet(viewsets.ViewSet):
         msglist = []
         for msg in msgs:
             pending = Pending.objects.filter(id=msg.pending).first()
-            assets = [{"assetname":list(item.keys())[0],"number":item[list(item.keys())[0]]} for item in json.loads(pending.asset)]
-            msglist.append({"id":msg.id,"type":msg.type,"status":pending.result,"message":msg.content,"info":assets})
+            if pending:
+                assets = [{"assetname":list(item.keys())[0],"number":item[list(item.keys())[0]]} for item in json.loads(pending.asset)]
+                msglist.append({"id":msg.id,"type":msg.type,"status":pending.result,"message":msg.content,"info":assets})
         return Response({"code":0,"info":msglist})
     
     #员工是否存在未读信息
