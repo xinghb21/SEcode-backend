@@ -73,6 +73,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'utils.log_middleware.LogMiddle',
     # Remove CSRF middleware to make it happy, although insecure :(
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -177,9 +178,10 @@ REST_FRAMEWORK = {
 }
 
 # csrf
-# CSRF_TRUSTED_ORIGINS  =  [ 
-#     "https://frontend-feature-Aplus.app.secoder.net",
-#     "https://Aplus-frontend-Aplus.app.secoder.net",
-#     "https://frontend-dev-Aplus.app.secoder.net",
-# ]
+CSRF_TRUSTED_ORIGINS  =  [ 
+    "https://frontend-feature-Aplus.app.secoder.net",
+    "https://Aplus-frontend-Aplus.app.secoder.net",
+    "https://frontend-dev-Aplus.app.secoder.net",
+    "http://localhost:3000",
+]
 
