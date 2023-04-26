@@ -319,7 +319,7 @@ class asset(viewsets.ViewSet):
 class assetclass(APIView):
     authentication_classes = [LoginAuthentication]
     permission_classes = [GeneralPermission]
-    allowed_identity = [EP]
+    allowed_identity = [EP,EN]
     
     @Check
     def delete(self,req:Request):

@@ -69,7 +69,21 @@ class EpViewSet(viewsets.ViewSet):
             else:
                 asset.status = 1
             asset.save()
-    
+
+    #同意时将资产从暂存区移除
+    def leave_buffer(self,asset,staff,assetdict,assetname):
+        #本资产的所有预备条目
+        pro = json.loads(asset.process)
+        #资产待审批数量减少
+        for i in pro:
+            if list(i.keys())[0] == staff.name:
+                if assetdict[assetname] < i[staff.name]:
+                    i[staff.name] -= assetdict[assetname]
+                else:
+                    pro.remove(i)
+                break
+        asset.process = json.dumps(pro)
+        
     #产生消息
     def create_message(self,result,pending_id,type,reply):
         operate = ""
@@ -132,17 +146,7 @@ class EpViewSet(viewsets.ViewSet):
                 if not asset:continue
                 #数量型
                 if asset.type:
-                    #本资产的所有预备条目
-                    pro = json.loads(asset.process)
-                    #资产待审批数量减少
-                    for i in pro:
-                        if list(i.keys())[0] == staff.name:
-                            if assetdict[assetname] < i[staff.name]:
-                                i[staff.name] -= assetdict[assetname]
-                            else:
-                                pro.remove(i)
-                            break
-                    asset.process = json.dumps(pro)
+                    self.leave_buffer(asset,staff,assetdict,assetname)
                     #同意，更新usage
                     if status == 0:
                         use = json.loads(asset.usage)
@@ -185,17 +189,7 @@ class EpViewSet(viewsets.ViewSet):
                 asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
                 #数量型
                 if asset.type:
-                    #本资产的所有预备条目
-                    pro = json.loads(asset.process)
-                    #资产待审批数量减少
-                    for i in pro:
-                        if list(i.keys())[0] == staff.name:
-                            if assetdict[assetname] < i[staff.name]:
-                                i[staff.name] -= assetdict[assetname]
-                            else:
-                                pro.remove(i)
-                            break
-                    asset.process = json.dumps(pro)
+                    self.leave_buffer(asset,staff,assetdict,assetname)
                     #跨部门
                     if destdep != depart:
                         asset.number -= assetdict[assetname]
@@ -245,17 +239,7 @@ class EpViewSet(viewsets.ViewSet):
                 #待办单条资产
                 asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
                 if asset.type:
-                    #本资产的所有预备条目
-                    pro = json.loads(asset.process)
-                    #资产待审批数量减少
-                    for i in pro:
-                        if list(i.keys())[0] == staff.name:
-                            if assetdict[assetname] < i[staff.name]:
-                                i[staff.name] -= assetdict[assetname]
-                            else:
-                                pro.remove(i)
-                            break
-                    asset.process = json.dumps(pro)
+                    self.leave_buffer(asset,staff,assetdict,assetname)
                     maintain = json.loads(asset.maintain)
                     if not maintain:
                         asset.maintain = json.dumps([{staff.name:assetdict[assetname]}])
@@ -284,17 +268,7 @@ class EpViewSet(viewsets.ViewSet):
                 #待办单条资产
                 asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
                 if asset.type:
-                    #本资产的所有预备条目
-                    pro = json.loads(asset.process)
-                    #资产待审批数量减少
-                    for i in pro:
-                        if list(i.keys())[0] == staff.name:
-                            if assetdict[assetname] < i[staff.name]:
-                                i[staff.name] -= assetdict[assetname]
-                            else:
-                                pro.remove(i)
-                            break
-                    asset.process = json.dumps(pro)
+                    self.leave_buffer(asset,staff,assetdict,assetname)
                     asset.number_idle += assetdict[assetname]
                 else:
                     asset.status = 0
