@@ -1,5 +1,6 @@
 from utils import utils_time
 from django.db import models
+import django.utils.timezone as timezone
 from utils.utils_request import return_field
 from department.models import Department, Entity
 from user.models import User
@@ -10,7 +11,7 @@ import json
 class Feishu(models.Model):
     id = models.BigAutoField(primary_key=True)
     
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
+    user = models.OneToOneField("user.User", on_delete=models.CASCADE, null=True, related_name="feishu")
     
     token_create_time = models.FloatField(default=utils_time.get_timestamp)
     
@@ -38,7 +39,7 @@ class Feishu(models.Model):
             ret = {
                 "id": self.id,
                 "user": self.user.name,
-                "create_time": self.create_time,
+                "token_create_time": self.token_create_time,
                 "access_token": self.access_token,
                 "access_expires_in": self.access_expires_in,
                 "refresh_token": self.refresh_token,
@@ -49,7 +50,7 @@ class Feishu(models.Model):
             raise Failure("序列化失败")
         
     class Meta:
-        db_table = "FeishuUser"
+        db_table = "feishu"
         
 # 记录到达的事件以检测重复事件
 class Event(models.Model):
@@ -62,6 +63,9 @@ class Event(models.Model):
     # 整数，单位为秒
     create_time = models.BigIntegerField(verbose_name="创建时间", default=utils_time.get_timestamp)
     
+    # 整数，单位为秒
+    create_time_format = models.CharField(verbose_name="创建时间", default=utils_time.get_time, max_length=255)
+    
     class Meta:
         db_table = "Event"
     
@@ -69,7 +73,7 @@ class Event(models.Model):
 class EventException(models.Model):
     id = models.BigAutoField(primary_key=True)
     
-    event = models.OneToOneField(Event, on_delete=models.CASCADE)
+    event = models.OneToOneField(Event, on_delete=models.CASCADE, null=True)
     
     msg = models.TextField(verbose_name="报错信息")
     
