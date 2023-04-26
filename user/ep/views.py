@@ -72,7 +72,21 @@ class EpViewSet(viewsets.ViewSet):
             else:
                 asset.status = 1
             asset.save()
-    
+
+    #同意时将资产从暂存区移除
+    def leave_buffer(self,asset,staff,assetdict,assetname):
+        #本资产的所有预备条目
+        pro = json.loads(asset.process)
+        #资产待审批数量减少
+        for i in pro:
+            if list(i.keys())[0] == staff.name:
+                if assetdict[assetname] < i[staff.name]:
+                    i[staff.name] -= assetdict[assetname]
+                else:
+                    pro.remove(i)
+                break
+        asset.process = json.dumps(pro)
+        
     #产生消息
     def create_message(self,result,pending_id,type,reply):
         operate = ""
@@ -87,7 +101,7 @@ class EpViewSet(viewsets.ViewSet):
         if result == False:
             return "您编号为%d的%s请求已通过审批" % (pending_id,operate)
         else:
-            return "您编号为%d的%s请求未通过审批\n拒绝理由:%s" % (pending_id,operate,reply)
+            return "您编号为%d的%s请求未通过审批,拒绝理由:%s" % (pending_id,operate,reply)
     
     #资产管理员审批请求
     @Check
@@ -135,17 +149,7 @@ class EpViewSet(viewsets.ViewSet):
                 if not asset:continue
                 #数量型
                 if asset.type:
-                    #本资产的所有预备条目
-                    pro = json.loads(asset.process)
-                    #资产待审批数量减少
-                    for i in pro:
-                        if list(i.keys())[0] == staff.name:
-                            if assetdict[assetname] < i[staff.name]:
-                                i[staff.name] -= assetdict[assetname]
-                            else:
-                                pro.remove(i)
-                            break
-                    asset.process = json.dumps(pro)
+                    self.leave_buffer(asset,staff,assetdict,assetname)
                     #同意，更新usage
                     if status == 0:
                         use = json.loads(asset.usage)
@@ -188,17 +192,7 @@ class EpViewSet(viewsets.ViewSet):
                 asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
                 #数量型
                 if asset.type:
-                    #本资产的所有预备条目
-                    pro = json.loads(asset.process)
-                    #资产待审批数量减少
-                    for i in pro:
-                        if list(i.keys())[0] == staff.name:
-                            if assetdict[assetname] < i[staff.name]:
-                                i[staff.name] -= assetdict[assetname]
-                            else:
-                                pro.remove(i)
-                            break
-                    asset.process = json.dumps(pro)
+                    self.leave_buffer(asset,staff,assetdict,assetname)
                     #跨部门
                     if destdep != depart:
                         asset.number -= assetdict[assetname]
@@ -234,7 +228,7 @@ class EpViewSet(viewsets.ViewSet):
                         asset.save()
             #跨部门还需要向接受方发起类型确认的消息
             if destdep != depart:
-                pd = Pending(entity=ent,department=destdep.id,initiator=pen.initiator,destination=pen.destination,asset=pen.asset,type=5)
+                pd = Pending(entity=ent,department=destdep.id,initiator=pen.initiator,destination=pen.destination,asset=pen.asset,type=5,result=1)
                 pd.save()
                 Message.objects.create(user=pen.destination,type=5,pending=pd.id,content="请为转移资产选择类别")
         #资产维保
@@ -248,17 +242,7 @@ class EpViewSet(viewsets.ViewSet):
                 #待办单条资产
                 asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
                 if asset.type:
-                    #本资产的所有预备条目
-                    pro = json.loads(asset.process)
-                    #资产待审批数量减少
-                    for i in pro:
-                        if list(i.keys())[0] == staff.name:
-                            if assetdict[assetname] < i[staff.name]:
-                                i[staff.name] -= assetdict[assetname]
-                            else:
-                                pro.remove(i)
-                            break
-                    asset.process = json.dumps(pro)
+                    self.leave_buffer(asset,staff,assetdict,assetname)
                     maintain = json.loads(asset.maintain)
                     if not maintain:
                         asset.maintain = json.dumps([{staff.name:assetdict[assetname]}])
@@ -287,17 +271,7 @@ class EpViewSet(viewsets.ViewSet):
                 #待办单条资产
                 asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
                 if asset.type:
-                    #本资产的所有预备条目
-                    pro = json.loads(asset.process)
-                    #资产待审批数量减少
-                    for i in pro:
-                        if list(i.keys())[0] == staff.name:
-                            if assetdict[assetname] < i[staff.name]:
-                                i[staff.name] -= assetdict[assetname]
-                            else:
-                                pro.remove(i)
-                            break
-                    asset.process = json.dumps(pro)
+                    self.leave_buffer(asset,staff,assetdict,assetname)
                     asset.number_idle += assetdict[assetname]
                 else:
                     asset.status = 0
@@ -373,14 +347,15 @@ class EpViewSet(viewsets.ViewSet):
     def assetclear(self,req:Request):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        id = require(req.data, "id", "int" , err_msg="Error type of [id]")
-        assetname = require(req.data, "assetname", "string" , err_msg="Error type of [assetname]")
-        asset = Asset.objects.filter(id=id,entity=ent,department=dep,name=assetname).first()
-        if not asset:
-            raise Failure("资产不存在")
-        if not (utils_time.get_timestamp() - asset.create_time > asset.life * 31536000 or asset.expire):
-            raise Failure("资产尚未报废或达到年限")
-        asset.delete()
+        assetnames = require(req.data, "name", "list" , err_msg="Error type of [name]")
+        assets = [Asset.objects.filter(entity=ent,department=dep,name=assetname).first() for assetname in assetnames]
+        for asset in assets:
+            if not asset:
+                raise Failure("资产不存在")
+            if not (utils_time.get_timestamp() - asset.create_time > asset.life * 31536000 or asset.expire):
+                raise Failure("资产尚未报废或达到年限")
+        for asset in assets:
+            asset.delete()
         return Response({"code":0,"info":"success"})
     
     def getparse(self,body, key, tp):
@@ -409,7 +384,7 @@ class EpViewSet(viewsets.ViewSet):
     
     #条件查询资产
     @Check
-    @action(detail=False, methods=['get'], url_path="queryasset")
+    @action(detail=False, methods=['get','post'], url_path="queryasset")
     def queryasset(self,req:Request):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
@@ -425,7 +400,9 @@ class EpViewSet(viewsets.ViewSet):
         price_to = self.getparse(req.data,"priceto","float")
         id = self.getparse(req.data,"id","int")
         custom = self.getparse(req.data,"custom","string")
-        print(not parent,not assetclass,not name,not belonging,not time_from,not time_to,not user,not status,not price_from,not price_to,not id,not custom)
+        content = self.getparse(req.data,"content","string")
+        if content and not custom:
+            raise Failure("请先选择属性")
         assets = Asset.objects.filter(entity=ent,department=dep).all()
         if parent:
             parentasset = Asset.objects.filter(entity=ent,department=dep,name=parent).first()
@@ -465,7 +442,7 @@ class EpViewSet(viewsets.ViewSet):
                     if not item.user or item.user.name != user:
                         return_list.remove(item)
             assets = list(return_list)
-        if status or status == 0:
+        if status >= 0:
             for item in assets:
                 flag = False
                 if item.type:
@@ -498,17 +475,16 @@ class EpViewSet(viewsets.ViewSet):
                     return_list.remove(item)
             assets = list(return_list)
         if custom:
-            cst= eval(custom)
-            key = list(cst.keys())[0]
             for item in assets:
                 add = json.loads(item.additional)
-                if key not in add:
+                flag = False
+                if custom in add:
+                    if not content:
+                        flag = True
+                    else:
+                        if add[custom] == content:
+                            flag = True
+                if not flag:
                     return_list.remove(item)
-                    continue
-                else:
-                    if cst[key]:
-                        if add[key] != cst[key]:
-                            return_list.remove(item)
-                            continue
         return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name,"type":item.type}for item in return_list]})
         
