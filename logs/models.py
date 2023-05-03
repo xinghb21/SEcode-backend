@@ -1,6 +1,8 @@
 from utils import utils_time
 from django.db import models
 from utils.utils_request import return_field
+from asset.models import Asset
+from user.models import User
 
 # Create your models here.
 class Logs(models.Model):
@@ -17,7 +19,7 @@ class Logs(models.Model):
     #时间戳
     time = models.FloatField(default=utils_time.get_timestamp)
     
-    #日志类型，1人员，2部门，3资产
+    #日志类型,1人员登录，2部门变动，3人员变动
     type = models.IntegerField(default=1)
 
     class Meta:
