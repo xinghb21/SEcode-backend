@@ -502,3 +502,53 @@ class EpViewSet(viewsets.ViewSet):
                     return_list.remove(item)
         return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name,"type":item.type}for item in return_list]})
         
+#防止父结构出现自环
+    def validparent(self,asset,name):
+        if asset.name == name:
+            return False
+        while(asset.parent != None):
+            asset = asset.parent
+            if asset.name == name:
+                return False
+        return True
+    
+#资产信息变更
+    @Check
+    @action(detail=False, methods=['post'], url_path="modifyasset")
+    def modifyasset(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        name = require(req.data, "name", "string" , err_msg="Error type of [name]")
+        parent = self.getparse(req.data,"parent","string")
+        price =  self.getparse(req.data,"price","float")
+        number = self.getparse(req.data,"number","int")
+        description = self.getparse(req.data,"description","string")
+        add = req.data["addition"] if "addition" in req.data.keys() else {}
+        print(name,parent,price,number,description,add)
+        asset = Asset.objects.filter(entity=ent,department=dep,name=name).first()
+        if not asset:
+            raise Failure("资产不存在")
+        if parent:
+            parentasset = Asset.objects.filter(name=parent).first()
+            if not parentasset:
+                raise Failure("父级资产不存在")
+            if self.validparent(parentasset,name) == False:
+                raise Failure("资产类别关系存在自环")
+            asset.parent = parentasset
+        if add:
+            addition = json.loads(asset.additional)
+            addition.update(add)
+            asset.additional = json.dumps(addition)
+        if price != "":
+            asset.price = price
+            asset.renew_time = utils_time.get_timestamp()
+            AssetLog(asset=asset,type=7,price=price).save()
+        if number != "":
+            if asset.type:
+                asset.number += number - asset.number_idle
+                asset.number_idle = number
+        if description != "":
+            asset.description = description
+        asset.save()
+        return Response({"code":0,"info":"success"})
+
