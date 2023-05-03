@@ -1,6 +1,8 @@
 from utils import utils_time
 from django.db import models
 from utils.utils_request import return_field
+from asset.models import Asset
+from user.models import User
 
 # Create your models here.
 class Logs(models.Model):
@@ -17,7 +19,7 @@ class Logs(models.Model):
     #时间戳
     time = models.FloatField(default=utils_time.get_timestamp)
     
-    #日志类型，1人员，2部门，3资产
+    #日志类型,1人员登录，2部门变动，3人员变动
     type = models.IntegerField(default=1)
 
     class Meta:
@@ -76,4 +78,42 @@ class accessTimeOutLogs(models.Model):
     class Meta:
         db_table = 'accessTimeOutLogs'
     
+class AssetLog(models.Model):
+    #主键自增
+    id = models.BigAutoField(primary_key=True)
     
+    #关联资产
+    asset = models.ForeignKey('asset.Asset', null=True, on_delete=models.CASCADE)
+    
+    #操作类别,1创建(包括资产管理员创建和作为转移目标),2领用,3转移,4维保,5维保完成,6退库,7价值更改
+    type = models.IntegerField(default=0)
+    
+    #更改的价值
+    price = models.FloatField(default=0)
+    
+    #数量，条目型为1
+    number = models.IntegerField(default=1)
+    
+    #源用户,转移，维保，退库操作应该存在
+    src = models.ForeignKey("user.User",null=True ,on_delete=models.SET_NULL, related_name="src")
+    
+    #目的用户,领用,转移,维保,维保完成操作应该存在
+    dest = models.ForeignKey("user.User",null=True ,on_delete=models.SET_NULL, related_name="dest")
+    
+    #操作完成时间
+    time = models.FloatField(default=utils_time.get_timestamp)
+    
+    class Meta:
+        db_table = "AssetLog"
+
+    def serialize(self):
+        return{
+            "id":self.id,
+            "asset":self.asset.name,
+            "type":self.type,
+            "number":self.number,
+            "src":self.src.name,
+            "dest":self.dest.name,
+            "time":self.time
+        }
+

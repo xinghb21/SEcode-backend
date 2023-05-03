@@ -52,6 +52,9 @@ class Asset(models.Model):
     #资产的创建时间
     create_time = models.FloatField(default=utils_time.get_timestamp)
     
+    #资产价值更新时间
+    renew_time =  models.FloatField(default=utils_time.get_timestamp,null=True)
+
     #资产的说明和描述
     description = models.TextField(default="")
     
@@ -106,6 +109,7 @@ class Asset(models.Model):
                 "price":self.price,
                 "life":self.life,
                 "create_time":self.create_time,
+                "renew_tiem":self.renew_time,
                 "description":self.description,
                 "additional": json.loads(self.additional),
             }
