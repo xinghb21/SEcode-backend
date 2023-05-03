@@ -26,6 +26,7 @@ from rest_framework import viewsets
 from rest_framework.renderers import JSONRenderer
 
 from feishu.event.info import applySubmit
+from feishu.event.approval import newApproval
 
 class NsViewSet(viewsets.ViewSet):
     authentication_classes = [LoginAuthentication]
@@ -203,6 +204,11 @@ class NsViewSet(viewsets.ViewSet):
         newprocess = applySubmit(req.user, req.data)
         db.close_old_connections()
         newprocess.start()
+        # 给资产管理员发送消息
+        db.close_old_connections()
+        newprocess2 = newApproval(pending.id)
+        db.close_old_connections()
+        newprocess2.start()
         # cyh
         return Response({"code":0,"info":"success"})
 
