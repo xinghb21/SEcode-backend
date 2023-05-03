@@ -17,7 +17,7 @@ from utils.identity import *
 from utils.permission import GeneralPermission
 from utils.session import LoginAuthentication
 from utils.exceptions import Failure, ParamErr, Check
-
+import math
 from rest_framework.decorators import action, throttle_classes, permission_classes, authentication_classes, api_view
 from rest_framework.response import Response
 from rest_framework.request import Request
@@ -103,3 +103,41 @@ class AsViewSet(viewsets.ViewSet):
             "tbfixNumber":expire
         }
         return Response({"code":0,"info":info})
+
+    #价值折旧计算
+    def price_count(self,asset,timestamp):
+        if asset.expire == True or timestamp - asset.create_time > asset.life * 31536000:
+            return 0.00
+        else:
+            return round(float(asset.price) * ( 1 - (timestamp - asset.create_time) / (asset.life * 31536000)),2)
+    
+    #资产净总价值
+    @Check
+    @action(detail=False,methods=['get'],url_path="totalnvalue")
+    def totalnvalue(self,req:Request):
+        totalnetvalue = 0.00
+        assets = self.preprocess(req.user)
+        for item in assets:
+            if item.type:
+                totalnetvalue += 1.00 * item.number * self.price_count(item,utils_time.get_timestamp() - int(utils_time.get_timestamp()) % 86400)
+            else:
+                totalnetvalue += self.price_count(item,utils_time.get_timestamp() - int(utils_time.get_timestamp()) % 86400)
+        return Response({"code":0,"info":{"totalnetvalue":totalnetvalue}})
+    
+    #近30天内资产净值
+    @Check
+    @action(detail=False,methods=['get'],url_path="nvcurve")
+    def nvcureve(self,req:Request):
+        valuelist = []
+        today = utils_time.get_timestamp() - int(utils_time.get_timestamp()) % 86400
+        assets = self.preprocess(req.user)
+        for i in range(30):
+            day = today - (29 - i) * 86400
+            totalnetvalue = 0.00
+            for item in assets:
+                if item.type:
+                    totalnetvalue += 1.00 * item.number * self.price_count(item,day)
+                else:
+                    totalnetvalue += self.price_count(item,day)
+            valuelist.append({"date":int(day),"netvalue":round(totalnetvalue,2)})
+        return Response({"code":0,"info":valuelist})
