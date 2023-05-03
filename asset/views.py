@@ -5,7 +5,7 @@ import time
 
 from user.models import User
 from department.models import Department, Entity
-from logs.models import Logs
+from logs.models import AssetLog
 from asset.models import Asset, AssetClass
 
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
@@ -299,7 +299,7 @@ class asset(viewsets.ViewSet):
                 
         for a in toadd:
             a.save()
-            
+            AssetLog(asset=a,type=1,number=a.number if a.type else 1,src=req.user).save()
         return Response({"code": 0, "detail": "success"})
     # cyh
     # 批量删除资产
