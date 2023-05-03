@@ -552,3 +552,71 @@ class EpViewSet(viewsets.ViewSet):
         asset.save()
         return Response({"code":0,"info":"success"})
 
+    #调拨的有效检查
+    def valid_asset(self,assets):
+        assetlist = []
+        #错误检查
+        for assetdict in assets:
+            id = assetdict["id"]
+            name = assetdict["assetname"]
+            number = assetdict["assetnumber"]
+            asset = Asset.objects.filter(id=id).first()
+            if not asset or asset.name != name:
+                raise Failure("资产信息错误")
+            if asset.type and asset.number_idle < number:
+                raise Failure("闲置资产数量不足")
+            assetlist.append({name:number})
+        return assetlist
+    
+    #调拨的资产状态改变
+    def asset_in_process(self,assets,username):
+        for assetdict in assets:
+            id = assetdict["id"]
+            number = assetdict["assetnumber"]
+            asset = Asset.objects.filter(id=id).first()
+            #数量型
+            if asset.type:
+                asset.number_idle -= number
+                process = json.loads(asset.process)
+                if not process:
+                    asset.process = json.dumps([{username:number}])
+                else:
+                    needupdate = True
+                    for term in process:
+                        if username in term:
+                            term.update({username:term[username]+number})
+                            needupdate = False
+                            break
+                    if needupdate:
+                        process.append({username:number})
+                    asset.process = json.dumps(process)
+            #条目型
+            else:
+                asset.status = 5
+            asset.save()
+    
+    #申请资产调拨
+    @Check
+    @action(detail=False, methods=['post'], url_path="transfer")
+    def transfer(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        fromdep = Department.objects.filter(id=req.user.department).first()
+        assets = require(req.data, "transfer", "list" , err_msg="Error type of [transfer]")
+        reason = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
+        department = require(req.data, "department", "string" , err_msg="Error type of [department]")
+        todep = Department.objects.filter(name=department).first()
+        if not todep:
+            raise Failure("目标部门不存在")
+        dest = User.objects.filter(id=todep.admin).first()
+        if not dest:
+            raise Failure("目标部门无资产管理员")
+        assetlist = self.valid_asset(assets)
+        for asset in assetlist:
+            assetname = list(asset.keys())[0]
+            sameasset = Asset.objects.filter(entity=ent,department=todep,name=assetname).first()
+            if sameasset:
+                raise Failure("资产%s在目标用户所在部门存在同名资产" % assetname)
+        self.asset_in_process(assets,req.user.name)
+        pending = Pending(entity=ent.id,department=fromdep.id,initiator=req.user.id,destination=dest.id,asset=json.dumps(assetlist),type=2,description=reason)
+        pending.save()
+        return Response({"code":0,"info":"success"})
