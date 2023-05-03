@@ -502,7 +502,7 @@ class EpViewSet(viewsets.ViewSet):
                     return_list.remove(item)
         return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name,"type":item.type}for item in return_list]})
         
-#防止父结构出现自环
+    #防止父结构出现自环
     def validparent(self,asset,name):
         if asset.name == name:
             return False
@@ -512,7 +512,7 @@ class EpViewSet(viewsets.ViewSet):
                 return False
         return True
     
-#资产信息变更
+    #资产信息变更
     @Check
     @action(detail=False, methods=['post'], url_path="modifyasset")
     def modifyasset(self,req:Request):
