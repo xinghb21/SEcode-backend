@@ -507,3 +507,12 @@ class EsViewSet(viewsets.ViewSet):
             raise Failure("该用户不在业务实体内")
         apps = json.loads(user.apps)
         return Response({"code": 0,"info": apps["data"]})
+
+#获取操作日志
+    @Check
+    @action(detail=False,methods=['get'])
+    def getlogs(self,req:Request):
+        page = int(req.query_params["page"])
+        logs = list(Logs.objects.filter(entity=req.user.entity).all().order_by("-time"))
+        return_list = logs[10 * page - 10:10 * page:]
+        return Response({"code": 0,"info": [{"id":item.id,"type":item.type,"content":item.content,"time":item.time} for item in return_list],"count":len(logs)})
