@@ -198,7 +198,7 @@ class asset(viewsets.ViewSet):
             raise Failure("该资产不存在")
         ret = {
             "code": 0,
-            **asset.serialize(),
+            "data": {**asset.serialize()},
         }
         return Response(ret)    
                
