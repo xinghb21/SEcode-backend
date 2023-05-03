@@ -183,7 +183,7 @@ class asset(viewsets.ViewSet):
             asset = asset.filter(price__lte=pto)
         ret = {
             "code": 0,
-            "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name, "description": ast.description, "type": ast.type} for ast in asset] 
+            "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name if ast.category != None else "请手动设定资产类别", "description": ast.description, "type": ast.type} for ast in asset] 
         }
         return Response(ret)
     
