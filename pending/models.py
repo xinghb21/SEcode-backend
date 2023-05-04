@@ -23,7 +23,7 @@ class Pending(models.Model):
     #目标资产名称和数量列表
     asset = models.TextField(default="[]")
     
-    #申请类型，枚举，0已审批，1领用，2转移，3维保，4退库, 5转移者确定类型
+    #申请类型，枚举，0已审批，1领用，2转移，3维保，4退库, 5转移者确定类型,6调拨
     type = models.IntegerField(default=0)
     
     #申请人的描述信息

@@ -124,7 +124,7 @@ def assginES(req:HttpRequest):
             return request_failed(-1,"此用户名已存在")
         es = User(name=username,password=make_password(pwd),entity=ent.id,department=0,identity=2,lockedapp="001110000")
         es.save()
-        Logs(entity = ent.id,content="创建系统管理员"+es.name,type=1).save()
+        Logs(entity = ent.id,content="创建系统管理员"+es.name,type=3).save()
         ent.admin = es.id
         ent.save()
         return request_success({"username":es.name})
@@ -138,7 +138,7 @@ def deleteSingleES(ent):
     es.delete()
     ent.admin = 0
     ent.save()
-    Logs(entity = ent.id,content="删除系统管理员"+name,type=1).save()
+    Logs(entity = ent.id,content="删除系统管理员"+name,type=3).save()
 
 #删除单个业务实体管理员
 @CheckRequire
