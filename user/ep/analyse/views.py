@@ -151,4 +151,4 @@ class AsViewSet(viewsets.ViewSet):
                 else:
                     value += self.price_count(item,day)
             valuelist.append({"date":int(day),"netvalue":round(value,2)})
-        return Response({"code":0,"info":valuelist})
+        return Response({"code":0,"info":valuelist.reverse()})

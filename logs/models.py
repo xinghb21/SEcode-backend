@@ -117,8 +117,8 @@ class AssetLog(models.Model):
             "asset":self.asset.name,
             "type":self.type,
             "number":self.number,
-            "src":self.src.name,
-            "dest":self.dest.name,
+            "src":self.src.name if self.src else "",
+            "dest":self.dest.name if self.dest else "",
             "time":self.time
         }
 

@@ -3,6 +3,7 @@ import json
 import re
 import time
 
+from django.http import HttpRequest, HttpResponse
 from user.models import User
 from department.models import Department, Entity
 from logs.models import AssetLog
@@ -377,7 +378,8 @@ class assetclass(APIView):
         })
 # cyh
 
-#hyx资产信息和全视图
+#hyx
+#资产详细信息
 @api_view(['GET'])
 @authentication_classes([LoginAuthentication])
 @permission_classes([GeneralPermission])
@@ -390,6 +392,23 @@ def getdetail(req:Request):
         raise Failure("该资产不存在")
     ret = {
         "code": 0,
-        **asset.serialize(),
+        "data":asset.serialize(),
     }
     return Response(ret)
+
+#资产全视图，标签二维码显示，不需要登录
+@CheckRequire
+def fulldetail(req:HttpRequest,id:any):
+    asset = Asset.objects.filter(id=int(id)).first()
+    if not asset:
+        return HttpResponse("资产不存在")
+    content = ""
+    content += "<b>资产名称</b>:" + asset.name + '<br/>'
+    if asset.category:
+        content += "<b>资产类别</b>:" + asset.category.name + "(" + ("数量型" if asset.type else "条目型") + ")" + '<br/>'
+    else:
+        content += "<b>资产类别</b>:" + ("数量型" if asset.type else "条目型") + ",尚未确定具体类别"+ '<br/>'
+    if asset.parent:
+        content += "<b>上级资产</b>:" + asset.parent.name + '<br/>'
+    logs = list(AssetLog.objects.filter(asset=asset).all())
+    return HttpResponse(content)

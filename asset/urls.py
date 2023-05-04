@@ -9,5 +9,6 @@ router.register("", asset, basename="asset")
 
 urlpatterns = router.urls + [
     path("assetclass", assetclass.as_view()),
-    path("getdetail",assetView.getdetail)
+    path("getdetail",assetView.getdetail),
+    path("fulldetail/<id>",assetView.fulldetail)
 ]
