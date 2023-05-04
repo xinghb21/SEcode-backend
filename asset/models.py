@@ -101,17 +101,16 @@ class Asset(models.Model):
     def serialize(self):
         ret = {
                 "id":self.id,
-                "parent":self.parent.name if self.parent else None,
+                "parent":self.parent.name if self.parent else "暂无上级资产",
                 "department":self.department.name,
                 "entity": self.entity.name,
-                "category": self.category.name,
+                "category": self.category.name if self.category else "暂未确认类别",
                 "type": self.type,
                 "name":self.name,
-                "belonging":self.belonging.name,
+                "belonging":self.belonging.name if self.belonging else "暂无挂账人",
                 "price":self.price,
                 "life":self.life,
                 "create_time":self.create_time,
-                "renew_tiem":self.renew_time,
                 "description":self.description,
                 "additional": json.loads(self.additional),
                 "haspic":self.haspic
@@ -126,7 +125,7 @@ class Asset(models.Model):
             ret["expire"] = self.expire
             return ret
         else:
-            ret["user"] = self.user.name if self.user else None
+            ret["user"] = self.user.name if self.user else "暂无使用者"
             ret["status"] = self.status
             return ret
             

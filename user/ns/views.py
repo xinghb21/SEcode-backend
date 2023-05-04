@@ -40,13 +40,13 @@ class NsViewSet(viewsets.ViewSet):
         dep = Department.objects.filter(id=user.department).first()
         asset_item = Asset.objects.filter(entity=ent,department=dep,type=False,user=user).all()
         asset_num_all = Asset.objects.filter(entity=ent,department=dep,type=True).all()
-        return_list = [{"id":i.id,"name":i.name,"type":0,"state":{str(i.status):1}} for i in asset_item]
+        return_list = [{"id":i.id,"name":i.name,"type":0,"state":{str(i.status):1},"haspic":i.haspic} for i in asset_item]
         for i in asset_num_all:
             statedict = {}
             users = json.loads(i.usage)
             maintains = json.loads(i.maintain)
             process = json.loads(i.process)
-            return_dict = {"id":i.id,"name":i.name,"type":1,"state":statedict}
+            return_dict = {"id":i.id,"name":i.name,"type":1,"state":statedict,"haspic":i.haspic}
             belong = False
             for dict in users:
                 if user.name in list(dict.keys())[0]:
@@ -271,7 +271,9 @@ class NsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=['get'],url_path="possess")
     def possess(self,req:Request):
         list = self.staffassets(req.user.name)
-        return Response({"code":0,"assets":list})
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        return Response({"code":0,"assets":list,"entity":ent.name,"department":dep.name})
 
     #获取申请中涉及的的资产
     @Check

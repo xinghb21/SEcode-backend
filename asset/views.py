@@ -16,7 +16,7 @@ from utils.permission import GeneralPermission
 from utils.session import LoginAuthentication
 from utils.exceptions import Failure, ParamErr, Check
 
-from rest_framework.decorators import action, throttle_classes, permission_classes
+from rest_framework.decorators import action, permission_classes,api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import viewsets
@@ -186,21 +186,6 @@ class asset(viewsets.ViewSet):
             "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name if ast.category != None else "请手动设定资产类别", "description": ast.description, "type": ast.type} for ast in asset] 
         }
         return Response(ret)
-    
-    @Check
-    @action(detail=False, methods=["get"], url_path="getdetail")
-    def get_detail(self, req:Request):
-        name = require(req.query_params, "name", err_msg="Missing or error type of [name]")
-        et = Entity.objects.filter(id=req.user.entity).first()
-        dep = Department.objects.filter(id=req.user.department).first()
-        asset = Asset.objects.filter(entity=et, department=dep, name=name).first()
-        if not asset:
-            raise Failure("该资产不存在")
-        ret = {
-            "code": 0,
-            **asset.serialize(),
-        }
-        return Response(ret)    
                
     @Check  
     @action(detail=False, methods=["post"], url_path="post") 
@@ -254,9 +239,8 @@ class asset(viewsets.ViewSet):
                 additional = json.dumps(additional)
             else:
                 additional = "{}"
-            if 'hasimage' in asset.keys() and asset["hasimage"] != None:
+            if 'hasimage' in asset.keys() :
                 hasimage = require(asset, 'hasimage', 'boolean', "Error type of [hasimage]")
-                print(hasimage)
             else:
                 hasimage = False
             if tp == True:
@@ -392,3 +376,20 @@ class assetclass(APIView):
             "data": [clas.name for clas in classes],
         })
 # cyh
+
+#hyx资产信息和全视图
+@api_view(['GET'])
+@authentication_classes([LoginAuthentication])
+@permission_classes([GeneralPermission])
+def getdetail(req:Request):
+    id = require(req.query_params, "id", err_msg="Missing or error type of [id]")
+    et = Entity.objects.filter(id=req.user.entity).first()
+    dep = Department.objects.filter(id=req.user.department).first()
+    asset = Asset.objects.filter(entity=et, department=dep, id=id).first()
+    if not asset:
+        raise Failure("该资产不存在")
+    ret = {
+        "code": 0,
+        **asset.serialize(),
+    }
+    return Response(ret)
