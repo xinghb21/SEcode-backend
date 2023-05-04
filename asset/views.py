@@ -291,7 +291,7 @@ class asset(viewsets.ViewSet):
                 
         for a in toadd:
             a.save()
-            AssetLog(asset=a,type=1,entity=req.user.entity,department=req.user.department,number=a.number if a.type else 1,src=req.user).save()
+            AssetLog(asset=a,type=1,entity=req.user.entity,department=req.user.department,number=a.number if a.type else 1).save()
         return Response({"code": 0, "detail": "success"})
     # cyh
     # 批量删除资产
@@ -402,13 +402,70 @@ def fulldetail(req:HttpRequest,id:any):
     asset = Asset.objects.filter(id=int(id)).first()
     if not asset:
         return HttpResponse("资产不存在")
-    content = ""
-    content += "<b>资产名称</b>:" + asset.name + '<br/>'
+    content = "<h4>基本信息<h4/>"
+    content += "资产名称:" + asset.name + '<br/>'
+    content += "资产编号:" + str(asset.id) + '<br/>'
+    content += "业务实体:" + asset.entity.name + '<br/>'
+    content += "所属部门:" + asset.department.name + '<br/>'
+    content += "创建时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
     if asset.category:
-        content += "<b>资产类别</b>:" + asset.category.name + "(" + ("数量型" if asset.type else "条目型") + ")" + '<br/>'
+        content += "资产类别:" + asset.category.name + "(" + ("数量型" if asset.type else "条目型") + ")" + '<br/>'
     else:
-        content += "<b>资产类别</b>:" + ("数量型" if asset.type else "条目型") + ",尚未确定具体类别"+ '<br/>'
+        content += "资产类别:" + ("数量型" if asset.type else "条目型") + ",尚未确定具体类别"+ '<br/>'
     if asset.parent:
-        content += "<b>上级资产</b>:" + asset.parent.name + '<br/>'
-    logs = list(AssetLog.objects.filter(asset=asset).all())
+        content += "上级资产:" + asset.parent.name + '<br/>'
+    if asset.belonging:
+        content += "挂账人:" + asset.belonging.name + '<br/>'
+    
+    content += "原市值:" + str(float(asset.price)) + '<br/>'
+    content += "描述信息:" + (asset.description if asset.description else "暂无描述") + '<br/>'
+    addition = json.loads(asset.additional)
+    if addition:
+        for key in addition:
+            content += "%s:%s" % (key,addition[key])  + '<br/>'
+    content += "<h4>使用情况<h4/>"
+    if asset.expire:
+        content += "已报废<br/>"
+    elif asset.type:
+        content += "总数量:" + str(asset.number) + '<br/>'
+        content += "闲置数量:" + str(asset.number_idle) + '<br/>'
+        content += "清退数量:" + str(asset.number_expire) + '<br/>'
+        usage = json.loads(asset.usage)
+        maintain = json.loads(asset.maintain)
+        process = json.loads(asset.process)
+        if usage:
+            content += "<h5>使用<h5/>"
+            for user in usage:
+                content += "%s:%d" % (list(user.keys())[0],user[list(user.keys())[0]]) + '<br/>'
+        if maintain:
+            content += "<h5>维保<h5/>"
+            for user in maintain:
+                content += "%s:%d" % (list(user.keys())[0],user[list(user.keys())[0]]) + '<br/>'
+        if process:
+            content += "<h5>入库审批<h5/>"
+            for user in process:
+                content += "%s:%d" % (list(user.keys())[0],user[list(user.keys())[0]]) + '<br/>'
+    else:
+        content += "使用者:" + (asset.user.name if asset.user else "无") + '<br/>'
+        content += "状态:" + ("闲置" if asset.status == 0 else ("使用" if asset.status == 1 else("维保" if asset.status == 2 else ("清退") if asset.status == 3 else ("废弃") if asset.status == 4 else "入库审批"))) + '<br/>'
+    logs = list(AssetLog.objects.filter(asset=asset).all().order_by("-time"))[0:30:]
+    content += "<h4>调动历史<h4/>"
+    for log in logs:
+        if log.type == 1:
+            if log.src:
+                content += "用户%s从外部门获取,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            else:
+                content += "资产管理员导入,数量:%d" % log.number + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+        if log.type == 2:
+            content += "用户%s领用,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+        if log.type == 3:
+            content += "用户%s向用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+        if log.type == 4:
+            content += "用户%s维保,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+        if log.type == 5:
+            content += "用户%s维保完成,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+        if log.type == 6:
+            content += "用户%s退库,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+        if log.type == 7:
+            content += "用户%s向外部门用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
     return HttpResponse(content)
