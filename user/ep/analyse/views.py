@@ -135,12 +135,11 @@ class AsViewSet(viewsets.ViewSet):
             value = 0.0
             day = today - i * 86400
             #根据资产日志还原当天的资产列表
-            addlog = AssetLog.objects.filter(entity=req.user.entity,department=req.user.department,type=1,time__gte=day-86400,time__lte=day).all
-            ()
-            removelog = AssetLog.objects.filter(entity=req.user.entity,department=req.user.department,type=7,time__gte=day-86400,time__lte=day).all()
+            addlog = list(AssetLog.objects.filter(entity=req.user.entity,department=req.user.department,type=1,time__gte=day-86400,time__lte=day).all())
+            removelog = list(AssetLog.objects.filter(entity=req.user.entity,department=req.user.department,type=7,time__gte=day-86400,time__lte=day).all())
             for i in addlog:
                 if i.asset in assets:
-                    assets.remove(i)
+                    assets.remove(i.asset)
             for i in removelog:
                 assets.append(i.asset)
             if not assets:
