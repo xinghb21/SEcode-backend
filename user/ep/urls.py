@@ -5,4 +5,6 @@ from rest_framework.routers import DefaultRouter
 router = DefaultRouter(trailing_slash=False)
 router.register("", EpViewSet, basename="ns")
 
-urlpatterns = router.urls
+urlpatterns = router.urls +[
+    path('as/', include("user.ep.analyse.urls")),
+]

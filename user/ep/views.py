@@ -165,8 +165,8 @@ class EpViewSet(viewsets.ViewSet):
                             if needupdate:
                                 use.append({staff.name:assetdict[assetname]})
                             asset.usage = json.dumps(use)
+                        AssetLog(asset=asset,entity=staff.entity,department=staff.department,type=2,number=assetdict[assetname],dest=staff).save()
                     #不同意，更新闲置
-                        AssetLog(asset=asset,type=2,number=assetdict[assetname],dest=staff).save()
                     else:
                         asset.number_idle += assetdict[assetname]
                 #条目型
@@ -176,7 +176,7 @@ class EpViewSet(viewsets.ViewSet):
                         asset.status = 1
                         asset.user = staff
                         asset.belonging = staff
-                        AssetLog(asset=asset,type=2,number=1,dest=staff).save()
+                        AssetLog(asset=asset,entity=staff.entity,department=staff.department,type=2,number=1,dest=staff).save()
                     else:
                         asset.status = 0
                 asset.save()
@@ -201,8 +201,10 @@ class EpViewSet(viewsets.ViewSet):
                         destlist = [{destuser.name:assetdict[assetname]}]
                         newasset = Asset(entity=entity,department=destdep,name=assetname,type=1,belonging=destuser,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,number=assetdict[assetname],number_idle=0,usage=json.dumps(destlist))
                         newasset.save()
-                        AssetLog(asset=asset,type=3,number=assetdict[assetname],src=staff,dest=destuser).save()
-                        AssetLog(asset=newasset,type=1,number=assetdict[assetname],src=staff).save()
+                        #转移者
+                        AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,number=assetdict[assetname],src=staff,dest=destuser).save()
+                        #接收者
+                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,number=assetdict[assetname],src=staff).save()
 
                     #同部门
                     else:
@@ -219,7 +221,7 @@ class EpViewSet(viewsets.ViewSet):
                             if needupdate:
                                 use.append({destuser.name:assetdict[assetname]})
                             asset.usage = json.dumps(use)
-                        AssetLog(asset=asset,type=3,number=assetdict[assetname],src=staff,dest=destuser).save()
+                        AssetLog(asset=asset,type=3,entity=destuser.entity,department=destuser.department,number=assetdict[assetname],src=staff,dest=destuser).save()
                     asset.save()
                 #条目型
                 else:
@@ -227,15 +229,19 @@ class EpViewSet(viewsets.ViewSet):
                     if destdep != depart:
                         newasset = Asset(entity=entity,department=destdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,belonging=destuser,user=destuser,status=1)
                         newasset.save()
-                        asset.delete()
-                        AssetLog(asset=newasset,type=1,number=1,src=staff).save()
+                        asset.status = 4
+                        asset.save()
+                        #转移者
+                        AssetLog(asset=newasset,type=7,entity=staff.entity,department=staff.department,number=1,src=staff,dest=destuser).save()
+                        #接受者
+                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,number=1,src=staff).save()
                     #同部门
                     else:
                         asset.belonging = destuser
                         asset.user = destuser
                         asset.status = 1
                         asset.save()
-                        AssetLog(asset=asset,type=3,number=1,src=staff,dest=destuser).save()
+                        AssetLog(asset=asset,type=3,entity=destuser.entity,department=destuser.department,number=1,src=staff,dest=destuser).save()
             #跨部门还需要向接受方发起类型确认的消息
             if destdep != depart:
                 pd = Pending(entity=ent,department=destdep.id,initiator=pen.initiator,destination=pen.destination,asset=pen.asset,type=5,result=1)
@@ -266,10 +272,10 @@ class EpViewSet(viewsets.ViewSet):
                         if needupdate:
                             maintain.append({staff.name:assetdict[assetname]})
                         asset.maintain = json.dumps(maintain)
-                    AssetLog(asset=asset,type=4,number=assetdict[assetname],src=staff).save()
+                    AssetLog(asset=asset,type=4,entity=staff.entity,department=staff.department,number=assetdict[assetname],src=staff).save()
                 else:
                     asset.status = 2
-                    AssetLog(asset=asset,type=4,number=1,src=staff).save()
+                    AssetLog(asset=asset,type=4,entity=staff.entity,department=staff.department,number=1,src=staff).save()
                 asset.save()
         #资产退库
         if ptype == 4:
@@ -285,12 +291,12 @@ class EpViewSet(viewsets.ViewSet):
                 if asset.type:
                     self.leave_buffer(asset,staff,assetdict,assetname)
                     asset.number_idle += assetdict[assetname]
-                    AssetLog(asset=asset,type=6,number=assetdict[assetname],src=staff).save()
+                    AssetLog(asset=asset,type=6,entity=staff.entity,department=staff.department,number=assetdict[assetname],src=staff).save()
                 else:
                     asset.status = 0
                     asset.user = None
                     asset.belonging = admin
-                    AssetLog(asset=asset,type=6,number=1,src=staff).save()
+                    AssetLog(asset=asset,type=6,entity=staff.entity,department=staff.department,number=1,src=staff).save()
                 asset.save()
         # cyh
         # 通知员工审批结果,审批人的回复
@@ -502,7 +508,7 @@ class EpViewSet(viewsets.ViewSet):
                     return_list.remove(item)
         return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name,"type":item.type}for item in return_list]})
         
-#防止父结构出现自环
+    #防止父结构出现自环
     def validparent(self,asset,name):
         if asset.name == name:
             return False
@@ -512,7 +518,7 @@ class EpViewSet(viewsets.ViewSet):
                 return False
         return True
     
-#资产信息变更
+    #资产信息变更
     @Check
     @action(detail=False, methods=['post'], url_path="modifyasset")
     def modifyasset(self,req:Request):
@@ -539,10 +545,6 @@ class EpViewSet(viewsets.ViewSet):
             addition = json.loads(asset.additional)
             addition.update(add)
             asset.additional = json.dumps(addition)
-        if price != "":
-            asset.price = price
-            asset.renew_time = utils_time.get_timestamp()
-            AssetLog(asset=asset,type=7,price=price).save()
         if number != "":
             if asset.type:
                 asset.number += number - asset.number_idle
