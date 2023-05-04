@@ -92,6 +92,8 @@ class Asset(models.Model):
     expire = models.BooleanField(null=False, default=False)
     # ---------数量型资产使用----------------
     
+    #有无图片
+    haspic = models.BooleanField(default=False)
 
     class Meta:
         db_table = "Asset"
@@ -112,6 +114,7 @@ class Asset(models.Model):
                 "renew_tiem":self.renew_time,
                 "description":self.description,
                 "additional": json.loads(self.additional),
+                "haspic":self.haspic
             }
         if self.type:
             ret["number"] = self.number

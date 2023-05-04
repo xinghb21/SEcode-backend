@@ -8,7 +8,7 @@ from django.contrib.auth.hashers import make_password
 from user.models import User
 from department.models import Department,Entity
 from asset.models import Asset
-from logs.models import Logs
+from logs.models import AssetLog
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
@@ -130,14 +130,26 @@ class AsViewSet(viewsets.ViewSet):
     def nvcureve(self,req:Request):
         valuelist = []
         today = utils_time.get_timestamp() - int(utils_time.get_timestamp()) % 86400
-        assets = self.preprocess(req.user)
+        assets = list(self.preprocess(req.user))
         for i in range(30):
-            day = today - (29 - i) * 86400
-            totalnetvalue = 0.00
+            value = 0.0
+            day = today - i * 86400
+            #根据资产日志还原当天的资产列表
+            addlog = AssetLog.objects.filter(entity=req.user.entity,department=req.user.department,type=1,time__gte=day-86400,time__lte=day).all
+            ()
+            removelog = AssetLog.objects.filter(entity=req.user.entity,department=req.user.department,type=7,time__gte=day-86400,time__lte=day).all()
+            for i in addlog:
+                if i.asset in assets:
+                    assets.remove(i)
+            for i in removelog:
+                assets.append(i.asset)
+            if not assets:
+                valuelist.append({"date":int(day),"netvalue":-1})
+                continue
             for item in assets:
                 if item.type:
-                    totalnetvalue += 1.00 * item.number * self.price_count(item,day)
+                    value += 1.00 * item.number * self.price_count(item,day)
                 else:
-                    totalnetvalue += self.price_count(item,day)
-            valuelist.append({"date":int(day),"netvalue":round(totalnetvalue,2)})
+                    value += self.price_count(item,day)
+            valuelist.append({"date":int(day),"netvalue":round(value,2)})
         return Response({"code":0,"info":valuelist})

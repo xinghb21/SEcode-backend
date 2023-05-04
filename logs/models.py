@@ -15,7 +15,6 @@ class Logs(models.Model):
     #内容，手动填入
     content = models.TextField(default="{}")
     
-    
     #时间戳
     time = models.FloatField(default=utils_time.get_timestamp)
     
@@ -82,10 +81,16 @@ class AssetLog(models.Model):
     #主键自增
     id = models.BigAutoField(primary_key=True)
     
+    #业务实体id
+    entity = models.BigIntegerField(default=0)
+    
+    #部门id
+    department = models.BigIntegerField(default=0)
+    
     #关联资产
     asset = models.ForeignKey('asset.Asset', null=True, on_delete=models.CASCADE)
     
-    #操作类别,1创建(包括资产管理员创建和作为转移目标),2领用,3转移,4维保,5维保完成,6退库,7价值更改
+    #操作类别,1创建(包括资产管理员创建和作为转移目标),2领用,3同部门转移,4维保,5维保完成,6退库,7跨部门转移
     type = models.IntegerField(default=0)
     
     #更改的价值

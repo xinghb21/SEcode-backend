@@ -254,6 +254,11 @@ class asset(viewsets.ViewSet):
                 additional = json.dumps(additional)
             else:
                 additional = "{}"
+            if 'hasimage' in asset.keys() and asset["hasimage"] != None:
+                hasimage = require(asset, 'hasimage', 'boolean', "Error type of [hasimage]")
+                print(hasimage)
+            else:
+                hasimage = False
             if tp == True:
                 number = require(asset, "number", "int", "Missing or error type of [number]")
                 if number < 0:
@@ -279,7 +284,8 @@ class asset(viewsets.ViewSet):
                                     usage=usage,
                                     maintain=maintain,
                                     number_expire=number_expire,
-                                    expire=expire))
+                                    expire=expire,
+                                    haspic=hasimage))
             else:
                 user = None
                 status = 0
@@ -295,11 +301,12 @@ class asset(viewsets.ViewSet):
                                     description=description, 
                                     additional=additional,
                                     user=user,
-                                    status=status))
+                                    status=status,
+                                    haspic=hasimage))
                 
         for a in toadd:
             a.save()
-            AssetLog(asset=a,type=1,number=a.number if a.type else 1,src=req.user).save()
+            AssetLog(asset=a,type=1,entity=req.user.entity,department=req.user.department,number=a.number if a.type else 1,src=req.user).save()
         return Response({"code": 0, "detail": "success"})
     # cyh
     # 批量删除资产
