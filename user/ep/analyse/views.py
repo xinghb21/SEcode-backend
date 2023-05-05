@@ -132,7 +132,7 @@ class AsViewSet(viewsets.ViewSet):
                 totalnetvalue += 1.00 * item.number * self.price_count(item,utils_time.get_timestamp() - int(utils_time.get_timestamp()) % 86400)
             else:
                 totalnetvalue += self.price_count(item,utils_time.get_timestamp() - int(utils_time.get_timestamp()) % 86400)
-        return Response({"code":0,"info":{"totalnetvalue":totalnetvalue}})
+        return Response({"code":0,"info":{"totalnetvalue":round(totalnetvalue,2)}})
     
     #近30天内资产净值
     @Check
