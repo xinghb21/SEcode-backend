@@ -305,7 +305,8 @@ class asset(viewsets.ViewSet):
         dep = Department.objects.filter(id=req.user.department).first()
         assets = Asset.objects.filter(entity=et, department=dep, name__in=names).exclude(status=4)
         for asset in assets:
-            AssetLog(type=8,entity=req.user.entity,department=req.user.department,number=asset.number if asset.type else 1,price=asset.price * asset.number,expire_time=asset.create_time).save()
+            if asset.number and asset.price:
+                AssetLog(type=8,entity=req.user.entity,department=req.user.department,number=asset.number if asset.type else 1,price=asset.price * asset.number,expire_time=asset.create_time).save()
             asset.delete()
         return Response({"code": 0, "detail": "success"})
   
