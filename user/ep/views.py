@@ -676,11 +676,11 @@ class EpViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['post'], url_path="setcat")
     def setcat(self,req:Request):
-        assetname = require(req.data, "assetname", "string" , err_msg="Error type of [assetname]")
+        id = require(req.data, "id", "int" , err_msg="Error type of [id]")
         label = require(req.data, "label", "string" , err_msg="Error type of [label]")
         dep = Department.objects.filter(id=req.user.department).first()
         ent = Entity.objects.filter(id=req.user.entity).first()
-        asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+        asset = Asset.objects.filter(entity=ent,department=dep,id=id).first()
         assetclass = AssetClass.objects.filter(entity=ent,department=dep,name=label).first()
         if not asset:
             raise Failure("资产不存在")
