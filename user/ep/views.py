@@ -671,3 +671,23 @@ class EpViewSet(viewsets.ViewSet):
         pending = Pending(entity=ent.id,department=todep.id,initiator=req.user.id,destination=dest.id,asset=json.dumps(assetlist),type=6,description=reason)
         pending.save()
         return Response({"code":0,"info":"success"})
+    
+    #为调拨的资产选定类别
+    @Check
+    @action(detail=False, methods=['post'], url_path="setcat")
+    def setcat(self,req:Request):
+        assetname = require(req.data, "assetname", "string" , err_msg="Error type of [assetname]")
+        label = require(req.data, "label", "string" , err_msg="Error type of [label]")
+        dep = Department.objects.filter(id=req.user.department).first()
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+        assetclass = AssetClass.objects.filter(entity=ent,department=dep,name=label).first()
+        if not asset:
+            raise Failure("资产不存在")
+        if not assetclass:
+            raise Failure("资产类别不存在")
+        if asset.type != assetclass.type:
+            raise Failure("资产与资产类别类型不符")
+        asset.category = assetclass
+        asset.save()
+        return Response({"code":0,"info":"success"})
