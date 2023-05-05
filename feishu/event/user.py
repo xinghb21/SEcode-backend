@@ -15,6 +15,26 @@ from feishu.tokens import get_tenant_token
 from feishu.event.event_exception import CatchException
 from feishu.models import Event, Feishu
 
+# 构造新业务实体和部门，返回业务实体和最后一级部门的id
+def build_departments(items, e):
+    parent_dept = []
+    for item in items:
+        parent_dept.append(item["name"])
+    parent_dept.reverse()
+    if len(parent_dept) == 0:
+        raise Exception(e, "该用户没有所属部门")
+    entity = parent_dept[0]
+    et = Entity.objects.filter(name=entity).first()
+    if not et:
+        et = Entity.objects.create(name=entity)
+    parent = 0
+    for i in range(1, len(parent_dept)):
+        dep = Department.objects.filter(entity=et.id, name=parent_dept[i]).first()
+        if not dep:
+            dep = Department.objects.create(name=parent_dept[i], entity=et.id, parent=parent)
+        parent = dep.id
+    return (et, parent)
+
 class createUser(Process):
     def __init__(self, event:dict, e:Event):
         super().__init__()
@@ -28,8 +48,6 @@ class createUser(Process):
         if fs:
             raise Exception(self.e, "该飞书用户已经存在")
         dep_id = obj["department_ids"][0]
-        # 父部门名称列表
-        parent_dept = []
         # 获取父部门列表
         resp = requests.get("https://open.feishu.cn/open-apis/contact/v3/departments/parent",
                             params={
@@ -43,22 +61,7 @@ class createUser(Process):
         if res["code"] != 0:
             raise Exception(self.e, res["msg"])
         items = res["data"]["items"]
-        for item in items:
-            parent_dept.append(item["name"])
-        parent_dept.reverse()
-        if len(parent_dept) == 0:
-            raise Exception(self.e, "该用户没有所属部门")
-        entity = parent_dept[0]
-        
-        et = Entity.objects.filter(name=entity).first()
-        if not et:
-            et = Entity.objects.create(name=entity)
-        parent = 0
-        for i in range(1, len(parent_dept)):
-            dep = Department.objects.filter(entity=et.id, name=parent_dept[i]).first()
-            if not dep:
-                dep = Department.objects.create(name=parent_dept[i], entity=et.id, parent=parent)
-            parent = dep.id
+        et, parent = build_departments(items, self.e)
         resp = requests.get("https://open.feishu.cn/open-apis/contact/v3/departments/"+dep_id,
                             params={
                                 "department_id_type": "open_department_id",
@@ -148,7 +151,6 @@ class updateUser(Process):
             new_dep = obj["department_ids"][0]
             if old_dep == new_dep:
                 raise Exception(self.e, "用户并未变更部门")
-            parent_dept = []
             # 获取父部门列表
             resp = requests.get("https://open.feishu.cn/open-apis/contact/v3/departments/parent",
                                 params={
@@ -162,21 +164,7 @@ class updateUser(Process):
             if res["code"] != 0:
                 raise Exception(self.e, str(res["code"]) + res["msg"])
             items = res["data"]["items"]
-            for item in items:
-                parent_dept.append(item["name"])
-            parent_dept.reverse()
-            if len(parent_dept) == 0:
-                raise Exception(self.e, "该用户没有所属部门")
-            entity = parent_dept[0]
-            et = Entity.objects.filter(name=entity).first()
-            if not et:
-                et = Entity.objects.create(name=entity)
-            parent = 0
-            for i in range(1, len(parent_dept)):
-                dep = Department.objects.filter(entity=et.id, name=parent_dept[i]).first()
-                if not dep:
-                    dep = Department.objects.create(name=parent_dept[i], entity=et.id, parent=parent)
-                parent = dep.id
+            et, parent = build_departments(items, self.e)
             resp = requests.get("https://open.feishu.cn/open-apis/contact/v3/departments/"+new_dep,
                                 params={
                                     "department_id_type": "open_department_id",
