@@ -139,6 +139,7 @@ class AsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=['get'],url_path="nvcurve")
     def nvcureve(self,req:Request):
         valuelist = []
+        deleteprices = []
         today = int(utils_time.get_timestamp()) - int(utils_time.get_timestamp()) % 86400
         dep = Department.objects.filter(id=req.user.department).first()
         deps = self.get_departs(dep,[dep])
@@ -146,16 +147,25 @@ class AsViewSet(viewsets.ViewSet):
         assets = list(self.preprocess(req.user))
         for i in range(30):
             value = 0.0
+            deletevalue = 0.0
             day = today - i * 86400
             #根据资产日志还原当天的资产列表
             addlog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=1,time__gte=day,time__lte=day+86400).all())
             removelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=7,time__gte=day,time__lte=day+86400).all())
+            deletelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=8,time__gte=day,time__lte=day+86400).all())
+            for item in deletelog:
+                deleteprices.append((item.price,item.expire_time))
+            for item in deleteprices:
+                if item[1] > day:
+                    deleteprices.remove(item)
+                else:
+                    deletevalue += item[0]
             for item in assets:
                 if item.type:
                     value += 1.00 * item.number * self.price_count(item,day)
                 else:
                     value += self.price_count(item,day)
-            valuelist.append({"date":int(day),"netvalue":round(value,2)})
+            valuelist.append({"date":int(day),"netvalue":round(value + deletevalue,2)})
             for i in addlog:
                 if i.asset in assets:
                     assets.remove(i.asset)

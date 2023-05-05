@@ -52,7 +52,7 @@ class EpViewSet(viewsets.ViewSet):
         for assetdict in assetlist:
             assetname = list(assetdict.keys())[0]
             #待办单条资产
-            asset = Asset.objects.filter(entity=user.entity,department=user.department,name=assetname).first()
+            asset = Asset.objects.filter(entity=user.entity,department=user.department,name=assetname).exclude(status=4).first()
             #数量型
             if asset.type:
                 use = json.loads(asset.usage)
@@ -129,10 +129,10 @@ class EpViewSet(viewsets.ViewSet):
         for assetdict in assets:
             assetname = list(assetdict.keys())[0]
             if ptype != 6:
-                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first()
             else:
                 fromdep = Department.objects.filter(entity=ent,admin=pen.initiator).first()
-                asset = Asset.objects.filter(entity=ent,department=fromdep,name=assetname).first()
+                asset = Asset.objects.filter(entity=ent,department=fromdep,name=assetname).exclude(status=4).first()
             if not asset and status == 0:
                 raise Failure("请求中包含已失效资产，请拒绝")
         assetlist = assets
@@ -151,7 +151,7 @@ class EpViewSet(viewsets.ViewSet):
             for assetdict in assetlist:
                 assetname = list(assetdict.keys())[0]
                 #待办单条资产
-                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first()
                 if not asset:continue
                 #数量型
                 if asset.type:
@@ -197,13 +197,15 @@ class EpViewSet(viewsets.ViewSet):
             for assetdict in assetlist:
                 assetname = list(assetdict.keys())[0]
                 #待办单条资产
-                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first()
                 #数量型
                 if asset.type:
                     self.leave_buffer(asset,staff,assetdict,assetname)
                     #跨部门
                     if destdep != depart:
                         asset.number -= assetdict[assetname]
+                        if asset.number == 0:
+                            asset.status = 4
                         destlist = [{destuser.name:assetdict[assetname]}]
                         newasset = Asset(entity=entity,department=destdep,name=assetname,type=1,belonging=destuser,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,number=assetdict[assetname],number_idle=0,usage=json.dumps(destlist))
                         newasset.save()
@@ -237,7 +239,7 @@ class EpViewSet(viewsets.ViewSet):
                         asset.status = 4
                         asset.save()
                         #转移者
-                        AssetLog(asset=newasset,type=7,entity=staff.entity,department=staff.department,number=1,src=staff,dest=destuser).save()
+                        AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,number=1,src=staff,dest=destuser).save()
                         #接受者
                         AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,number=1,src=staff).save()
                     #同部门
@@ -261,7 +263,7 @@ class EpViewSet(viewsets.ViewSet):
             for assetdict in assetlist:
                 assetname = list(assetdict.keys())[0]
                 #待办单条资产
-                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first()
                 if asset.type:
                     self.leave_buffer(asset,staff,assetdict,assetname)
                     maintain = json.loads(asset.maintain)
@@ -292,7 +294,7 @@ class EpViewSet(viewsets.ViewSet):
             for assetdict in assetlist:
                 assetname = list(assetdict.keys())[0]
                 #待办单条资产
-                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first()
                 if asset.type:
                     self.leave_buffer(asset,staff,assetdict,assetname)
                     asset.number_idle += assetdict[assetname]
@@ -313,7 +315,7 @@ class EpViewSet(viewsets.ViewSet):
                     assetname = list(assetdict.keys())[0]
                     #待办单条资产
                     fromdep = Department.objects.filter(entity=ent,admin=pen.initiator).first()
-                    asset = Asset.objects.filter(entity=ent,department=fromdep,name=assetname).first()
+                    asset = Asset.objects.filter(entity=ent,department=fromdep,name=assetname).exclude(status=4).first()
                     #数量型
                     if asset.type:
                         self.leave_buffer(asset,fromadmin,assetdict,assetname)
@@ -328,11 +330,13 @@ class EpViewSet(viewsets.ViewSet):
                     assetname = list(assetdict.keys())[0]
                     #待办单条资产
                     thisdep = Department.objects.filter(entity=ent,admin=pen.destination).first()
-                    asset = Asset.objects.filter(entity=ent,department=fromdep,name=assetname).first()
+                    asset = Asset.objects.filter(entity=ent,department=fromdep,name=assetname).exclude(status=4).first()
                     #数量型
                     if asset.type:
                         self.leave_buffer(asset,fromadmin,assetdict,assetname)
                         asset.number -= assetdict[assetname]
+                        if asset.number == 0:
+                            asset.status = 4
                         newasset = Asset(entity=entity,department=thisdep,name=assetname,type=1,belonging=thisadmin,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,number=assetdict[assetname],number_idle=assetdict[assetname])
                         newasset.save()
                         #转移者
@@ -344,7 +348,7 @@ class EpViewSet(viewsets.ViewSet):
                         newasset.save()
                         asset.status = 4
                         #转移者
-                        AssetLog(asset=newasset,type=7,entity=fromadmin.entity,department=fromadmin.department,number=1,src=fromadmin,dest=thisadmin).save()
+                        AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,number=1,src=fromadmin,dest=thisadmin).save()
                         #接受者
                         AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,number=1,src=thisadmin).save()
                     asset.save()
@@ -376,7 +380,7 @@ class EpViewSet(viewsets.ViewSet):
         returnlist = []
         for item in assets:
             assetname = list(item.keys())[0]
-            asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).first()
+            asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).exclude(status=4).first()
             returnlist.append({"id":asset.id,"assetname":assetname,"assetclass":asset.category.name,"assetcount":item[assetname]})
         return Response({"code":0,"info":returnlist})
     
@@ -398,8 +402,8 @@ class EpViewSet(viewsets.ViewSet):
     def assetstbc(self,req:Request):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        broken_assets = Asset.objects.filter(entity=ent,department=dep,expire=True).all()
-        find_old_assets = Asset.objects.filter(entity=ent,department=dep,expire=False).all()
+        broken_assets = Asset.objects.filter(entity=ent,department=dep,expire=True).exclude(status=4).all()
+        find_old_assets = Asset.objects.filter(entity=ent,department=dep,expire=False).exclude(status=4).all()
         old_assets = []
         for item in find_old_assets:
             if utils_time.get_timestamp() - item.create_time > item.life * 31536000:
@@ -418,7 +422,7 @@ class EpViewSet(viewsets.ViewSet):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         assetnames = require(req.data, "name", "list" , err_msg="Error type of [name]")
-        assets = [Asset.objects.filter(entity=ent,department=dep,name=assetname).first() for assetname in assetnames]
+        assets = [Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first() for assetname in assetnames]
         for asset in assets:
             if not asset:
                 raise Failure("资产不存在")
@@ -473,9 +477,9 @@ class EpViewSet(viewsets.ViewSet):
         content = self.getparse(req.data,"content","string")
         if content and not custom:
             raise Failure("请先选择属性")
-        assets = Asset.objects.filter(entity=ent,department=dep).all()
+        assets = Asset.objects.filter(entity=ent,department=dep).exclude(status=4).all()
         if parent:
-            parentasset = Asset.objects.filter(entity=ent,department=dep,name=parent).first()
+            parentasset = Asset.objects.filter(entity=ent,department=dep,name=parent).exclude(status=4).first()
             assets = assets.filter(parent=parentasset).all()
         if assetclass:
             cat = AssetClass.objects.filter(entity=ent,department=dep,name=assetclass).first()
@@ -581,11 +585,11 @@ class EpViewSet(viewsets.ViewSet):
         description = self.getparse(req.data,"description","string")
         add = req.data["addition"] if "addition" in req.data.keys() else {}
         print(name,parent,price,number,description,add)
-        asset = Asset.objects.filter(entity=ent,department=dep,name=name).first()
+        asset = Asset.objects.filter(entity=ent,department=dep,name=name).exclude(status=4).first()
         if not asset:
             raise Failure("资产不存在")
         if parent:
-            parentasset = Asset.objects.filter(name=parent).first()
+            parentasset = Asset.objects.filter(name=parent).exclude(status=4).first()
             if not parentasset:
                 raise Failure("父级资产不存在")
             if self.validparent(parentasset,name) == False:
@@ -612,7 +616,7 @@ class EpViewSet(viewsets.ViewSet):
             id = assetdict["id"]
             name = assetdict["assetname"]
             number = assetdict["assetnumber"]
-            asset = Asset.objects.filter(id=id).first()
+            asset = Asset.objects.filter(id=id).exclude(status=4).first()
             if not asset or asset.name != name:
                 raise Failure("资产信息错误")
             if (asset.type and asset.number_idle < number) or (not asset.type and asset.status):
@@ -625,7 +629,7 @@ class EpViewSet(viewsets.ViewSet):
         for assetdict in assets:
             id = assetdict["id"]
             number = assetdict["assetnumber"]
-            asset = Asset.objects.filter(id=id).first()
+            asset = Asset.objects.filter(id=id).exclude(status=4).first()
             #数量型
             if asset.type:
                 asset.number_idle -= number
@@ -664,7 +668,7 @@ class EpViewSet(viewsets.ViewSet):
         assetlist = self.valid_asset(assets)
         for asset in assetlist:
             assetname = list(asset.keys())[0]
-            sameasset = Asset.objects.filter(entity=ent,department=todep,name=assetname).first()
+            sameasset = Asset.objects.filter(entity=ent,department=todep,name=assetname).exclude(status=4).first()
             if sameasset:
                 raise Failure("资产%s在目标用户所在部门存在同名资产" % assetname)
         self.asset_in_process(assets,req.user.name)
@@ -680,7 +684,7 @@ class EpViewSet(viewsets.ViewSet):
         label = require(req.data, "label", "string" , err_msg="Error type of [label]")
         dep = Department.objects.filter(id=req.user.department).first()
         ent = Entity.objects.filter(id=req.user.entity).first()
-        asset = Asset.objects.filter(entity=ent,department=dep,id=id).first()
+        asset = Asset.objects.filter(entity=ent,department=dep,id=id).exclude(status=4).first()
         assetclass = AssetClass.objects.filter(entity=ent,department=dep,name=label).first()
         if not asset:
             raise Failure("资产不存在")

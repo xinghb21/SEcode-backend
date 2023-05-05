@@ -129,7 +129,7 @@ class asset(viewsets.ViewSet):
         # 按名字查直接返回单个
         if "name" in req.query_params.keys():
             name = require(req.query_params, "name", err_msg="Error type of [name]")
-            asset = Asset.objects.filter(entity=et, department=dep, name=name).first()
+            asset = Asset.objects.filter(entity=et, department=dep, name=name).exclude(status=4).first()
             if not asset:
                 return Response({
                     "code": 0,
@@ -139,10 +139,10 @@ class asset(viewsets.ViewSet):
                 "code": 0,
                 "data": [return_field(asset.serialize(), ["name", "description", "category", "type"])]
             })
-        asset = Asset.objects.filter(entity=et, department=dep)
+        asset = Asset.objects.filter(entity=et, department=dep).exclude(status=4)
         if "parent" in req.query_params.keys():
             parent = require(req.query_params, "parent", "string", "Error type of [parent]")
-            parent = Asset.objects.filter(entity=et, department=dep, name=parent).first()
+            parent = Asset.objects.filter(entity=et, department=dep, name=parent).exclude(status=4).first()
             if not parent:
                 raise Failure("所提供的上级资产不存在")
             asset = asset.filter(parent=parent)
@@ -199,7 +199,7 @@ class asset(viewsets.ViewSet):
         for asset in req.data:
             if 'parent' in asset.keys() and asset["parent"] != "" and asset["parent"] != None:
                 parent_name = require(asset, 'parent', 'string', "Error type of [parent]")
-                parent = Asset.objects.filter(entity=entity, department=dep, name=parent_name).first()
+                parent = Asset.objects.filter(entity=entity, department=dep, name=parent_name).exclude(status=4).first()
                 if not parent:
                     raise Failure("上级资产不存在")
             else:
@@ -213,7 +213,7 @@ class asset(viewsets.ViewSet):
             name = require(asset, "name", "string", "Missing or error type of [name]")
             if len(name) > 128:
                 raise Failure("名称过长")
-            if Asset.objects.filter(entity=entity, department=dep, name=name).first():
+            if Asset.objects.filter(entity=entity, department=dep, name=name).exclude(status=4).first():
                 raise Failure("名称重复")
             if "belonging" in asset.keys() and asset["belonging"] != "" and asset["belonging"] != None:
                 belonging = require(asset, "belonging", "string", "Missing or error type of [belonging]")
@@ -303,8 +303,9 @@ class asset(viewsets.ViewSet):
             raise ParamErr("请求参数格式不正确")
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        assets = Asset.objects.filter(entity=et, department=dep, name__in=names)
+        assets = Asset.objects.filter(entity=et, department=dep, name__in=names).exclude(status=4)
         for asset in assets:
+            AssetLog(type=8,entity=req.user.entity,department=req.user.department,number=asset.number if asset.type else 1,price=asset.price * asset.number,expire_time=asset.create_time).save()
             asset.delete()
         return Response({"code": 0, "detail": "success"})
   
@@ -387,7 +388,7 @@ def getdetail(req:Request):
     id = require(req.query_params, "id", err_msg="Missing or error type of [id]")
     et = Entity.objects.filter(id=req.user.entity).first()
     dep = Department.objects.filter(id=req.user.department).first()
-    asset = Asset.objects.filter(entity=et, department=dep, id=id).first()
+    asset = Asset.objects.filter(entity=et, department=dep, id=id).exclude(status=4).first()
     if not asset:
         raise Failure("该资产不存在")
     ret = {
@@ -399,7 +400,7 @@ def getdetail(req:Request):
 #资产全视图，标签二维码显示，不需要登录
 @CheckRequire
 def fulldetail(req:HttpRequest,id:any):
-    asset = Asset.objects.filter(id=int(id)).first()
+    asset = Asset.objects.filter(id=int(id)).exclude(status=4).first()
     if not asset:
         return HttpResponse("资产不存在")
     content = "<h4>基本信息<h4/>"
