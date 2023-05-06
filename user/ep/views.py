@@ -344,7 +344,7 @@ class EpViewSet(viewsets.ViewSet):
                         #接收者
                         AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,number=assetdict[assetname],src=thisadmin).save()
                     else:
-                        newasset = Asset(entity=entity,department=destdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,belonging=thisadmin,status=0)
+                        newasset = Asset(entity=entity,department=thisdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,belonging=thisadmin,status=0)
                         newasset.save()
                         asset.status = 4
                         #转移者

@@ -57,6 +57,9 @@ class epTest(TestCase):
     def returnassets(self,assets,reason):
         return self.client.post("/user/ns/returnasset",{"assets":assets,"reason":reason}, content_type="application/json")
     
+    def transfer(self,assets,department,reason):
+        return self.client.post("/user/ep/transfer",{"transfer":assets,"department":department,"reason":reason}, content_type="application/json")
+    
     def preprocess(self):
         resp = self.addassetclass("class1", 1)
         resp = self.addassetclass("class2",0)
@@ -243,4 +246,39 @@ class epTest(TestCase):
         resp = self.client.post("/user/ep/modifyasset",{"name":"asset1","parent":"asset2"})
         self.assertEqual(resp.json()["detail"],"资产类别关系存在自环")
     
-        
+    def test_transfer(self):
+        resp = self.addassetclass("class1", 1)
+        resp = self.addassetclass("class2",0)
+        resp = self.addasset("asset1", "class1", 100)
+        resp = self.addasset("asset2", "class2", 1)
+        assets1 = [{"id":1,"assetname":"asset1","assetnumber":50}]
+        assets2 = [{"id":2,"assetname":"asset2","assetnumber":1}]
+        assets3 = [{"id":1,"assetname":"asset1","assetnumber":30}]
+        resp = self.transfer(assets1,"dep2","transfer")
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.transfer(assets2,"dep2","transfer")
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.transfer(assets3,"dep2","transfer")
+        self.assertEqual(resp.json()["code"], 0)
+        self.logout("ep")
+        self.login("ep2","ep2")
+        resp = self.reply(1,0)
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.reply(2,0)
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.reply(3,1,"reject")
+        self.assertEqual(resp.json()["code"], 0)
+        assets4 = [{"id":1,"assetname":"asset1","assetnumber":10}]
+        resp = self.transfer(assets3,"dep3","transfer")
+        self.assertEqual(resp.json()["detail"], "目标部门不存在")
+        dep4 = Department.objects.create(name="dep4", entity=1)
+        resp = self.transfer(assets3,"dep4","transfer")
+        self.assertEqual(resp.json()["detail"], "目标部门无资产管理员")
+        resp = self.transfer(assets4,"dep2","transfer")
+        self.assertEqual(resp.json()["detail"], "资产asset1在目标用户所在部门存在同名资产")
+        resp = self.addassetclass("class3", 1)
+        resp = self.addassetclass("class4",0)
+        resp = self.client.post("/user/ep/setcat",{"id":3,"label":"class3"})
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.post("/user/ep/setcat",{"id":4,"label":"class4"})
+        self.assertEqual(resp.json()["code"], 0)

@@ -310,6 +310,32 @@ class asset(viewsets.ViewSet):
             asset.delete()
         return Response({"code": 0, "detail": "success"})
     
+    #资产历史格式转换
+    def process_history(self,pagelogs):
+        returnlist = []
+        for item in pagelogs:
+            if item.type == 1:
+                if item.src:
+                    returnlist.append({"type":1,"content":"用户%s从外部门获取,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+                else:
+                    returnlist.append({"type":1,"content":"资产管理员导入,数量:%d" % item.number,"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 2:
+                returnlist.append({"type":2,"content":"用户%s领用,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 3:
+                returnlist.append({"type":3,"content": "用户%s向部门内用户%s转移,数量:%d" % (item.src.name,item.dest.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 4:
+                returnlist.append({"type":4,"content": "用户%s维保,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 5:
+                returnlist.append({"type":4,"content": "用户%s维保完成,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 6:
+                returnlist.append({"type":5,"content": "用户%s退库,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 7:
+                returnlist.append({"type":3,"content": "用户%s向外部门用户%s转移,数量:%d" % (item.src.name,item.dest.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 9:
+                returnlist.append({"type":3,"content": "资产数量更改为%d" % (item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            else: continue
+        return returnlist
+
     #hyx资产历史
     @Check
     @action(detail=False, methods=['get'], url_path="history")
@@ -320,28 +346,21 @@ class asset(viewsets.ViewSet):
         logs = list(AssetLog.objects.filter(asset=asset).all().order_by("-time"))
         count = len(logs)
         pagelogs = logs[10 * page - 10:10 * page:]
-        returnlist = []
-        for item in pagelogs:
-            if item.type == 1:
-                if item.src:
-                    returnlist.append({"type":1,"content":"用户%s从外部门获取,数量:%d" % (item.src.name,item.number),"time":item.time})
-                else:
-                    returnlist.append({"type":1,"content":"资产管理员导入,数量:%d" % item.number,"time":item.time})
-            elif item.type == 2:
-                returnlist.append({"type":2,"content":"用户%s领用,数量:%d" % (item.src.name,item.number),"time":item.time})
-            elif item.type == 3:
-                returnlist.append({"type":3,"content": "用户%s向部门内用户%s转移,数量:%d" % (item.src.name,item.dest.name,item.number),"time":item.time})
-            elif item.type == 4:
-                returnlist.append({"type":4,"content": "用户%s维保,数量:%d" % (item.src.name,item.number),"time":item.time})
-            elif item.type == 5:
-                returnlist.append({"type":4,"content": "用户%s维保完成,数量:%d" % (item.src.name,item.number),"time":item.time})
-            elif item.type == 6:
-                returnlist.append({"type":5,"content": "用户%s退库,数量:%d" % (item.src.name,item.number),"time":item.time})
-            elif item.type == 7:
-                returnlist.append({"type":3,"content": "用户%s向外部门用户%s转移,数量:%d" % (item.src.name,item.dest.name,item.number),"time":item.time})
-            elif item.type == 9:
-                returnlist.append({"type":3,"content": "资产数量更改为%d" % (item.number),"time":item.time})
-            else: continue
+        returnlist = self.process_history(pagelogs)
+        return Response({"code": 0, "info": returnlist,"count":count})
+    
+    #所有历史
+    @Check
+    @action(detail=False, methods=['get'], url_path="allhistory")
+    def allhistory(self,req:Request):
+        page = int(req.query_params["page"])
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        asset = Asset.objects.filter(entity=ent,department=dep).exclude(status=4).all()
+        logs = list(AssetLog.objects.filter(asset__in=list(asset)).all().order_by("-time"))
+        count = len(logs)
+        pagelogs = logs[10 * page - 10:10 * page:]
+        returnlist = self.process_history(pagelogs)
         return Response({"code": 0, "info": returnlist,"count":count})
   
 class assetclass(APIView):
@@ -489,23 +508,23 @@ def fulldetail(req:HttpRequest,id:any):
     for log in logs:
         if log.type == 1:
             if log.src:
-                content += "用户%s从外部门获取,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+                content += "用户%s从外部门获取,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
             else:
-                content += "资产管理员导入,数量:%d" % log.number + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+                content += "资产管理员导入,数量:%d" % log.number + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 2:
-            content += "用户%s领用,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s领用,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 3:
-            content += "用户%s向用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s向用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 4:
-            content += "用户%s维保,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s维保,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 5:
-            content += "用户%s维保完成,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s维保完成,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 6:
-            content += "用户%s退库,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s退库,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 7:
-            content += "用户%s向外部门用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s向外部门用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 8:
-            content += "资产被手动删除" + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "资产被手动删除" + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 9:
-            content += "资产数量更改为%d" % (log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "资产数量更改为%d" % (log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
     return HttpResponse(content)
