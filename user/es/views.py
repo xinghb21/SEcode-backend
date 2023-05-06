@@ -147,6 +147,7 @@ class EsViewSet(viewsets.ViewSet):
             dep.save()
         user.department = dep.id
         user.save()
+        Logs(entity=user.entity,content="用户"+user.name+"部门从"+olddep.name+"变更为"+dep.name,type=3).save()
         ret = {
             "code": 0,
             "name": user.name,
@@ -165,6 +166,7 @@ class EsViewSet(viewsets.ViewSet):
         else:
             user.locked = True
             user.save()
+            Logs(entity=user.entity,content="锁定用户"+user.name,type=3).save()
             return Response({"code": 0, "detail": "成功锁定用户"})
     
     @Check   
@@ -176,6 +178,7 @@ class EsViewSet(viewsets.ViewSet):
         else:
             user.locked = False
             user.save()
+            Logs(entity=user.entity,content="解锁用户"+user.name,type=3).save()
             return Response({"code": 0, "detail": "成功解锁用户"})
     
     # 用于匹配app列表的正则表达式
@@ -415,6 +418,7 @@ class EsViewSet(viewsets.ViewSet):
             user.save()
             dep.admin = user.id
             dep.save()
+            Logs(entity=entity.id,content="员工"+user.name+"升职为部门"+dep.name+"的资产管理员",type=3).save()
         else:
             if user.identity == 3:
                 dep.admin = 0
@@ -422,6 +426,7 @@ class EsViewSet(viewsets.ViewSet):
                 user.identity = 4
                 user.lockedapp = "000000001"
                 user.save()
+                Logs(entity=entity.id,content="部门"+dep.name+"的资产管理员"+user.name+"降职为员工",type=3).save()
         return Response({
             "code": 0,
             "detail": "success"
@@ -502,3 +507,12 @@ class EsViewSet(viewsets.ViewSet):
             raise Failure("该用户不在业务实体内")
         apps = json.loads(user.apps)
         return Response({"code": 0,"info": apps["data"]})
+
+#获取操作日志
+    @Check
+    @action(detail=False,methods=['get'])
+    def getlogs(self,req:Request):
+        page = int(req.query_params["page"])
+        logs = list(Logs.objects.filter(entity=req.user.entity).all().order_by("-time"))
+        return_list = logs[10 * page - 10:10 * page:]
+        return Response({"code": 0,"info": [{"id":item.id,"type":item.type,"content":item.content,"time":item.time} for item in return_list],"count":len(logs)})
