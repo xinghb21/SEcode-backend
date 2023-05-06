@@ -171,6 +171,8 @@ class epTest(TestCase):
         self.assertEqual(resp.json()["code"], 0)
         resp = self.reply(5,1,"Fail")
         self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.get("/user/ep/getallmatain")
+        self.assertEqual(resp.json()["info"], [{'id': 3, 'assets': [{'id': 1, 'name': 'asset1'}]}, {'id': 4, 'assets': [{'id': 2, 'name': 'asset2'}]}])
         self.logout("ep")
         self.login("ns1","ns1")
         assets4 = [{"id": 1,"assetname": "asset1","assetnumber": 20}]

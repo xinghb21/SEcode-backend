@@ -207,7 +207,7 @@ class EpViewSet(viewsets.ViewSet):
                         if asset.number == 0:
                             asset.status = 4
                         destlist = [{destuser.name:assetdict[assetname]}]
-                        newasset = Asset(entity=entity,department=destdep,name=assetname,type=1,belonging=destuser,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,number=assetdict[assetname],number_idle=0,usage=json.dumps(destlist))
+                        newasset = Asset(entity=entity,department=destdep,name=assetname,type=1,belonging=destuser,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,number=assetdict[assetname],number_idle=0,usage=json.dumps(destlist))
                         newasset.save()
                         #转移者
                         AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,number=assetdict[assetname],src=staff,dest=destuser).save()
@@ -234,7 +234,7 @@ class EpViewSet(viewsets.ViewSet):
                 else:
                     #跨部门
                     if destdep != depart:
-                        newasset = Asset(entity=entity,department=destdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,belonging=destuser,user=destuser,status=1)
+                        newasset = Asset(entity=entity,department=destdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,belonging=destuser,user=destuser,status=1)
                         newasset.save()
                         asset.status = 4
                         asset.save()
@@ -337,14 +337,14 @@ class EpViewSet(viewsets.ViewSet):
                         asset.number -= assetdict[assetname]
                         if asset.number == 0:
                             asset.status = 4
-                        newasset = Asset(entity=entity,department=thisdep,name=assetname,type=1,belonging=thisadmin,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,number=assetdict[assetname],number_idle=assetdict[assetname])
+                        newasset = Asset(entity=entity,department=thisdep,name=assetname,type=1,belonging=thisadmin,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,number=assetdict[assetname],number_idle=assetdict[assetname])
                         newasset.save()
                         #转移者
                         AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,number=assetdict[assetname],src=fromadmin,dest=thisadmin).save()
                         #接收者
                         AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,number=assetdict[assetname],src=thisadmin).save()
                     else:
-                        newasset = Asset(entity=entity,department=thisdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additional=asset.additional,belonging=thisadmin,status=0)
+                        newasset = Asset(entity=entity,department=thisdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,belonging=thisadmin,status=0)
                         newasset.save()
                         asset.status = 4
                         #转移者
@@ -697,3 +697,95 @@ class EpViewSet(viewsets.ViewSet):
         asset.category = assetclass
         asset.save()
         return Response({"code":0,"info":"success"})
+    
+    #获取所有维保申请
+    @Check
+    @action(detail=False,methods=['get'],url_path="getallmatain")
+    def getallmatain(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        pendings = Pending.objects.filter(entity=ent.id,department=dep.id,type=3,result=1).all()
+        return_list = []
+        for item in pendings:
+            assets = json.loads(item.asset)
+            assetlist = []
+            for assetdict in assets:
+                assetname = list(assetdict.keys())[0]
+                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+                if asset:
+                    assetlist.append({"id":asset.id,"name":assetname})
+            return_list.append({"id":item.id,"assets":assetlist})
+        return Response({"code":0,"info":return_list})
+    
+    #维保完成, TODO 需要添加日志！
+    @Check
+    @action(detail=False,methods=['post'],url_path="matianover")
+    def matianover(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        assets = require(req.data, "assets", "list" , err_msg="Error type of [assets]")
+        pid = require(req.data, "id", "int" , err_msg="Error type of [id]")
+        pending = Pending.objects.filter(id=pid).first()
+        staff = User.objects.filter(id=pending.initiator).first()
+        numlist = json.loads(pending.asset)
+        numdict = {}
+        for item in numlist:
+            numdict.update({list(item.keys())[0]:item[list(item.keys())[0]]})
+        for item in assets:
+            asset = Asset.objects.filter(id=int(item["id"])).first()
+            if not asset or asset.name != item.name:
+                raise Failure("资产信息有误")
+        useasset = []
+        brokenasset = []
+        for item in assets:
+            asset = Asset.objects.filter(id=int(item["id"])).first()
+            #数量型
+            if asset.type:
+                #移出维保区
+                number = numdict[asset.name]
+                maintain = json.loads(asset.maintain)
+                for term in maintain:
+                    if staff.name in term:
+                        if number == term[staff.name]:
+                            maintain.remove(term)
+                        else:
+                            term.update({staff.name:term[staff.name] - number})
+                        break
+                asset.maintain = json.dumps(maintain)
+                #正常使用
+                if int(item["state"]) == 1:
+                    use = json.loads(asset.usage)
+                    if not use:
+                        asset.usage = json.dumps([{staff.name:number}])
+                    else:
+                        needupdate = True
+                        for term in use:
+                            if staff.name in term:
+                                term.update({staff.name:term[staff.name] + number})
+                                needupdate = False
+                                break
+                        if needupdate:
+                            use.append({staff.name:number})
+                        asset.usage = json.dumps(use)
+                #报废
+                else:
+                    if asset.number_expire != None:
+                        asset.number_expire += number
+                    else:
+                        asset.number_expire = number
+                    if asset.number_expire == asset.number:
+                        asset.expire = True
+            else:
+                if int(item["state"]) == 1:
+                    asset.status = 1
+                else:
+                    asset.status = 4
+                    asset.expire = True
+            asset.save()
+            if int(item["state"]) == 1:
+                useasset.append(item["name"])
+            else:
+                brokenasset.append(item["name"])
+        content = "维保已完成。返还资产:" + str(useasset).replace('[','').replace(']','') + ";报废资产:" + str(brokenasset).replace('[','').replace(']','')
+        Message(user=staff.id,pending=pending.id,type=3,content=content).save()
+        return Response({"code":0,"info":"ok"})

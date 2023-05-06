@@ -121,12 +121,13 @@ class asset(viewsets.ViewSet):
         return Response(ret)
     #hyx end
     
+    #获取所有资产
     @Check
     @action(detail=False, methods=["get"], url_path="get")
     def get_by_condition(self, req:Request):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        # 按名字查直接返回单个
+        '''# 按名字查直接返回单个
         if "name" in req.query_params.keys():
             name = require(req.query_params, "name", err_msg="Error type of [name]")
             asset = Asset.objects.filter(entity=et, department=dep, name=name).exclude(status=4).first()
@@ -138,9 +139,9 @@ class asset(viewsets.ViewSet):
             return Response({
                 "code": 0,
                 "data": [return_field(asset.serialize(), ["name", "description", "category", "type"])]
-            })
-        asset = Asset.objects.filter(entity=et, department=dep).exclude(status=4)
-        if "parent" in req.query_params.keys():
+            })'''
+        asset = Asset.objects.filter(entity=et, department=dep).exclude(status=4).all()
+        '''if "parent" in req.query_params.keys():
             parent = require(req.query_params, "parent", "string", "Error type of [parent]")
             parent = Asset.objects.filter(entity=et, department=dep, name=parent).exclude(status=4).first()
             if not parent:
@@ -181,13 +182,14 @@ class asset(viewsets.ViewSet):
             asset = asset.filter(price__gte=pfrom)
         if "priceto" in req.query_params.keys():
             pto = require(req.query_params, "priceto", "float", err_msg="Error type of [priceto]")
-            asset = asset.filter(price__lte=pto)
+            asset = asset.filter(price__lte=pto)'''
         ret = {
             "code": 0,
             "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name if ast.category != None else "尚未确定具体类别", "description": ast.description, "type": ast.type} for ast in asset] 
         }
         return Response(ret)
                
+    #增加资产
     @Check  
     @action(detail=False, methods=["post"], url_path="post") 
     def post(self, req:Request):
@@ -240,6 +242,10 @@ class asset(viewsets.ViewSet):
                 additional = json.dumps(additional)
             else:
                 additional = "{}"
+            if "additionalinfo" in asset.keys() and asset["additionalinfo"] != "" and asset["additionalinfo"] != None:
+                additionalinfo = require(asset,"additionalinfo","string","Error type of [additionalinfo]")
+            else:
+                additionalinfo = ""
             if 'hasimage' in asset.keys() :
                 hasimage = require(asset, 'hasimage', 'boolean', "Error type of [hasimage]")
             else:
@@ -264,6 +270,7 @@ class asset(viewsets.ViewSet):
                                     life=life, 
                                     description=description, 
                                     additional=additional,
+                                    additionalinfo=additionalinfo,
                                     number=number,
                                     number_idle=number_idle,
                                     usage=usage,
@@ -283,7 +290,8 @@ class asset(viewsets.ViewSet):
                                     belonging=belonging, 
                                     price=price, 
                                     life=life, 
-                                    description=description, 
+                                    description=description,
+                                    additionalinfo=additionalinfo, 
                                     additional=additional,
                                     user=user,
                                     status=status,
@@ -345,7 +353,7 @@ class asset(viewsets.ViewSet):
         asset = Asset.objects.filter(id=id).exclude(status=4).first()
         logs = list(AssetLog.objects.filter(asset=asset).all().order_by("-time"))
         count = len(logs)
-        pagelogs = logs[10 * page - 10:10 * page:]
+        pagelogs = logs[5 * page - 5:5 * page:]
         returnlist = self.process_history(pagelogs)
         return Response({"code": 0, "info": returnlist,"count":count})
     
@@ -474,6 +482,7 @@ def fulldetail(req:HttpRequest,id:any):
     
     content += "原市值:" + str(float(asset.price)) + '<br/>'
     content += "描述信息:" + (asset.description if asset.description else "暂无描述") + '<br/>'
+    content += "html格式补充说明:" + (asset.additionalinfo if asset.additionalinfo else "暂无描述") + '<br/>'
     addition = json.loads(asset.additional)
     if addition:
         for key in addition:
