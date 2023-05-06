@@ -184,7 +184,7 @@ class asset(viewsets.ViewSet):
             asset = asset.filter(price__lte=pto)
         ret = {
             "code": 0,
-            "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name if ast.category != None else "请手动设定资产类别", "description": ast.description, "type": ast.type} for ast in asset] 
+            "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name if ast.category != None else "尚未确定具体类别", "description": ast.description, "type": ast.type} for ast in asset] 
         }
         return Response(ret)
                
@@ -309,6 +309,40 @@ class asset(viewsets.ViewSet):
                 AssetLog(type=8,entity=req.user.entity,department=req.user.department,number=asset.number if asset.type else 1,price=asset.price * asset.number,expire_time=asset.create_time).save()
             asset.delete()
         return Response({"code": 0, "detail": "success"})
+    
+    #hyx资产历史
+    @Check
+    @action(detail=False, methods=['get'], url_path="history")
+    def history(self,req:Request):
+        id = int(req.query_params["id"])
+        page = int(req.query_params["page"])
+        asset = Asset.objects.filter(id=id).exclude(status=4).first()
+        logs = list(AssetLog.objects.filter(asset=asset).all().order_by("-time"))
+        count = len(logs)
+        pagelogs = logs[10 * page - 10:10 * page:]
+        returnlist = []
+        for item in pagelogs:
+            if item.type == 1:
+                if item.src:
+                    returnlist.append({"type":1,"content":"用户%s从外部门获取,数量:%d" % (item.src.name,item.number),"time":item.time})
+                else:
+                    returnlist.append({"type":1,"content":"资产管理员导入,数量:%d" % item.number,"time":item.time})
+            elif item.type == 2:
+                returnlist.append({"type":2,"content":"用户%s领用,数量:%d" % (item.src.name,item.number),"time":item.time})
+            elif item.type == 3:
+                returnlist.append({"type":3,"content": "用户%s向部门内用户%s转移,数量:%d" % (item.src.name,item.dest.name,item.number),"time":item.time})
+            elif item.type == 4:
+                returnlist.append({"type":4,"content": "用户%s维保,数量:%d" % (item.src.name,item.number),"time":item.time})
+            elif item.type == 5:
+                returnlist.append({"type":4,"content": "用户%s维保完成,数量:%d" % (item.src.name,item.number),"time":item.time})
+            elif item.type == 6:
+                returnlist.append({"type":5,"content": "用户%s退库,数量:%d" % (item.src.name,item.number),"time":item.time})
+            elif item.type == 7:
+                returnlist.append({"type":3,"content": "用户%s向外部门用户%s转移,数量:%d" % (item.src.name,item.dest.name,item.number),"time":item.time})
+            elif item.type == 9:
+                returnlist.append({"type":3,"content": "资产数量更改为%d" % (item.number),"time":item.time})
+            else: continue
+        return Response({"code": 0, "info": returnlist,"count":count})
   
 class assetclass(APIView):
     authentication_classes = [LoginAuthentication]
@@ -470,4 +504,8 @@ def fulldetail(req:HttpRequest,id:any):
             content += "用户%s退库,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
         if log.type == 7:
             content += "用户%s向外部门用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+        if log.type == 8:
+            content += "资产被手动删除" + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+        if log.type == 9:
+            content += "资产数量更改为%d" % (log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
     return HttpResponse(content)

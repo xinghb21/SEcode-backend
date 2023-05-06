@@ -560,7 +560,7 @@ class EpViewSet(viewsets.ViewSet):
                             flag = True
                 if not flag:
                     return_list.remove(item)
-        return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name,"type":item.type}for item in return_list]})
+        return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name if item.category != None else "尚未确定具体类别","type":item.type}for item in return_list]})
         
     #防止父结构出现自环
     def validparent(self,asset,name):
@@ -580,11 +580,9 @@ class EpViewSet(viewsets.ViewSet):
         dep = Department.objects.filter(id=req.user.department).first()
         name = require(req.data, "name", "string" , err_msg="Error type of [name]")
         parent = self.getparse(req.data,"parent","string")
-        price =  self.getparse(req.data,"price","float")
         number = self.getparse(req.data,"number","int")
         description = self.getparse(req.data,"description","string")
         add = req.data["addition"] if "addition" in req.data.keys() else {}
-        print(name,parent,price,number,description,add)
         asset = Asset.objects.filter(entity=ent,department=dep,name=name).exclude(status=4).first()
         if not asset:
             raise Failure("资产不存在")
@@ -597,10 +595,14 @@ class EpViewSet(viewsets.ViewSet):
             asset.parent = parentasset
         if add:
             addition = json.loads(asset.additional)
+            if type(add) == str:
+                add = eval(add)
             addition.update(add)
             asset.additional = json.dumps(addition)
         if number != "":
             if asset.type:
+                if asset.price and asset.number and asset.number_idle:
+                    AssetLog(type=9,entity=req.user.entity,department=req.user.department,number=number,price=asset.price * (asset.number - number),expire_time=asset.create_time).save()
                 asset.number += number - asset.number_idle
                 asset.number_idle = number
         if description != "":

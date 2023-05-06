@@ -152,7 +152,7 @@ class AsViewSet(viewsets.ViewSet):
             #根据资产日志还原当天的资产列表
             addlog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=1,time__gte=day,time__lte=day+86400).all())
             removelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=7,time__gte=day,time__lte=day+86400).all())
-            deletelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=8,time__gte=day,time__lte=day+86400).all())
+            deletelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type__in=[8,9],time__gte=day,time__lte=day+86400).all())
             for item in deletelog:
                 deleteprices.append((item.price,item.expire_time))
             for item in deleteprices:
@@ -165,7 +165,9 @@ class AsViewSet(viewsets.ViewSet):
                     value += 1.00 * item.number * self.price_count(item,day)
                 else:
                     value += self.price_count(item,day)
-            valuelist.append({"date":int(day),"netvalue":round(value + deletevalue,2)})
+            value += deletevalue
+            if value < 0: value = 0
+            valuelist.append({"date":int(day),"netvalue":round(value,2)})
             for i in addlog:
                 if i.asset in assets:
                     assets.remove(i.asset)

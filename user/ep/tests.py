@@ -224,3 +224,23 @@ class epTest(TestCase):
         self.assertEqual(resp.json()["data"],[{'name': 'asset3', 'key': 3, 'description': '', 'assetclass': 'class2', 'type': True}])
         resp = self.client.post("/user/ep/queryasset",{"custom":"color","content":"red","status":3,"belonging":"ns1"},content_type="application/json")
         self.assertEqual(resp.json()["data"],[{'name': 'asset4', 'key': 4, 'description': '', 'assetclass': 'class1', 'type': False}])
+    
+    def test_modify(self):
+        et = Entity.objects.filter(id=1).first()
+        dep = Department.objects.filter(id=1).first()
+        ns1 = User.objects.filter(name="ns1").first()
+        ns2 = User.objects.filter(name="ns2").first()
+        class1 = AssetClass.objects.create(name="class1",entity=et,department=dep,type=False)
+        class2 = AssetClass.objects.create(name="class2",entity=et,department=dep,type=True)
+        asset1 = Asset.objects.create(name="asset1",entity=et,department=dep,category=class1,type=False,price=2000,create_time=114514,additional=json.dumps({"size":"large"}))
+        asset2 = Asset.objects.create(name="asset2",entity=et,department=dep,category=class2,type=True,price=1,number=1000,number_idle=1000,status=1,user=ns2)
+        resp = self.client.post("/user/ep/modifyasset",{"name":"asset3"})
+        self.assertEqual(resp.json()["detail"],"资产不存在")
+        resp = self.client.post("/user/ep/modifyasset",{"name":"asset2","parent":"asset1","number":2000,"description":"hehe"})
+        self.assertEqual(resp.json()["code"],0)
+        resp = self.client.post("/user/ep/modifyasset",{"name":"asset1","parent":"asset3"})
+        self.assertEqual(resp.json()["detail"],"父级资产不存在")
+        resp = self.client.post("/user/ep/modifyasset",{"name":"asset1","parent":"asset2"})
+        self.assertEqual(resp.json()["detail"],"资产类别关系存在自环")
+    
+        
