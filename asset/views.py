@@ -121,73 +121,20 @@ class asset(viewsets.ViewSet):
         return Response(ret)
     #hyx end
     
+    #获取所有资产
     @Check
     @action(detail=False, methods=["get"], url_path="get")
     def get_by_condition(self, req:Request):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        # 按名字查直接返回单个
-        if "name" in req.query_params.keys():
-            name = require(req.query_params, "name", err_msg="Error type of [name]")
-            asset = Asset.objects.filter(entity=et, department=dep, name=name).exclude(status=4).first()
-            if not asset:
-                return Response({
-                    "code": 0,
-                    "data": []
-                })
-            return Response({
-                "code": 0,
-                "data": [return_field(asset.serialize(), ["name", "description", "category", "type"])]
-            })
-        asset = Asset.objects.filter(entity=et, department=dep).exclude(status=4)
-        if "parent" in req.query_params.keys():
-            parent = require(req.query_params, "parent", "string", "Error type of [parent]")
-            parent = Asset.objects.filter(entity=et, department=dep, name=parent).exclude(status=4).first()
-            if not parent:
-                raise Failure("所提供的上级资产不存在")
-            asset = asset.filter(parent=parent)
-        if "category" in req.query_params.keys():
-            cate = require(req.query_params, "category", err_msg="Error type of [category]")
-            cate = AssetClass.objects.filter(entity=et, department=dep, name=cate).first()
-            if not cate:
-                raise Failure("所提供的资产类型不存在")
-            asset = asset.filter(category=cate)
-            # print(asset)
-        # 按挂账人进行查询还需要讨论一下，比如一个部门下的资产的挂账人除了资产管理员还可以是谁
-        if "belonging" in req.query_params.keys():
-            user = require(req.query_params, "belonging", err_msg="Error type of [belonging]")
-            user = User.objects.filter(entity=et.id, department=dep.id, name=user).first()
-            if not user:
-                raise Failure("所提供的挂账人不存在")
-            asset = asset.filter(belonging=user)
-        if "from" in req.query_params.keys():
-            from_ = require(req.query_params, "from", "float", err_msg="Error type of [from]")
-            asset = asset.filter(create_time__gte=from_)
-        if "to" in req.query_params:
-            to_ = require(req.query_params, "to", "float", err_msg="Error type of [to]")
-            asset = asset.filter(create_time__lte=to_)
-        # 资产使用者只能是本部门下的吗？
-        if "user" in req.query_params.keys():
-            user = require(req.query_params, "user", err_msg="Error type of [user]")
-            user = User.objects.filter(name=user).first()
-            if not user:
-                raise Failure("所提供的使用者不存在")
-            asset = asset.filter(user=user)
-        if "status" in req.query_params.keys():
-            status = require(req.query_params, "status", "int", err_msg="Error type of [status]")
-            asset = asset.filter(status=status)
-        if "pricefrom" in req.query_params.keys():
-            pfrom = require(req.query_params, "pricefrom", "float", err_msg="Error type of [pricefrom]")
-            asset = asset.filter(price__gte=pfrom)
-        if "priceto" in req.query_params.keys():
-            pto = require(req.query_params, "priceto", "float", err_msg="Error type of [priceto]")
-            asset = asset.filter(price__lte=pto)
+        asset = Asset.objects.filter(entity=et, department=dep).exclude(status=4).all()
         ret = {
             "code": 0,
-            "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name if ast.category != None else "请手动设定资产类别", "description": ast.description, "type": ast.type} for ast in asset] 
+            "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name if ast.category != None else "尚未确定具体类别", "description": ast.description, "type": ast.type} for ast in asset] 
         }
         return Response(ret)
                
+    #增加资产
     @Check  
     @action(detail=False, methods=["post"], url_path="post") 
     def post(self, req:Request):
@@ -240,6 +187,10 @@ class asset(viewsets.ViewSet):
                 additional = json.dumps(additional)
             else:
                 additional = "{}"
+            if "additionalinfo" in asset.keys() and asset["additionalinfo"] != "" and asset["additionalinfo"] != None:
+                additionalinfo = require(asset,"additionalinfo","string","Error type of [additionalinfo]")
+            else:
+                additionalinfo = ""
             if 'hasimage' in asset.keys() :
                 hasimage = require(asset, 'hasimage', 'boolean', "Error type of [hasimage]")
             else:
@@ -264,6 +215,7 @@ class asset(viewsets.ViewSet):
                                     life=life, 
                                     description=description, 
                                     additional=additional,
+                                    additionalinfo=additionalinfo,
                                     number=number,
                                     number_idle=number_idle,
                                     usage=usage,
@@ -283,7 +235,8 @@ class asset(viewsets.ViewSet):
                                     belonging=belonging, 
                                     price=price, 
                                     life=life, 
-                                    description=description, 
+                                    description=description,
+                                    additionalinfo=additionalinfo, 
                                     additional=additional,
                                     user=user,
                                     status=status,
@@ -306,9 +259,62 @@ class asset(viewsets.ViewSet):
         assets = Asset.objects.filter(entity=et, department=dep, name__in=names).exclude(status=4)
         for asset in assets:
             if asset.number and asset.price:
-                AssetLog(type=8,entity=req.user.entity,department=req.user.department,number=asset.number if asset.type else 1,price=asset.price * asset.number,expire_time=asset.create_time).save()
+                AssetLog(type=8,entity=req.user.entity,department=req.user.department,number=asset.number if asset.type else 1,price=asset.price * asset.number,expire_time=asset.create_time,life=asset.life).save()
             asset.delete()
         return Response({"code": 0, "detail": "success"})
+    
+    #资产历史格式转换
+    def process_history(self,pagelogs):
+        returnlist = []
+        for item in pagelogs:
+            if item.type == 1:
+                if item.src:
+                    returnlist.append({"type":1,"content":"用户%s从外部门获取,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+                else:
+                    returnlist.append({"type":1,"content":"资产管理员导入,数量:%d" % item.number,"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 2:
+                returnlist.append({"type":2,"content":"用户%s领用,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 3:
+                returnlist.append({"type":3,"content": "用户%s向部门内用户%s转移,数量:%d" % (item.src.name,item.dest.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 4:
+                returnlist.append({"type":4,"content": "用户%s维保,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 5:
+                returnlist.append({"type":4,"content": "用户%s维保完成,数量:%d" % (item.dest.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 6:
+                returnlist.append({"type":5,"content": "用户%s退库,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 7:
+                returnlist.append({"type":3,"content": "用户%s向外部门用户%s转移,数量:%d" % (item.src.name,item.dest.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            elif item.type == 9:
+                returnlist.append({"type":6,"content": "资产数量更改为%d" % (item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+            else: continue
+        return returnlist
+
+    #hyx资产历史
+    @Check
+    @action(detail=False, methods=['get'], url_path="history")
+    def history(self,req:Request):
+        id = int(req.query_params["id"])
+        page = int(req.query_params["page"])
+        asset = Asset.objects.filter(id=id).exclude(status=4).first()
+        logs = list(AssetLog.objects.filter(asset=asset).all().order_by("-time"))
+        count = len(logs)
+        pagelogs = logs[5 * page - 5:5 * page:]
+        returnlist = self.process_history(pagelogs)
+        return Response({"code": 0, "info": returnlist,"count":count})
+    
+    #所有历史
+    @Check
+    @action(detail=False, methods=['get'], url_path="allhistory")
+    def allhistory(self,req:Request):
+        page = int(req.query_params["page"])
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        asset = Asset.objects.filter(entity=ent,department=dep).exclude(status=4).all()
+        logs = list(AssetLog.objects.filter(asset__in=list(asset)).all().order_by("-time"))
+        count = len(logs)
+        pagelogs = logs[10 * page - 10:10 * page:]
+        returnlist = self.process_history(pagelogs)
+        return Response({"code": 0, "info": returnlist,"count":count})
   
 class assetclass(APIView):
     authentication_classes = [LoginAuthentication]
@@ -410,17 +416,18 @@ def fulldetail(req:HttpRequest,id:any):
     content += "业务实体:" + asset.entity.name + '<br/>'
     content += "所属部门:" + asset.department.name + '<br/>'
     content += "创建时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
-    if asset.category:
+    if asset.category != None:
         content += "资产类别:" + asset.category.name + "(" + ("数量型" if asset.type else "条目型") + ")" + '<br/>'
     else:
         content += "资产类别:" + ("数量型" if asset.type else "条目型") + ",尚未确定具体类别"+ '<br/>'
-    if asset.parent:
+    if asset.parent != None:
         content += "上级资产:" + asset.parent.name + '<br/>'
-    if asset.belonging:
+    if asset.belonging != None:
         content += "挂账人:" + asset.belonging.name + '<br/>'
     
     content += "原市值:" + str(float(asset.price)) + '<br/>'
     content += "描述信息:" + (asset.description if asset.description else "暂无描述") + '<br/>'
+    content += "html格式补充说明:" + (asset.additionalinfo if asset.additionalinfo else "暂无描述") + '<br/>'
     addition = json.loads(asset.additional)
     if addition:
         for key in addition:
@@ -455,19 +462,23 @@ def fulldetail(req:HttpRequest,id:any):
     for log in logs:
         if log.type == 1:
             if log.src:
-                content += "用户%s从外部门获取,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+                content += "用户%s从外部门获取,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
             else:
-                content += "资产管理员导入,数量:%d" % log.number + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+                content += "资产管理员导入,数量:%d" % log.number + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 2:
-            content += "用户%s领用,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s领用,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 3:
-            content += "用户%s向用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s向用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 4:
-            content += "用户%s维保,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s维保,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 5:
-            content += "用户%s维保完成,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s维保完成,数量:%d" % (log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 6:
-            content += "用户%s退库,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s退库,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 7:
-            content += "用户%s向外部门用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
+            content += "用户%s向外部门用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
+        if log.type == 8:
+            content += "资产被手动删除" + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
+        if log.type == 9:
+            content += "资产数量更改为%d" % (log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
     return HttpResponse(content)

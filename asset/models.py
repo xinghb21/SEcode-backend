@@ -58,6 +58,9 @@ class Asset(models.Model):
     #资产的说明和描述
     description = models.TextField(default="")
     
+    #html格式补充说明
+    additionalinfo = models.TextField(default="")
+    
     #自定义的资产类型，以字符串存储，格式类似于json，实际处理需要解析
     additional = models.TextField(default="{}")
     
@@ -65,13 +68,13 @@ class Asset(models.Model):
     # 资产使用者
     user = models.ForeignKey("user.User",null=True ,on_delete=models.SET_NULL, related_name="user")
     
-    #资产的状态，枚举类型，0闲置，1在使用，2维保，3清退，4转移变空(区分于删除), 5处理中
+    #资产的状态，枚举类型，0闲置，1在使用，2维保，3清退，4转移或清退变空(区分于删除), 5处理中
     status = models.IntegerField(choices=AsserStatus.choices, default=AsserStatus.IDLE)
     # -----------------------------------
     
     # ----------数量型资产使用-------------
     # 资产数量
-    number = models.IntegerField(null=True)
+    number = models.IntegerField(null=True,default=1)
     
     # 闲置数量
     number_idle = models.IntegerField(null=True)
@@ -85,10 +88,10 @@ class Asset(models.Model):
     # 待处理情况，是一个可序列化的字符串，记录了谁是发起人，待处理多少
     process = models.TextField(null=False, default="[]")
     
-    # 清退数量
+    # 报废数量
     number_expire = models.IntegerField(null=False, default=0)
     
-    # 是否报废
+    # 是否完全报废
     expire = models.BooleanField(null=False, default=False)
     # ---------数量型资产使用----------------
     
@@ -112,6 +115,7 @@ class Asset(models.Model):
                 "life":self.life,
                 "create_time":self.create_time,
                 "description":self.description,
+                "additionalinfo":self.additionalinfo,
                 "additional": json.loads(self.additional),
                 "haspic":self.haspic
             }
@@ -125,8 +129,10 @@ class Asset(models.Model):
             ret["expire"] = self.expire
             return ret
         else:
-            ret["user"] = self.user.name if self.user else "暂无使用者"
+            ret["user"] = self.user.name if self.user else None
             ret["status"] = self.status
+            ret["number"] = 1
+            ret["number_idle"] = 0 if self.status else 1
             return ret
             
 

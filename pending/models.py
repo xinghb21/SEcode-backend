@@ -32,7 +32,7 @@ class Pending(models.Model):
     #处理人的回复
     reply = models.CharField(max_length=100,default="")
     
-    #申请结果，0未处理，1成功，2失败
+    #申请结果，0未处理，1成功，2失败，3删除
     result = models.IntegerField(default=0)
     
     #请求发起时间
