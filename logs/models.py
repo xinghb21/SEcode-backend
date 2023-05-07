@@ -115,6 +115,7 @@ class AssetLog(models.Model):
     life = models.IntegerField(default=0)
     
     class Meta:
+        managed = True
         db_table = "AssetLog"
 
     def serialize(self):
