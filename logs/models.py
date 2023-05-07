@@ -90,7 +90,7 @@ class AssetLog(models.Model):
     #关联资产
     asset = models.ForeignKey('asset.Asset', null=True, on_delete=models.CASCADE)
     
-    #操作类别,1创建(包括资产管理员创建和作为转移目标),2领用,3同部门转移,4维保,5维保完成,6退库,7跨部门转移,8删除
+    #操作类别,1创建(包括资产管理员创建和作为转移目标),2领用,3同部门转移,4维保,5维保完成,6退库,7跨部门转移,8删除,9改变数量
     type = models.IntegerField(default=0)
     
     #更改的价值
@@ -110,6 +110,9 @@ class AssetLog(models.Model):
     
     #销毁时间
     expire_time = models.FloatField(default=0)
+    
+    #原资产年限
+    life = models.IntegerField(default=0)
     
     class Meta:
         db_table = "AssetLog"
