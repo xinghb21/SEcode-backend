@@ -81,11 +81,11 @@ class AsViewSet(viewsets.ViewSet):
             if item.expire == True or utils_time.get_timestamp() - item.create_time > item.life * 31536000:
                 expire += 1
                 break
-            if item.status == 0:
+            elif item.status == 0:
                 free += 1
-            if item.status == 1:
+            elif item.status == 1:
                 occupy += 1
-            if item.status == 2:
+            elif item.status == 2:
                 maintain += 1
         for item in quant_assets:
             if item.expire == True or utils_time.get_timestamp() - item.create_time > item.life * 31536000:
@@ -94,15 +94,15 @@ class AsViewSet(viewsets.ViewSet):
             use = json.loads(item.usage)
             maint = json.loads(item.maintain)
             process = json.loads(item.process)
-            if item.number == item.number_idle:
+            if item.number - item.number_expire == item.number_idle:
                 free += 1
             if item.number_idle == 0 and not maint and not process:
                 occupy += 1
-            if use:
+            elif use:
                 part_occupy += 1
             if item.number_idle == 0 and not use and not process:
                 maintain += 1
-            if maint:
+            elif maint:
                 part_maintain += 1
         info = {
             "freeNumber":free,
@@ -139,7 +139,7 @@ class AsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=['get'],url_path="nvcurve")
     def nvcureve(self,req:Request):
         valuelist = []
-        deleteprices = []
+        deletelogs = []
         today = int(utils_time.get_timestamp()) - int(utils_time.get_timestamp()) % 86400
         dep = Department.objects.filter(id=req.user.department).first()
         deps = self.get_departs(dep,[dep])
@@ -150,16 +150,16 @@ class AsViewSet(viewsets.ViewSet):
             deletevalue = 0.0
             day = today - i * 86400
             #根据资产日志还原当天的资产列表
-            addlog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=1,time__gte=day,time__lte=day+86400).all())
-            removelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=7,time__gte=day,time__lte=day+86400).all())
-            deletelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type__in=[8,9],time__gte=day,time__lte=day+86400).all())
+            addlog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=1,time__gte=day+86400,time__lte=day+2 * 86400).all())
+            removelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=7,time__gte=day+86400,time__lte=day+2 * 86400).all())
+            deletelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type__in=[8,9],time__gte=day+86400,time__lte=day+2 * 86400).all())
             for item in deletelog:
-                deleteprices.append((item.price,item.expire_time))
-            for item in deleteprices:
-                if item[1] > day:
-                    deleteprices.remove(item)
+                deletelogs.append(item)
+            for item in deletelogs:
+                if item.expire_time > day:
+                    deletelogs.remove(item)
                 else:
-                    deletevalue += item[0]
+                    deletevalue += item.price * (1 - (day - item.expire_time) / (item.life * 31536000))
             for item in assets:
                 if item.type:
                     value += 1.00 * item.number * self.price_count(item,day)

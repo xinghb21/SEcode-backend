@@ -111,6 +111,9 @@ class AssetLog(models.Model):
     #销毁时间
     expire_time = models.FloatField(default=0)
     
+    #原资产年限
+    life = models.IntegerField(default=0)
+    
     class Meta:
         db_table = "AssetLog"
 

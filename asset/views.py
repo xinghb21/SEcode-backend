@@ -127,62 +127,7 @@ class asset(viewsets.ViewSet):
     def get_by_condition(self, req:Request):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        '''# 按名字查直接返回单个
-        if "name" in req.query_params.keys():
-            name = require(req.query_params, "name", err_msg="Error type of [name]")
-            asset = Asset.objects.filter(entity=et, department=dep, name=name).exclude(status=4).first()
-            if not asset:
-                return Response({
-                    "code": 0,
-                    "data": []
-                })
-            return Response({
-                "code": 0,
-                "data": [return_field(asset.serialize(), ["name", "description", "category", "type"])]
-            })'''
         asset = Asset.objects.filter(entity=et, department=dep).exclude(status=4).all()
-        '''if "parent" in req.query_params.keys():
-            parent = require(req.query_params, "parent", "string", "Error type of [parent]")
-            parent = Asset.objects.filter(entity=et, department=dep, name=parent).exclude(status=4).first()
-            if not parent:
-                raise Failure("所提供的上级资产不存在")
-            asset = asset.filter(parent=parent)
-        if "category" in req.query_params.keys():
-            cate = require(req.query_params, "category", err_msg="Error type of [category]")
-            cate = AssetClass.objects.filter(entity=et, department=dep, name=cate).first()
-            if not cate:
-                raise Failure("所提供的资产类型不存在")
-            asset = asset.filter(category=cate)
-            # print(asset)
-        # 按挂账人进行查询还需要讨论一下，比如一个部门下的资产的挂账人除了资产管理员还可以是谁
-        if "belonging" in req.query_params.keys():
-            user = require(req.query_params, "belonging", err_msg="Error type of [belonging]")
-            user = User.objects.filter(entity=et.id, department=dep.id, name=user).first()
-            if not user:
-                raise Failure("所提供的挂账人不存在")
-            asset = asset.filter(belonging=user)
-        if "from" in req.query_params.keys():
-            from_ = require(req.query_params, "from", "float", err_msg="Error type of [from]")
-            asset = asset.filter(create_time__gte=from_)
-        if "to" in req.query_params:
-            to_ = require(req.query_params, "to", "float", err_msg="Error type of [to]")
-            asset = asset.filter(create_time__lte=to_)
-        # 资产使用者只能是本部门下的吗？
-        if "user" in req.query_params.keys():
-            user = require(req.query_params, "user", err_msg="Error type of [user]")
-            user = User.objects.filter(name=user).first()
-            if not user:
-                raise Failure("所提供的使用者不存在")
-            asset = asset.filter(user=user)
-        if "status" in req.query_params.keys():
-            status = require(req.query_params, "status", "int", err_msg="Error type of [status]")
-            asset = asset.filter(status=status)
-        if "pricefrom" in req.query_params.keys():
-            pfrom = require(req.query_params, "pricefrom", "float", err_msg="Error type of [pricefrom]")
-            asset = asset.filter(price__gte=pfrom)
-        if "priceto" in req.query_params.keys():
-            pto = require(req.query_params, "priceto", "float", err_msg="Error type of [priceto]")
-            asset = asset.filter(price__lte=pto)'''
         ret = {
             "code": 0,
             "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name if ast.category != None else "尚未确定具体类别", "description": ast.description, "type": ast.type} for ast in asset] 
@@ -314,7 +259,7 @@ class asset(viewsets.ViewSet):
         assets = Asset.objects.filter(entity=et, department=dep, name__in=names).exclude(status=4)
         for asset in assets:
             if asset.number and asset.price:
-                AssetLog(type=8,entity=req.user.entity,department=req.user.department,number=asset.number if asset.type else 1,price=asset.price * asset.number,expire_time=asset.create_time).save()
+                AssetLog(type=8,entity=req.user.entity,department=req.user.department,number=asset.number if asset.type else 1,price=asset.price * asset.number,expire_time=asset.create_time,life=asset.life).save()
             asset.delete()
         return Response({"code": 0, "detail": "success"})
     
@@ -334,13 +279,13 @@ class asset(viewsets.ViewSet):
             elif item.type == 4:
                 returnlist.append({"type":4,"content": "用户%s维保,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
             elif item.type == 5:
-                returnlist.append({"type":4,"content": "用户%s维保完成,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+                returnlist.append({"type":4,"content": "用户%s维保完成,数量:%d" % (item.dest.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
             elif item.type == 6:
                 returnlist.append({"type":5,"content": "用户%s退库,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
             elif item.type == 7:
                 returnlist.append({"type":3,"content": "用户%s向外部门用户%s转移,数量:%d" % (item.src.name,item.dest.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
             elif item.type == 9:
-                returnlist.append({"type":3,"content": "资产数量更改为%d" % (item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+                returnlist.append({"type":6,"content": "资产数量更改为%d" % (item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
             else: continue
         return returnlist
 
@@ -471,13 +416,13 @@ def fulldetail(req:HttpRequest,id:any):
     content += "业务实体:" + asset.entity.name + '<br/>'
     content += "所属部门:" + asset.department.name + '<br/>'
     content += "创建时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(asset.create_time)) + '<br/>'
-    if asset.category:
+    if asset.category != None:
         content += "资产类别:" + asset.category.name + "(" + ("数量型" if asset.type else "条目型") + ")" + '<br/>'
     else:
         content += "资产类别:" + ("数量型" if asset.type else "条目型") + ",尚未确定具体类别"+ '<br/>'
-    if asset.parent:
+    if asset.parent != None:
         content += "上级资产:" + asset.parent.name + '<br/>'
-    if asset.belonging:
+    if asset.belonging != None:
         content += "挂账人:" + asset.belonging.name + '<br/>'
     
     content += "原市值:" + str(float(asset.price)) + '<br/>'
@@ -527,7 +472,7 @@ def fulldetail(req:HttpRequest,id:any):
         if log.type == 4:
             content += "用户%s维保,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 5:
-            content += "用户%s维保完成,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
+            content += "用户%s维保完成,数量:%d" % (log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 6:
             content += "用户%s退库,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 7:

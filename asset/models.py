@@ -74,7 +74,7 @@ class Asset(models.Model):
     
     # ----------数量型资产使用-------------
     # 资产数量
-    number = models.IntegerField(null=True)
+    number = models.IntegerField(null=True,default=1)
     
     # 闲置数量
     number_idle = models.IntegerField(null=True)
@@ -129,8 +129,10 @@ class Asset(models.Model):
             ret["expire"] = self.expire
             return ret
         else:
-            ret["user"] = self.user.name if self.user else "暂无使用者"
+            ret["user"] = self.user.name if self.user else None
             ret["status"] = self.status
+            ret["number"] = 1
+            ret["number_idle"] = 0 if self.status else 1
             return ret
             
 

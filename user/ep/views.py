@@ -381,7 +381,7 @@ class EpViewSet(viewsets.ViewSet):
         for item in assets:
             assetname = list(item.keys())[0]
             asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).exclude(status=4).first()
-            returnlist.append({"id":asset.id,"assetname":assetname,"assetclass":asset.category.name,"assetcount":item[assetname]})
+            returnlist.append({"id":asset.id,"assetname":assetname,"assetclass":asset.category.name if asset.category != None else "暂未确定类别","assetcount":item[assetname]})
         return Response({"code":0,"info":returnlist})
     
     #是否有未审批的代办项目
@@ -601,8 +601,8 @@ class EpViewSet(viewsets.ViewSet):
             asset.additional = json.dumps(addition)
         if number != "":
             if asset.type:
-                if asset.price and asset.number and asset.number_idle:
-                    AssetLog(type=9,entity=req.user.entity,department=req.user.department,number=number,price=asset.price * (asset.number - number),expire_time=asset.create_time).save()
+                if asset.price != None and asset.number != None and asset.number_idle != None:
+                    AssetLog(type=9,entity=req.user.entity,department=req.user.department,number=number,price=asset.price * (asset.number_idle - number),expire_time=asset.create_time,life=asset.life).save()
                 asset.number += number - asset.number_idle
                 asset.number_idle = number
         if description != "":
@@ -733,7 +733,7 @@ class EpViewSet(viewsets.ViewSet):
             numdict.update({list(item.keys())[0]:item[list(item.keys())[0]]})
         for item in assets:
             asset = Asset.objects.filter(id=int(item["id"])).first()
-            if not asset or asset.name != item.name:
+            if not asset or asset.name != item["name"]:
                 raise Failure("资产信息有误")
         useasset = []
         brokenasset = []
@@ -769,6 +769,8 @@ class EpViewSet(viewsets.ViewSet):
                         asset.usage = json.dumps(use)
                 #报废
                 else:
+                    if asset.price:
+                        AssetLog(type=8,entity=req.user.entity,asset=asset,department=req.user.department,number=number,price=asset.price * number,expire_time=asset.create_time,life=asset.life).save()
                     if asset.number_expire != None:
                         asset.number_expire += number
                     else:
@@ -779,13 +781,19 @@ class EpViewSet(viewsets.ViewSet):
                 if int(item["state"]) == 1:
                     asset.status = 1
                 else:
+                    AssetLog(type=8,entity=req.user.entity,asset=asset,department=req.user.department,number=1,price=asset.price * number,expire_time=asset.create_time,life=asset.life).save()
                     asset.status = 4
                     asset.expire = True
             asset.save()
             if int(item["state"]) == 1:
+                AssetLog(entity=ent.id,department=dep.id,asset=asset,type=5,dest=staff,number=number).save()
                 useasset.append(item["name"])
             else:
                 brokenasset.append(item["name"])
-        content = "维保已完成。返还资产:" + str(useasset).replace('[','').replace(']','') + ";报废资产:" + str(brokenasset).replace('[','').replace(']','')
+        content = "维保已完成。<br/>"
+        if useasset:
+            content += "返还资产:" + str(useasset).replace('[','').replace(']','') + "<br/>"
+        if brokenasset:
+            content += "报废资产:" + str(brokenasset).replace('[','').replace(']','') + "<br/>"
         Message(user=staff.id,pending=pending.id,type=3,content=content).save()
         return Response({"code":0,"info":"ok"})
