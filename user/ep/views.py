@@ -212,7 +212,7 @@ class EpViewSet(viewsets.ViewSet):
                         #转移者
                         AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,number=assetdict[assetname],src=staff,dest=destuser).save()
                         #接收者
-                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,number=assetdict[assetname],src=staff).save()
+                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,number=assetdict[assetname],dest=staff).save()
                     #同部门
                     else:
                         use = json.loads(asset.usage)
@@ -241,7 +241,7 @@ class EpViewSet(viewsets.ViewSet):
                         #转移者
                         AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,number=1,src=staff,dest=destuser).save()
                         #接受者
-                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,number=1,src=staff).save()
+                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,number=1,dest=staff).save()
                     #同部门
                     else:
                         asset.belonging = destuser
@@ -350,7 +350,7 @@ class EpViewSet(viewsets.ViewSet):
                         #转移者
                         AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,number=1,src=fromadmin,dest=thisadmin).save()
                         #接受者
-                        AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,number=1,src=thisadmin).save()
+                        AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,number=1,dest=thisadmin).save()
                     asset.save()
         # cyh
         # 通知员工审批结果,审批人的回复
@@ -602,7 +602,7 @@ class EpViewSet(viewsets.ViewSet):
         if number != "":
             if asset.type:
                 if asset.price != None and asset.number != None and asset.number_idle != None:
-                    AssetLog(type=9,entity=req.user.entity,department=req.user.department,number=number,price=asset.price * (asset.number_idle - number),expire_time=asset.create_time,life=asset.life).save()
+                    AssetLog(type=9,entity=req.user.entity,department=req.user.department,asset=asset,number=number,price=asset.price * (asset.number_idle - number),expire_time=asset.create_time,life=asset.life).save()
                 asset.number += number - asset.number_idle
                 asset.number_idle = number
         if description != "":

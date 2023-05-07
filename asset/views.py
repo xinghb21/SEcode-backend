@@ -268,12 +268,12 @@ class asset(viewsets.ViewSet):
         returnlist = []
         for item in pagelogs:
             if item.type == 1:
-                if item.src:
-                    returnlist.append({"type":1,"content":"用户%s从外部门获取,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+                if item.dest:
+                    returnlist.append({"type":1,"content":"用户%s从外部门获取,数量:%d" % (item.dest.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
                 else:
                     returnlist.append({"type":1,"content":"资产管理员导入,数量:%d" % item.number,"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
             elif item.type == 2:
-                returnlist.append({"type":2,"content":"用户%s领用,数量:%d" % (item.src.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+                returnlist.append({"type":2,"content":"用户%s领用,数量:%d" % (item.dest.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
             elif item.type == 3:
                 returnlist.append({"type":3,"content": "用户%s向部门内用户%s转移,数量:%d" % (item.src.name,item.dest.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
             elif item.type == 4:
@@ -461,12 +461,12 @@ def fulldetail(req:HttpRequest,id:any):
     content += "<h4>调动历史<h4/>"
     for log in logs:
         if log.type == 1:
-            if log.src:
-                content += "用户%s从外部门获取,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
+            if log.dest:
+                content += "用户%s从外部门获取,数量:%d" % (log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
             else:
                 content += "资产管理员导入,数量:%d" % log.number + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 2:
-            content += "用户%s领用,数量:%d" % (log.src.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
+            content += "用户%s领用,数量:%d" % (log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 3:
             content += "用户%s向用户%s转移,数量:%d" % (log.src.name,log.dest.name,log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 4:
