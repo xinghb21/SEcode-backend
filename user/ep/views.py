@@ -717,7 +717,7 @@ class EpViewSet(viewsets.ViewSet):
             return_list.append({"id":item.id,"assets":assetlist})
         return Response({"code":0,"info":return_list})
     
-    #维保完成, TODO 需要添加日志！
+    #维保完成
     @Check
     @action(detail=False,methods=['post'],url_path="matianover")
     def matianover(self,req:Request):
@@ -754,6 +754,7 @@ class EpViewSet(viewsets.ViewSet):
                 asset.maintain = json.dumps(maintain)
                 #正常使用
                 if int(item["state"]) == 1:
+                    AssetLog(entity=ent.id,department=dep.id,asset=asset,type=5,dest=staff,number=number).save()
                     use = json.loads(asset.usage)
                     if not use:
                         asset.usage = json.dumps([{staff.name:number}])
@@ -779,14 +780,14 @@ class EpViewSet(viewsets.ViewSet):
                         asset.expire = True
             else:
                 if int(item["state"]) == 1:
+                    AssetLog(entity=ent.id,department=dep.id,asset=asset,type=5,dest=staff,number=1).save()
                     asset.status = 1
                 else:
-                    AssetLog(type=8,entity=req.user.entity,asset=asset,department=req.user.department,number=1,price=asset.price * number,expire_time=asset.create_time,life=asset.life).save()
+                    AssetLog(type=8,entity=req.user.entity,asset=asset,department=req.user.department,number=1,price=asset.price,expire_time=asset.create_time,life=asset.life).save()
                     asset.status = 4
                     asset.expire = True
             asset.save()
             if int(item["state"]) == 1:
-                AssetLog(entity=ent.id,department=dep.id,asset=asset,type=5,dest=staff,number=number).save()
                 useasset.append(item["name"])
             else:
                 brokenasset.append(item["name"])

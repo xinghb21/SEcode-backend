@@ -42,6 +42,9 @@ class esTest(TestCase):
                                 ,content_type="application/json")
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.get("/asset/allhistory?page=1")
+        print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
         
     def test_get(self):
         self.client.post("/asset/assetclass", {"name": "assetclass", "type": 1})

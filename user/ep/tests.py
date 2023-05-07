@@ -54,6 +54,9 @@ class epTest(TestCase):
     def maintain(self,assets,reason):
         return self.client.post("/user/ns/applymainten",{"assets":assets,"reason":reason}, content_type="application/json")
     
+    def maintainover(self,id,assets):
+        return self.client.post("/user/ep/matianover",{"id":id,"assets":assets}, content_type="application/json")
+    
     def returnassets(self,assets,reason):
         return self.client.post("/user/ns/returnasset",{"assets":assets,"reason":reason}, content_type="application/json")
     
@@ -163,6 +166,7 @@ class epTest(TestCase):
         resp = self.maintain(assets1,"maintain")
         resp = self.maintain(assets2,"maintain")
         resp = self.maintain(assets3,"maintain")
+        resp = self.maintain(assets1,"maintain")
         self.logout("ns1")
         self.login("ep","ep")
         resp = self.reply(3,0)
@@ -173,13 +177,28 @@ class epTest(TestCase):
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.get("/user/ep/getallmatain")
         self.assertEqual(resp.json()["info"], [{'id': 3, 'assets': [{'id': 1, 'name': 'asset1'}]}, {'id': 4, 'assets': [{'id': 2, 'name': 'asset2'}]}])
+        resp = self.reply(6,0)
+        self.assertEqual(resp.json()["code"], 0)
+        expireasset = [{"id": 1,"name": "asset1","state": 1}]
+        backasset = [{"id": 2,"name": "asset2","state": 0}]
+        backasset2 = [{"id": 1,"name": "asset1","state": 0}]
+        resp = self.maintainover(3,expireasset)
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.maintainover(4,backasset)
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.maintainover(6,backasset2)
+        self.assertEqual(resp.json()["code"], 0)
         self.logout("ep")
         self.login("ns1","ns1")
         assets4 = [{"id": 1,"assetname": "asset1","assetnumber": 20}]
         resp = self.returnassets(assets4,"return")
         self.logout("ns1")
         self.login("ep","ep")
-        resp = self.reply(6,0)
+        resp = self.reply(7,0)
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.get("/asset/history?id=1&page=1")
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.get("/asset/history?id=2&page=1")
         self.assertEqual(resp.json()["code"], 0)
 
     def test_assets_in_apply(self):
