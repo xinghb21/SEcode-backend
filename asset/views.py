@@ -232,6 +232,7 @@ class asset(viewsets.ViewSet):
                                     category=category, 
                                     type=tp, 
                                     name=name, 
+                                    number=1,
                                     belonging=belonging, 
                                     price=price, 
                                     life=life, 
@@ -244,7 +245,7 @@ class asset(viewsets.ViewSet):
                 
         for a in toadd:
             a.save()
-            AssetLog(asset=a,type=1,entity=req.user.entity,department=req.user.department,number=a.number if a.type else 1).save()
+            AssetLog(asset=a,type=1,entity=req.user.entity,department=req.user.department,number=a.number,price=a.price*a.number,expire_time=a.create_time,life=a.life).save()
         return Response({"code": 0, "detail": "success"})
     # cyh
     # 批量删除资产

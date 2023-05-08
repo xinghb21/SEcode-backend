@@ -171,7 +171,7 @@ class EpViewSet(viewsets.ViewSet):
                             if needupdate:
                                 use.append({staff.name:assetdict[assetname]})
                             asset.usage = json.dumps(use)
-                        AssetLog(asset=asset,entity=staff.entity,department=staff.department,type=2,number=assetdict[assetname],dest=staff).save()
+                        AssetLog(asset=asset,entity=staff.entity,department=staff.department,type=2,expire_time=asset.create_time,number=assetdict[assetname],dest=staff).save()
                     #不同意，更新闲置
                     else:
                         asset.number_idle += assetdict[assetname]
@@ -182,7 +182,7 @@ class EpViewSet(viewsets.ViewSet):
                         asset.status = 1
                         asset.user = staff
                         asset.belonging = staff
-                        AssetLog(asset=asset,entity=staff.entity,department=staff.department,type=2,number=1,dest=staff).save()
+                        AssetLog(asset=asset,entity=staff.entity,department=staff.department,type=2,number=1,expire_time=asset.create_time,dest=staff).save()
                     else:
                         asset.status = 0
                 asset.save()
@@ -207,12 +207,12 @@ class EpViewSet(viewsets.ViewSet):
                         if asset.number == 0:
                             asset.status = 4
                         destlist = [{destuser.name:assetdict[assetname]}]
-                        newasset = Asset(entity=entity,department=destdep,name=assetname,type=1,belonging=destuser,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,number=assetdict[assetname],number_idle=0,usage=json.dumps(destlist))
+                        newasset = Asset(entity=entity,department=destdep,name=assetname,type=1,belonging=destuser,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,number=assetdict[assetname],number_idle=0,usage=json.dumps(destlist),create_time=asset.create_time)
                         newasset.save()
                         #转移者
-                        AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,number=assetdict[assetname],src=staff,dest=destuser).save()
+                        AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,expire_time=asset.create_time,number=assetdict[assetname],price=asset.price * assetdict[assetname],src=staff,dest=destuser,life=asset.life).save()
                         #接收者
-                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,number=assetdict[assetname],dest=staff).save()
+                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,expire_time=newasset.create_time,number=assetdict[assetname],price=newasset.price * assetdict[assetname],dest=staff,life=newasset.life).save()
                     #同部门
                     else:
                         use = json.loads(asset.usage)
@@ -234,14 +234,14 @@ class EpViewSet(viewsets.ViewSet):
                 else:
                     #跨部门
                     if destdep != depart:
-                        newasset = Asset(entity=entity,department=destdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,belonging=destuser,user=destuser,status=1)
+                        newasset = Asset(entity=entity,department=destdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,belonging=destuser,user=destuser,status=1,create_time=asset.create_time)
                         newasset.save()
                         asset.status = 4
                         asset.save()
                         #转移者
-                        AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,number=1,src=staff,dest=destuser).save()
+                        AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,number=1,expire_time=asset.create_time,life=newasset.life,price=newasset.price,src=staff,dest=destuser).save()
                         #接受者
-                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,number=1,dest=staff).save()
+                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,expire_time=newasset.create_time,number=1,price=newasset.price,dest=staff,life=newasset.life).save()
                     #同部门
                     else:
                         asset.belonging = destuser
@@ -337,20 +337,20 @@ class EpViewSet(viewsets.ViewSet):
                         asset.number -= assetdict[assetname]
                         if asset.number == 0:
                             asset.status = 4
-                        newasset = Asset(entity=entity,department=thisdep,name=assetname,type=1,belonging=thisadmin,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,number=assetdict[assetname],number_idle=assetdict[assetname])
+                        newasset = Asset(entity=entity,department=thisdep,name=assetname,type=1,belonging=thisadmin,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,number=assetdict[assetname],number_idle=assetdict[assetname],create_time=asset.create_time)
                         newasset.save()
                         #转移者
-                        AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,number=assetdict[assetname],src=fromadmin,dest=thisadmin).save()
+                        AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,number=assetdict[assetname],src=fromadmin,dest=thisadmin,expire_time=asset.create_time,life=newasset.life,price=newasset.price*assetdict[assetname]).save()
                         #接收者
-                        AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,number=assetdict[assetname],src=thisadmin).save()
+                        AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=assetdict[assetname],src=thisadmin,life=newasset.life,price=newasset.price*assetdict[assetname]).save()
                     else:
-                        newasset = Asset(entity=entity,department=thisdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,belonging=thisadmin,status=0)
+                        newasset = Asset(entity=entity,department=thisdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,belonging=thisadmin,status=0,create_time=asset.create_time)
                         newasset.save()
                         asset.status = 4
                         #转移者
-                        AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,number=1,src=fromadmin,dest=thisadmin).save()
+                        AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,expire_time=asset.create_time,number=1,src=fromadmin,dest=thisadmin,life=newasset.life,price=newasset.price).save()
                         #接受者
-                        AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,number=1,dest=thisadmin).save()
+                        AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=1,dest=thisadmin,life=newasset.life,price=newasset.price).save()
                     asset.save()
         # cyh
         # 通知员工审批结果,审批人的回复
@@ -380,7 +380,12 @@ class EpViewSet(viewsets.ViewSet):
         returnlist = []
         for item in assets:
             assetname = list(item.keys())[0]
-            asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).exclude(status=4).first()
+            if pending.type == 6:
+                fromuser = User.objects.filter(id=pending.initiator).first()
+                fromdep = Department.objects.filter(id=fromuser.department).first()
+                asset = Asset.objects.filter(department=fromdep,entity=ent,name=assetname).exclude(status=4).first()
+            else:
+                asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).exclude(status=4).first()
             returnlist.append({"id":asset.id,"assetname":assetname,"assetclass":asset.category.name if asset.category != None else "暂未确定类别","assetcount":item[assetname]})
         return Response({"code":0,"info":returnlist})
     

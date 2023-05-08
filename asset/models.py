@@ -135,7 +135,9 @@ class Asset(models.Model):
             ret["number"] = 1
             ret["number_idle"] = 0 if self.status else 1
             return ret
-            
+    
+    def is_expire(self):
+        return utils_time.get_timestamp() - self.create_time > self.life * 31536000
 
     def __str__(self) -> str:
         return self.name
