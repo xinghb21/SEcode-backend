@@ -44,6 +44,8 @@ class AwViewSet(viewsets.ViewSet):
         already_alert = Alert.objects.filter(entity=ent,department=dep,asset=asset,type=warning).first()
         if already_alert:
             raise Failure("已经存在同类告警策略")
+        if asset.type == False and warning == 1:
+            raise Failure("条目型资产不可设置数量告警")
         Alert(entity=ent,department=dep,asset=asset,type=warning,number=condition).save()
         return Response({"code":0,"info":"success"})
     

@@ -54,6 +54,8 @@ class anTest(TestCase):
     def test_post_and_get(self):
         resp = self.postaware("a",1,1)
         self.assertEqual(resp.json()["detail"], "资产不存在")
+        resp = self.postaware("e",1,10)
+        self.assertEqual(resp.json()["detail"], "条目型资产不可设置数量告警")
         resp = self.postaware("e",0,1)
         self.assertEqual(resp.json()["code"], 0)
         resp = self.postaware("e",0,2)
@@ -64,18 +66,35 @@ class anTest(TestCase):
         self.assertEqual(resp.json()["info"], [{'key': 1, 'assetname': 'e', 'warning': 0, 'condition': 1.0}, {'key': 2, 'assetname': 'n', 'warning': 1, 'condition': 10.0}])
     
     def test_delete(self):
-        resp = self.postaware("e",0,1)
-        resp = self.postaware("e",1,10)
+        resp = self.postaware("n",0,1)
+        resp = self.postaware("n",1,10)
         resp = self.deleteaware(3)
         self.assertEqual(resp.json()["detail"], "告警策略不存在")
         resp = self.deleteaware(1)
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.get("/user/ep/aw/getw")
-        self.assertEqual(resp.json()["info"], [{'key': 2, 'assetname': 'e', 'warning': 1, 'condition': 10.0}])
+        self.assertEqual(resp.json()["info"], [{'key': 2, 'assetname': 'n', 'warning': 1, 'condition': 10.0}])
         
     def test_change(self):
-        resp = self.postaware("e",1,10)
+        resp = self.postaware("n",1,10)
         resp = self.client.post("/user/ep/aw/cgcondition",{"key":2,"newcondition":5.0})
         self.assertEqual(resp.json()["detail"], "告警策略不存在")
         resp = self.client.post("/user/ep/aw/cgcondition",{"key":1,"newcondition":5.0})
         self.assertEqual(resp.json()["code"], 0)
+        
+    def test_alertmsg(self):
+        resp = self.client.get("/user/ep/beinformed")
+        self.assertEqual(resp.json()["info"], False)
+        resp = self.postaware("e",0,0)
+        resp = self.postaware("n",1,20)
+        resp = self.client.get("/user/ep/beinformed")
+        self.assertEqual(resp.json()["info"], True)
+        resp = self.client.get("/user/ep/allmessage")
+        self.assertEqual(resp.json()["info"], [{'key': 1, 'type': 0, 'message': '使用已超过0年'}, {'key': 2, 'type': 0, 'message': '数量不足20'}])
+        resp = self.client.post("/user/ep/aw/cgcondition",{"key":1,"newcondition":1})
+        resp = self.client.post("/user/ep/aw/cgcondition",{"key":2,"newcondition":15})
+        resp = self.client.get("/user/ep/allmessage")
+        self.assertEqual(resp.json()["info"], [{'key': 2, 'type': 0, 'message': '数量不足15'}])
+        resp = self.client.post("/user/ep/aw/cgcondition",{"key":2,"newcondition":5})
+        resp = self.client.get("/user/ep/beinformed")
+        self.assertEqual(resp.json()["info"], False)

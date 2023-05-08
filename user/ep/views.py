@@ -8,9 +8,9 @@ from django import db
 
 from user.models import User
 from department.models import Department,Entity
-from asset.models import Asset,AssetClass
+from asset.models import Asset,AssetClass,Alert
 from logs.models import AssetLog
-from pending.models import Pending,Message
+from pending.models import Pending,Message,EPMessage
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
@@ -799,3 +799,73 @@ class EpViewSet(viewsets.ViewSet):
         Message(user=staff.id,pending=pending.id,type=3,content=content).save()
         pending.delete()
         return Response({"code":0,"info":"ok"})
+    
+    #更新告警信息列表
+    def update_alert(self,ent,dep,userid):
+        awares = Alert.objects.filter(entity=ent,department=dep).all()
+        for item in awares:
+            asset = item.asset
+            if not asset:
+                continue
+            old_msg = EPMessage.objects.filter(user=userid,asset=asset,type=item.type).first()
+            #年限不足
+            if item.type == 0:
+                #确认
+                if utils_time.get_timestamp() - asset.create_time > item.number * 31536000:
+                    if not old_msg:
+                        EPMessage(user=userid,asset=asset,type=0,content="使用已超过%d年" % item.number).save()
+                    else:
+                        old_msg.content = "使用已超过%d年" % item.number
+                        old_msg.save()
+                else:
+                    if old_msg:
+                        old_msg.delete()
+            #数量不足
+            else:
+                #确认
+                if asset.number < item.number:
+                    if not old_msg:
+                        EPMessage(user=userid,asset=asset,type=1,content="数量不足%d" % item.number).save()
+                    else:
+                        old_msg.content = "数量不足%d" % item.number
+                        old_msg.save()
+                else:
+                    if old_msg:
+                        old_msg.delete()
+    
+    #获得所有消息通知
+    @Check
+    @action(detail=False,methods=['get'],url_path="allmessage")
+    def allmessage(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        self.update_alert(ent,dep,req.user.id)
+        msgs = EPMessage.objects.filter(user=req.user.id).all()
+        return_list = [{"key":item.id,"type":1 if item.type == 2 else 0,"message":item.content}for item in msgs]
+        return Response({"code":0,"info":return_list})
+    
+    #是否有消息通知
+    @Check
+    @action(detail=False,methods=['get'],url_path="beinformed")
+    def beiinformed(self,req:Request):
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        self.update_alert(ent,dep,req.user.id)
+        msgs = EPMessage.objects.filter(user=req.user.id).all()
+        if msgs:
+            return Response({"code":0,"info":True})
+        else:
+            return Response({"code":0,"info":False})
+        
+    #删除资产折旧信息
+    @Check
+    @action(detail=False,methods=['delete'],url_path="dclearmg")
+    def dclearmg(self,req:Request):
+        id = require(req.data, "key", "int" , err_msg="Error type of [key]")
+        msg = EPMessage.objects.filter(id=id).first()
+        if not msg:
+            raise Failure("消息不存在")
+        if msg.type != 2:
+            raise Failure("消息不是资产折旧")
+        msg.delete()
+        return Response({"code":0,"info":"success"})
