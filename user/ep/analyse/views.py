@@ -118,6 +118,8 @@ class AsViewSet(viewsets.ViewSet):
     def price_count(self,asset,timestamp):
         if asset.expire == True or timestamp - asset.create_time > asset.life * 31536000:
             return 0.00
+        elif float(asset.price) * ( 1 - (timestamp - asset.create_time) / (asset.life * 31536000)) > float(asset.price):
+                return round(float(asset.price),2)
         else:
             return round(float(asset.price) * ( 1 - (timestamp - asset.create_time) / (asset.life * 31536000)),2)
     
@@ -164,7 +166,7 @@ class AsViewSet(viewsets.ViewSet):
                 if item.expire_time > day:
                     deletelogs.remove(item)
                 else:
-                    deletevalue += item.price * (1 - (day - item.expire_time) / (item.life * 31536000))
+                    deletevalue += float(item.price) * (1 - (day - item.expire_time) / (item.life * 31536000)) if float(item.price) * (1 - (day - item.expire_time) / (item.life * 31536000)) < float(item.price) else float(item.price)
             for item in assets:
                 if item.type:
                     value += 1.00 * item.number * self.price_count(item,day)
