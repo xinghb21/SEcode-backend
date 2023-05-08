@@ -200,6 +200,7 @@ class asset(viewsets.ViewSet):
             "code": 0,
             "data": {**asset.serialize()},
         }
+        
         return Response(ret)    
                
     @Check  
