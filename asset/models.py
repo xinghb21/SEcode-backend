@@ -154,4 +154,19 @@ class AssetClass(models.Model):
     
     #资产类型，False为条目型，True为数量型
     type = models.BooleanField(null=False, default=False)
+
+#告警策略
+class Alert(models.Model):
+    id = models.BigAutoField(primary_key=True)
     
+    entity = models.ForeignKey('department.Entity', null=True, on_delete=models.CASCADE, verbose_name="所属业务实体")
+    
+    department = models.ForeignKey('department.Department', null=True, on_delete=models.CASCADE, verbose_name="所属部门")
+    
+    asset = models.ForeignKey('Asset', null=True, on_delete=models.CASCADE)
+    
+    #0按年限告警，1按数量告警
+    type = models.IntegerField(default=0)
+    
+    #具体数值
+    number = models.FloatField(default=0)

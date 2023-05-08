@@ -797,4 +797,5 @@ class EpViewSet(viewsets.ViewSet):
         if brokenasset:
             content += "报废资产:" + str(brokenasset).replace('[','').replace(']','') + "<br/>"
         Message(user=staff.id,pending=pending.id,type=3,content=content).save()
+        pending.delete()
         return Response({"code":0,"info":"ok"})
