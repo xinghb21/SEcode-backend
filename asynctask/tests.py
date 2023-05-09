@@ -5,7 +5,7 @@ from department.models import Department, Entity
 from user.models import User
 from utils.exceptions import Failure
 from asset.models import Asset
-
+import time
 # Create your tests here.
 class asyncTest(TestCase):
     def setUp(self) -> None:
@@ -27,4 +27,11 @@ class asyncTest(TestCase):
         resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
         # print(resp.content)
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["code"], 0)
+        
+    def test_getprocess(self):
+        self.login("bob", "bob")
+        resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
+        resp = self.client.post("/async/getprocess", data={"taskid":1}, content_type="application/json")
+        print(resp.json())
         self.assertEqual(resp.json()["code"], 0)

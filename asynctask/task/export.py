@@ -20,14 +20,13 @@ class Export(Process):
         self.test = test
         
     def get_basic(self):
-        task = Async_import_export_task.objects.filter(id=self.taskid).first()
-        if not task:
+        self.task = Async_import_export_task.objects.filter(id=self.taskid).first()
+        if not self.task:
             raise Failure("任务不存在")
-        task.pid = self.pid
-        task.status = 2
-        task.process_time = datetime.datetime.now().timestamp()
-        task.save()
-        self.task = task
+        self.task.pid = self.pid
+        self.task.status = 2
+        self.task.process_time = datetime.datetime.now().timestamp()
+        self.task.save()
         if not os.path.exists("./tmp"):
             os.mkdir("./tmp")
         if not os.path.exists("./tmp/"+str(self.pid)):
@@ -37,12 +36,12 @@ class Export(Process):
         path = "./tmp/"+str(self.pid)+"/tmp.xlsx"
         self.path = path
         self.df = pd.read_excel("./tmp/"+str(self.pid)+"/tmp.xlsx") 
-        ids = task.ids
+        ids = self.task.ids
         if not ids:
             ids = Asset.objects.values_list("id", flat=True)
             total = Asset.objects.count()
-            task.ids = json.dumps(list(ids))
-            task.save()
+            self.task.ids = json.dumps(list(ids))
+            self.task.save()
         else:
             ids = json.loads(ids)
             total = len(ids)
@@ -60,6 +59,7 @@ class Export(Process):
         self.task.status = 1
         self.task.finish_time = datetime.datetime.now().timestamp()
         self.task.save()
+        print(self.task.serialize())
 
 class AssetExport(Export):
     def __init__(self, taskid, test):
