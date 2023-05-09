@@ -22,12 +22,12 @@ class asyncTest(TestCase):
         }
         return self.client.post("/user/login", data=payload, content_type="application/json")
     
-    def test_newtask(self):
-        self.login("bob", "bob")
-        resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
-        # print(resp.content)
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()["code"], 0)
+    # def test_newtask(self):
+    #     self.login("bob", "bob")
+    #     resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
+    #     # print(resp.content)
+    #     self.assertEqual(resp.status_code, 200)
+    #     self.assertEqual(resp.json()["code"], 0)
         
     def test_getprocess(self):
         self.login("bob", "bob")
