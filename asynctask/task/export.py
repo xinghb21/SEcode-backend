@@ -14,49 +14,56 @@ from utils.exceptions import Failure
 from asynctask.task.oss import get_bucket
 
 class Export(Process):
-    def __init__(self):
+    def __init__(self, taskid, test):
         super().__init__()
+        self.taskid = taskid
+        self.test = test
         
     def get_basic(self):
-        task = Async_import_export_task.objects.filter(pid=self.pid).first()
+        task = Async_import_export_task.objects.filter(id=self.taskid).first()
         if not task:
             raise Failure("任务不存在")
+        task.pid = self.pid
         task.status = 2
         task.process_time = datetime.datetime.now().timestamp()
         task.save()
         self.task = task
-        if not os.path.exists("./tmp"+self.pid+"/"):
-            os.mkdir("./tmp"+self.pid+"/")
-        if not os.path.exists("./tmp/"+self.pid+"/tmp.xlsx"):
-            os.mknod("./tmp/"+self.pid+"/tmp.xlsx")
-        path = "./tmp/"+self.pid+"/tmp.xlsx"
+        if not os.path.exists("./tmp"):
+            os.mkdir("./tmp")
+        if not os.path.exists("./tmp/"+str(self.pid)):
+            os.mkdir("./tmp/"+str(self.pid))
+        if not os.path.exists("./tmp/"+str(self.pid)+"/tmp.xlsx"):
+            pd.DataFrame().to_excel("./tmp/"+str(self.pid)+"/tmp.xlsx", sheet_name="Sheet1", index=False, header=True)
+        path = "./tmp/"+str(self.pid)+"/tmp.xlsx"
         self.path = path
-        self.df = pd.read_excel("./tmp/"+self.pid+"/tmp.xlsx") 
-        ids = json.loads(task.ids) 
+        self.df = pd.read_excel("./tmp/"+str(self.pid)+"/tmp.xlsx") 
+        ids = task.ids
         if not ids:
             ids = Asset.objects.values_list("id", flat=True)
             total = Asset.objects.count()
             task.ids = json.dumps(list(ids))
             task.save()
         else:
+            ids = json.loads(ids)
             total = len(ids)
         self.ids = ids
         self.total = total
         
     def finish(self):
         DataFrame(self.df).to_excel(self.path, sheet_name="Sheet1", index=False, header=True) 
-        bucket = get_bucket()
-        bucket.put_object_from_file(self.path, self.path)
+        if not self.test:
+            bucket = get_bucket()
+            bucket.put_object_from_file(self.task.file_path, self.path)
         os.remove(self.path)
-        os.rmdir("./tmp/"+self.pid+"/")
+        os.rmdir("./tmp/"+str(self.pid)+"/")
         self.task.process = 100
         self.task.status = 1
         self.task.finish_time = datetime.datetime.now().timestamp()
         self.task.save()
 
 class AssetExport(Export):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, taskid, test):
+        super().__init__(taskid, test)
         
     def run(self):
         self.get_basic()
@@ -80,7 +87,7 @@ class AssetExport(Export):
             df.loc[i] = [asset.parent.name if asset.parent else "", \
                          asset.department.name if asset.department else "", \
                          asset.entity.name if asset.entity else "", \
-                         asset.category.name, \
+                         asset.category.name if asset.category else "", \
                          gettype(asset.type), \
                          asset.name, \
                          asset.belonging.name if asset.belonging else "", \
@@ -98,8 +105,8 @@ class AssetExport(Export):
         self.finish()
         
 class TaskExport(Export):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, taskid, test):
+        super().__init__(taskid, test)
         
     def run(self):
         self.get_basic()

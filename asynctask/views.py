@@ -26,6 +26,9 @@ class asynctask(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['post'], url_path="newouttask")
     def newtask(self, req:Request):
+        test = False
+        if req.query_params.get("test"):
+            test = True
         if req.user.identity != 3:
             raise Failure("您没有权限进行此操作")
         et = Entity.objects.filter(id=req.user.entity).first()
@@ -33,10 +36,10 @@ class asynctask(viewsets.ViewSet):
             raise Failure("登录用户所在的业务实体不存在")
         now = datetime.datetime.now()
         filepath = now.strftime("%Y/%m/%d/%H:%M:%S/") + "资产导出.xlsx"
-        db.close_old_connections()
-        p = AssetExport()
-        task = Async_import_export_task(name="导出资产列表", entity=et, user=req.user, type=0, file_path=filepath, pid=p.pid)
+        task = Async_import_export_task(name="导出资产列表", entity=et, user=req.user, type=0, file_path=filepath)
         task.save()
+        db.close_old_connections()
+        p = AssetExport(task.id, test)
         db.close_old_connections()
         p.start()
         return Response(
@@ -80,10 +83,9 @@ class asynctask(viewsets.ViewSet):
         tp = task.type
         db.close_old_connections()
         if tp == 0:
-            p = AssetExport()
+            p = AssetExport(task.id)
         elif tp == 1:
-            p = TaskExport()
-        task.pid = p.pid
+            p = TaskExport(task.id)
         task.status = 3
         task.process = 0
         task.save()
@@ -103,16 +105,19 @@ class asynctask(viewsets.ViewSet):
             }
         )
     
-    def gettask(self, req, ids):
+    def gettask(self, req:Request, ids):
+        test = False
+        if req.query_params.get("test"):
+            test = True
         et = Entity.objects.filter(id=req.user.entity).first()
         if not et:
             raise Failure("登录用户所在的业务实体不存在")
         now = datetime.datetime.now()
         filepath = now.strftime("%Y/%m/%d/%H:%M:%S/") + "异步任务导出.xlsx"
-        db.close_old_connections()
-        p = TaskExport()
-        task = Async_import_export_task(name="导出异步任务", entity=et, user=req.user, type=1, file_path=filepath, pid=p.pid, ids=json.dumps(ids))
+        task = Async_import_export_task(name="导出异步任务", entity=et, user=req.user, type=1, file_path=filepath, ids=json.dumps(ids))
         task.save()
+        db.close_old_connections()
+        p = TaskExport(task.id, test)
         db.close_old_connections()
         p.start()
         return Response(

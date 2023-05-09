@@ -35,7 +35,7 @@ class Async_import_export_task(models.Model):
     file_path = models.CharField(max_length=255, blank=True, null=True)
     
     # 对应的进程id
-    pid = models.IntegerField()
+    pid = models.IntegerField(default=0)
     
     # 处理进度 0-100
     process = models.IntegerField(default=0)
