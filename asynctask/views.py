@@ -2,14 +2,10 @@
 import json
 import datetime
 
-from user.models import User
-from department.models import Department, Entity
-from logs.models import Logs
-from asset.models import Asset, AssetClass
+from department.models import Entity
 
 from django import db
 
-from utils.permission import GeneralPermission
 from utils.session import LoginAuthentication
 from utils.exceptions import Failure, ParamErr, Check
 
@@ -146,6 +142,32 @@ class asynctask(viewsets.ViewSet):
         if req.user.identity != 2:
             raise Failure("您没有权限进行此操作")
         return self.gettask(req, Async_import_export_task.objects.filter(status=0).values_list("id", flat=True))
+    
+    @Check
+    @action(detail=False, methods=['post'], url_path="esgetalltask")
+    def esgetalltask(self, req:Request):
+        if req.user.identity != 2:
+            raise Failure("您没有权限进行此操作")
+        et = Entity.objects.filter(id=req.user.entity).first()
+        if not et:
+            raise Failure("登录用户所在的业务实体不存在")
+        tasks = Async_import_export_task.objects.filter(entity=et).order_by("-create_time")
+        return Response({
+            "code": 0,
+            "info": [task.respond() for task in tasks]
+        })
+        
+    @Check
+    @action(detail=False, methods=['post'], url_path="getalivetasks")
+    def getalivetasks(self, req:Request):
+        if req.user.identity != 2 or req.user.identity != 3:
+            raise Failure("您没有权限进行此操作")
+        tasks = Async_import_export_task.objects.filter(user=req.user, status=2).order_by("-create_time")
+        return Response({
+            "code": 0,
+            "info": [task.respond() for task in tasks]
+        })
+    
         
         
         

@@ -49,7 +49,7 @@ class Async_import_export_task(models.Model):
                 "id": self.id,
                 "name": self.name,
                 "entity": self.entity.name if self.entity else None,
-                "user": self.user.username if self.user else None,
+                "user": self.user.name if self.user else None,
                 "create_time": self.create_time,
                 "status": self.status,
                 "process_time": self.process_time,
@@ -60,6 +60,20 @@ class Async_import_export_task(models.Model):
             }
         except Exception:
             raise Failure("序列化失败")
+    
+    def respond(self):
+        try:
+            return {
+                "id": self.id,
+                "person": self.user.name if self.user else None,
+                "time": self.create_time,
+                "state": self.status,
+                "type": self.type,
+                "fileurl": self.file_path,
+            }
+        except Exception:
+            raise Failure("转换失败")
+        
         
     def __str__(self):
         return self.name
