@@ -128,11 +128,7 @@ class EpViewSet(viewsets.ViewSet):
         #检查所有资产是否都存在
         for assetdict in assets:
             assetname = list(assetdict.keys())[0]
-            if ptype != 6:
-                asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first()
-            else:
-                fromdep = Department.objects.filter(entity=ent,admin=pen.initiator).first()
-                asset = Asset.objects.filter(entity=ent,department=fromdep,name=assetname).exclude(status=4).first()
+            asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first()
             if not asset and status == 0:
                 raise Failure("请求中包含已失效资产，请拒绝")
         assetlist = assets
@@ -305,53 +301,6 @@ class EpViewSet(viewsets.ViewSet):
                     asset.belonging = admin
                     AssetLog(asset=asset,type=6,entity=staff.entity,department=staff.department,number=1,src=staff).save()
                 asset.save()
-        #资产调拨
-        if ptype == 6:
-            thisadmin = User.objects.filter(id=pen.destination).first()
-            fromadmin = User.objects.filter(id=pen.initiator).first()
-            pen.result = 0
-            if status == 1:
-                for assetdict in assetlist:
-                    assetname = list(assetdict.keys())[0]
-                    #待办单条资产
-                    fromdep = Department.objects.filter(entity=ent,admin=pen.initiator).first()
-                    asset = Asset.objects.filter(entity=ent,department=fromdep,name=assetname).exclude(status=4).first()
-                    #数量型
-                    if asset.type:
-                        self.leave_buffer(asset,fromadmin,assetdict,assetname)
-                        asset.number_idle += assetdict[assetname]
-                    #条目型
-                    else:
-                        asset.status = 0
-                    asset.save()
-                return Response({"code":0,"detail":"ok"})
-            else:
-                for assetdict in assetlist:
-                    assetname = list(assetdict.keys())[0]
-                    #待办单条资产
-                    thisdep = Department.objects.filter(entity=ent,admin=pen.destination).first()
-                    asset = Asset.objects.filter(entity=ent,department=fromdep,name=assetname).exclude(status=4).first()
-                    #数量型
-                    if asset.type:
-                        self.leave_buffer(asset,fromadmin,assetdict,assetname)
-                        asset.number -= assetdict[assetname]
-                        if asset.number == 0:
-                            asset.status = 4
-                        newasset = Asset(entity=entity,department=thisdep,name=assetname,type=1,belonging=thisadmin,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,number=assetdict[assetname],number_idle=assetdict[assetname],create_time=asset.create_time)
-                        newasset.save()
-                        #转移者
-                        AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,number=assetdict[assetname],src=fromadmin,dest=thisadmin,expire_time=asset.create_time,life=newasset.life,price=newasset.price*assetdict[assetname]).save()
-                        #接收者
-                        AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=assetdict[assetname],dest=thisadmin,life=newasset.life,price=newasset.price*assetdict[assetname]).save()
-                    else:
-                        newasset = Asset(entity=entity,department=thisdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,belonging=thisadmin,status=0,create_time=asset.create_time)
-                        newasset.save()
-                        asset.status = 4
-                        #转移者
-                        AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,expire_time=asset.create_time,number=1,src=fromadmin,dest=thisadmin,life=newasset.life,price=newasset.price).save()
-                        #接受者
-                        AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=1,dest=thisadmin,life=newasset.life,price=newasset.price).save()
-                    asset.save()
         # cyh
         # 通知员工审批结果,审批人的回复
         db.close_old_connections()
@@ -683,24 +632,86 @@ class EpViewSet(viewsets.ViewSet):
         pending.save()
         return Response({"code":0,"info":"success"})
     
-    #为调拨的资产选定类别
+    #审批调拨并为调拨的资产选定类别
     @Check
     @action(detail=False, methods=['post'], url_path="setcat")
     def setcat(self,req:Request):
-        id = require(req.data, "id", "int" , err_msg="Error type of [id]")
-        label = require(req.data, "label", "string" , err_msg="Error type of [label]")
         dep = Department.objects.filter(id=req.user.department).first()
         ent = Entity.objects.filter(id=req.user.entity).first()
-        asset = Asset.objects.filter(entity=ent,department=dep,id=id).exclude(status=4).first()
-        assetclass = AssetClass.objects.filter(entity=ent,department=dep,name=label).first()
-        if not asset:
-            raise Failure("资产不存在")
-        if not assetclass:
-            raise Failure("资产类别不存在")
-        if asset.type != assetclass.type:
-            raise Failure("资产与资产类别类型不符")
-        asset.category = assetclass
-        asset.save()
+        id = require(req.data, "id", "int" , err_msg="Error type of [id]")
+        status = require(req.data, "status", "int" , err_msg="Error type of [status]")
+        reply = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
+        pen = Pending.objects.filter(entity=ent.id,department=dep.id,id=id,type=6).first()
+        #检查待办项合法
+        if not pen:
+            raise Failure("待办项不存在")
+        if pen.result:
+            raise Failure("此待办已审批完成")
+        thisadmin = req.user
+        fromadmin = User.objects.filter(id=pen.initiator).first()
+        fromdep = Department.objects.filter(id=fromadmin.id).first()
+        assetlist = require(req.data,"asset","list",err_msg="Error type of [asset]")
+        for item in assetlist:
+            asset = Asset.objects.filter(entity=ent,department=fromdep,id=item["id"]).exclude(status=4).first()
+            assetclass = AssetClass.objects.filter(entity=ent,department=dep,name=item["label"]).first()
+            if not asset:
+                raise Failure("资产不存在")
+            if status == 0:
+                if not assetclass:
+                    raise Failure("资产类别不存在")
+                if asset.type != assetclass.type:
+                    raise Failure("资产与资产类别类型不符")
+        #更新待办信息
+        pen.result = 2 if status else 1
+        pen.review_time = utils_time.get_timestamp()
+        pen.reply = reply
+        pen.save()
+        #给员工发送消息
+        msg = self.create_message(status,id,pen.type,reply)
+        Message.objects.create(user=pen.initiator,content=msg,type=pen.type,pending=id)
+        #拒绝
+        if status == 1:
+            for assetdict in assetlist:
+                #待办单条资产
+                asset = Asset.objects.filter(entity=ent,department=fromdep,id=assetdict["id"]).exclude(status=4).first()
+                assetclass = AssetClass.objects.filter(entity=ent,department=dep,name=assetdict["label"]).first()
+                number = assetdict["number"]
+                #数量型
+                if asset.type:
+                    self.leave_buffer(asset,fromadmin,{asset.name:number},asset.name)
+                    asset.number_idle += number
+                #条目型
+                else:
+                    asset.status = 0
+                asset.save()
+            return Response({"code":0,"detail":"ok"})
+        else:
+            for assetdict in assetlist:
+                #待办单条资产
+                asset = Asset.objects.filter(entity=ent,department=fromdep,id=assetdict["id"]).exclude(status=4).first()
+                assetclass = AssetClass.objects.filter(entity=ent,department=dep,name=assetdict["label"]).first()
+                number = assetdict["number"]
+                #数量型
+                if asset.type:
+                    self.leave_buffer(asset,fromadmin,{asset.name:number},asset.name)
+                    asset.number -= number
+                    if asset.number == 0:
+                        asset.status = 4
+                    newasset = Asset(entity=ent,department=dep,name=asset.name,type=1,belonging=thisadmin,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,number=number,number_idle=number,create_time=asset.create_time,category=assetclass)
+                    newasset.save()
+                    #转移者
+                    AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,number=number,src=fromadmin,dest=thisadmin,expire_time=asset.create_time,life=newasset.life,price=newasset.price*number).save()
+                    #接收者
+                    AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=number,dest=thisadmin,life=newasset.life,price=newasset.price*number).save()
+                else:
+                    newasset = Asset(entity=ent,department=dep,type=0,name=asset.name,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,belonging=thisadmin,status=0,create_time=asset.create_time,category=assetclass)
+                    newasset.save()
+                    asset.status = 4
+                    #转移者
+                    AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,expire_time=asset.create_time,number=1,src=fromadmin,dest=thisadmin,life=newasset.life,price=newasset.price).save()
+                    #接受者
+                    AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=1,dest=thisadmin,life=newasset.life,price=newasset.price).save()
+                asset.save()
         return Response({"code":0,"info":"success"})
     
     #获取所有维保申请
