@@ -668,7 +668,7 @@ class EpViewSet(viewsets.ViewSet):
         pen.save()
         #给员工发送消息
         msg = self.create_message(status,id,pen.type,reply)
-        EPMessage.objects.create(user=fromadmin.id,content=msg,type=2)
+        Message.objects.create(user=fromadmin.id,content=msg,type=2,pending=pen.id)
         #拒绝
         if status == 1:
             for assetdict in assetlist:
