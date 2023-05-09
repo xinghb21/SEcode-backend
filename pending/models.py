@@ -109,4 +109,7 @@ class EPMessage(models.Model):
     #信息
     content = models.TextField(default="")
     
+    #如果是告警，关联告警id
+    aware = models.BigIntegerField(default=0)
+    
     time = models.FloatField(default=utils_time.get_timestamp)

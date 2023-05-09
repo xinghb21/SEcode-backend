@@ -380,7 +380,7 @@ class EpViewSet(viewsets.ViewSet):
         returnlist = []
         for item in assets:
             assetname = list(item.keys())[0]
-            if pending.type == 6:
+            if pending.type == 6 or pending.type == 2:
                 fromuser = User.objects.filter(id=pending.initiator).first()
                 fromdep = Department.objects.filter(id=fromuser.department).first()
                 asset = Asset.objects.filter(department=fromdep,entity=ent,name=assetname).exclude(status=4).first()
@@ -818,9 +818,9 @@ class EpViewSet(viewsets.ViewSet):
                 #确认
                 if utils_time.get_timestamp() - asset.create_time > item.number * 31536000:
                     if not old_msg:
-                        EPMessage(user=userid,asset=asset,type=0,content="使用已超过%d年" % item.number).save()
+                        EPMessage(user=userid,asset=asset,type=0,content="%s使用已超过%d年" % (asset.name,item.number),aware=item.id).save()
                     else:
-                        old_msg.content = "使用已超过%d年" % item.number
+                        old_msg.content = "%s使用已超过%d年" % (old_msg.asset.name,item.number)
                         old_msg.save()
                 else:
                     if old_msg:
@@ -830,9 +830,9 @@ class EpViewSet(viewsets.ViewSet):
                 #确认
                 if asset.number < item.number:
                     if not old_msg:
-                        EPMessage(user=userid,asset=asset,type=1,content="数量不足%d" % item.number).save()
+                        EPMessage(user=userid,asset=asset,type=1,content="%s数量不足%d" % (asset.name,item.number),aware=item.id).save()
                     else:
-                        old_msg.content = "数量不足%d" % item.number
+                        old_msg.content = "%s数量不足%d" % (old_msg.asset.name,item.number)
                         old_msg.save()
                 else:
                     if old_msg:

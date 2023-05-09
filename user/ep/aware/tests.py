@@ -51,6 +51,12 @@ class anTest(TestCase):
         }
         return self.client.delete("/user/ep/aw/deleteaw",data=payload, content_type="application/json")
     
+    def deletemessage(self,id):
+        payload = {
+            "key":id
+        }
+        return self.client.delete("/user/ep/dclearmg",data=payload, content_type="application/json")
+    
     def test_post_and_get(self):
         resp = self.postaware("a",1,1)
         self.assertEqual(resp.json()["detail"], "资产不存在")
@@ -90,11 +96,28 @@ class anTest(TestCase):
         resp = self.client.get("/user/ep/beinformed")
         self.assertEqual(resp.json()["info"], True)
         resp = self.client.get("/user/ep/allmessage")
-        self.assertEqual(resp.json()["info"], [{'key': 1, 'type': 0, 'message': '使用已超过0年'}, {'key': 2, 'type': 0, 'message': '数量不足20'}])
+        self.assertEqual(resp.json()["info"], [{'key': 1, 'type': 0, 'message': 'e使用已超过0年'}, {'key': 2, 'type': 0, 'message': 'n数量不足20'}])
+        resp = self.deletemessage(2)
+        self.assertEqual(resp.json()["detail"],"消息不是资产折旧")
         resp = self.client.post("/user/ep/aw/cgcondition",{"key":1,"newcondition":1})
         resp = self.client.post("/user/ep/aw/cgcondition",{"key":2,"newcondition":15})
         resp = self.client.get("/user/ep/allmessage")
-        self.assertEqual(resp.json()["info"], [{'key': 2, 'type': 0, 'message': '数量不足15'}])
+        self.assertEqual(resp.json()["info"], [{'key': 2, 'type': 0, 'message': 'n数量不足15'}])
         resp = self.client.post("/user/ep/aw/cgcondition",{"key":2,"newcondition":5})
+        resp = self.client.get("/user/ep/beinformed")
+        self.assertEqual(resp.json()["info"], False)
+    
+    def test_auto_expire(self):
+        self.addasset("badasset","entry",1,0,10)
+        resp = self.client.get("/user/ep/beinformed")
+        self.assertEqual(resp.json()["info"], False)
+        self.logout("ep")
+        self.login("ep","ep")
+        resp = self.client.get("/user/ep/allmessage")
+        self.assertEqual(resp.json()["info"], [{'key': 1, 'type': 1, 'message': '资产badasset因过期自动清退'}])
+        resp = self.deletemessage(2)
+        self.assertEqual(resp.json()["detail"],"消息不存在")
+        resp = self.deletemessage(1)
+        self.assertEqual(resp.json()["code"],0)
         resp = self.client.get("/user/ep/beinformed")
         self.assertEqual(resp.json()["info"], False)

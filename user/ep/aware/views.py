@@ -8,6 +8,7 @@ from user.models import User
 from department.models import Department,Entity
 from asset.models import Asset,Alert
 from logs.models import AssetLog
+from pending.models import EPMessage
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
@@ -59,6 +60,9 @@ class AwViewSet(viewsets.ViewSet):
         aware = Alert.objects.filter(id=id,entity=ent,department=dep).first()
         if not aware:
             raise Failure("告警策略不存在")
+        msgs = EPMessage.objects.filter(aware=aware.id).all()
+        for i in msgs:
+            i.delete()
         aware.delete()
         return Response({"code":0,"info":"success"})
     
