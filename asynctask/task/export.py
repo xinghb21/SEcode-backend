@@ -10,7 +10,7 @@ import datetime
 from asynctask.models import Async_import_export_task
 from utils.exceptions import Failure
 
-from task.oss import get_bucket
+from asynctask.task.oss import get_bucket
 
 class AssetExport(Process):
     def __init__(self, user:User):
