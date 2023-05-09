@@ -8,6 +8,7 @@ from django import db
 
 from utils.session import LoginAuthentication
 from utils.exceptions import Failure, ParamErr, Check
+from utils.utils_time import get_timestamp
 
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -31,6 +32,10 @@ class asynctask(viewsets.ViewSet):
             test = True
         if req.user.identity != 3:
             raise Failure("您没有权限进行此操作")
+        # 获取该资产管理员已有的任务，只保留最新的两条任务
+        oldtasks = Async_import_export_task.objects.filter(user=req.user).order_by("create_time")
+        if len(oldtasks) >= 2:
+            oldtasks[2:].delete()
         et = Entity.objects.filter(id=req.user.entity).first()
         if not et:
             raise Failure("登录用户所在的业务实体不存在")
@@ -83,15 +88,15 @@ class asynctask(viewsets.ViewSet):
         task = Async_import_export_task.objects.filter(id=id).first()
         if not task:
             raise Failure("任务不存在")
+        task.status = 3
+        task.process = 0
+        task.save()
         tp = task.type
         db.close_old_connections()
         if tp == 0:
             p = AssetExport(task.id, test)
         elif tp == 1:
             p = TaskExport(task.id, test)
-        task.status = 3
-        task.process = 0
-        task.save()
         db.close_old_connections()
         p.start()
         return Response(
@@ -159,6 +164,7 @@ class asynctask(viewsets.ViewSet):
         et = Entity.objects.filter(id=req.user.entity).first()
         if not et:
             raise Failure("登录用户所在的业务实体不存在")
+        Async_import_export_task.objects.filter(entity=et, finish_time__lt=get_timestamp()-3*24*60*60).delete()
         tasks = Async_import_export_task.objects.filter(entity=et).order_by("-create_time")
         return Response({
             "code": 0,
