@@ -649,7 +649,7 @@ class EpViewSet(viewsets.ViewSet):
             raise Failure("此待办已审批完成")
         thisadmin = req.user
         fromadmin = User.objects.filter(id=pen.initiator).first()
-        fromdep = Department.objects.filter(id=fromadmin.id).first()
+        fromdep = Department.objects.filter(id=fromadmin.department).first()
         assetlist = require(req.data,"asset","list",err_msg="Error type of [asset]")
         for item in assetlist:
             asset = Asset.objects.filter(entity=ent,department=fromdep,id=item["id"]).exclude(status=4).first()
@@ -668,7 +668,7 @@ class EpViewSet(viewsets.ViewSet):
         pen.save()
         #给员工发送消息
         msg = self.create_message(status,id,pen.type,reply)
-        Message.objects.create(user=pen.initiator,content=msg,type=pen.type,pending=id)
+        EPMessage.objects.create(user=fromadmin.id,content=msg,type=2)
         #拒绝
         if status == 1:
             for assetdict in assetlist:
