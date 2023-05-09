@@ -62,6 +62,15 @@ class epTest(TestCase):
     
     def transfer(self,assets,department,reason):
         return self.client.post("/user/ep/transfer",{"transfer":assets,"department":department,"reason":reason}, content_type="application/json")
+
+    def replytransfer(self,assets,id,status,reply="success"):
+        payload = {
+            "id":id,
+            "status":status,
+            "reason":reply,
+            "asset":assets
+        }
+        return self.client.post("/user/ep/setcat",payload,content_type="application/json")
     
     def preprocess(self):
         resp = self.addassetclass("class1", 1)
@@ -283,23 +292,29 @@ class epTest(TestCase):
         self.assertEqual(resp.json()["code"], 0)
         self.logout("ep")
         self.login("ep2","ep2")
-        resp = self.reply(1,0)
-        self.assertEqual(resp.json()["code"], 0)
-        resp = self.reply(2,0)
-        self.assertEqual(resp.json()["code"], 0)
-        resp = self.reply(3,1,"reject")
-        self.assertEqual(resp.json()["code"], 0)
-        assets4 = [{"id":1,"assetname":"asset1","assetnumber":10}]
         resp = self.transfer(assets3,"dep3","transfer")
+        resp = self.addassetclass("class3", 1)
+        resp = self.addassetclass("class4",0)
+        replyassets1 = [{"id":1,"label":"class3","number":50}]
+        resp = self.replytransfer(replyassets1,1,0,"success")
+        self.assertEqual(resp.json()["code"], 0)
+        replyassets2 = [{"id":2,"label":"class4","number":1}]
+        resp = self.replytransfer(replyassets2,2,0,"success")
+        self.assertEqual(resp.json()["code"], 0)
+        replyassets3 = [{"id":1,"label":"class5","number":30}]
+        resp = self.replytransfer(replyassets3,3,0,"fail")
+        self.assertEqual(resp.json()["detail"], "资产类别不存在")
+        replyassets4 = [{"id":1,"label":"class4","number":30}]
+        resp = self.replytransfer(replyassets4,3,0,"fail")
+        self.assertEqual(resp.json()["detail"], "资产与资产类别类型不符")
+        replyassets5 = [{"id":1,"label":"class3","number":30}]
+        resp = self.replytransfer(replyassets5,3,1,"reject")
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.transfer(assets3,"dep114514","transfer")
         self.assertEqual(resp.json()["detail"], "目标部门不存在")
         dep4 = Department.objects.create(name="dep4", entity=1)
         resp = self.transfer(assets3,"dep4","transfer")
         self.assertEqual(resp.json()["detail"], "目标部门无资产管理员")
+        assets4 = [{"id":1,"assetname":"asset1","assetnumber":10}]
         resp = self.transfer(assets4,"dep2","transfer")
         self.assertEqual(resp.json()["detail"], "资产asset1在目标用户所在部门存在同名资产")
-        resp = self.addassetclass("class3", 1)
-        resp = self.addassetclass("class4",0)
-        resp = self.client.post("/user/ep/setcat",{"id":3,"label":"class3"})
-        self.assertEqual(resp.json()["code"], 0)
-        resp = self.client.post("/user/ep/setcat",{"id":4,"label":"class4"})
-        self.assertEqual(resp.json()["code"], 0)

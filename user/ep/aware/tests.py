@@ -16,6 +16,11 @@ class anTest(TestCase):
         self.addasset("e","entry",1,10,2000)
         self.addasset("n","number",10,1,20)
         
+    def addassetclass(self, name, type):
+        return self.client.post("/asset/assetclass", {"name": name, "type": type})
+    
+    def addasset(self, name, cate, number,life=2,price=10):
+        return self.client.post("/asset/post", [{"name": name, "category": cate,"life": life, "number": number, "price": price}], content_type="application/json")
     def login(self, name, pw):
         payload = {
             "name": name,
@@ -28,14 +33,6 @@ class anTest(TestCase):
             "name": name
         }
         return self.client.post("/user/logout", data=payload, content_type="application/json")
-    
-    def addassetclass(self, name, type):
-        return self.client.post("/asset/assetclass", {"name": name, "type": type})
-    
-    def addasset(self, name, cate, number,life=10,price=10):
-        return self.client.post("/asset/post", [{"name": name, "category": cate,
-                                                "life": life, "number": number, "price": price
-                                                }], content_type="application/json")
     
     def postaware(self,name,type,number):
         payload = {
