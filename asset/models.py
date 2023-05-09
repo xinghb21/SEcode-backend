@@ -6,6 +6,12 @@ from user.models import User
 
 import json
 
+def gettype(type):
+    if type:
+        return "数量型"
+    else:
+        return "条目型"
+
 # Create your models here.
 class Asset(models.Model):
     
