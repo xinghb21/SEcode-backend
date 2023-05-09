@@ -111,7 +111,8 @@ class Asset(models.Model):
                 "type": self.type,
                 "name":self.name,
                 "belonging":self.belonging.name if self.belonging else "暂无挂账人",
-                "price":self.price,
+                "price":float(self.price),
+                "new_price":round(float(self.price) * (1 - (utils_time.get_timestamp() - self.create_time) / (self.life * 31536000)),2) if float(self.price) * (1 - (utils_time.get_timestamp() - self.create_time) / (self.life * 31536000)) < float(self.price) else float(self.price),
                 "life":self.life,
                 "create_time":self.create_time,
                 "description":self.description,
@@ -134,7 +135,9 @@ class Asset(models.Model):
             ret["number"] = 1
             ret["number_idle"] = 0 if self.status else 1
             return ret
-            
+    
+    def is_expire(self):
+        return utils_time.get_timestamp() - self.create_time > self.life * 31536000
 
     def __str__(self) -> str:
         return self.name
@@ -153,4 +156,19 @@ class AssetClass(models.Model):
     
     #资产类型，False为条目型，True为数量型
     type = models.BooleanField(null=False, default=False)
+
+#告警策略
+class Alert(models.Model):
+    id = models.BigAutoField(primary_key=True)
     
+    entity = models.ForeignKey('department.Entity', null=True, on_delete=models.CASCADE, verbose_name="所属业务实体")
+    
+    department = models.ForeignKey('department.Department', null=True, on_delete=models.CASCADE, verbose_name="所属部门")
+    
+    asset = models.ForeignKey('Asset', null=True, on_delete=models.CASCADE)
+    
+    #0按年限告警，1按数量告警
+    type = models.IntegerField(default=0)
+    
+    #具体数值
+    number = models.FloatField(default=0)

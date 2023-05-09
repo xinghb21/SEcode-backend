@@ -7,4 +7,5 @@ router.register("", EpViewSet, basename="ns")
 
 urlpatterns = router.urls +[
     path('as/', include("user.ep.analyse.urls")),
+    path('aw/', include("user.ep.aware.urls")),
 ]

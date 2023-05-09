@@ -118,6 +118,8 @@ class AsViewSet(viewsets.ViewSet):
     def price_count(self,asset,timestamp):
         if asset.expire == True or timestamp - asset.create_time > asset.life * 31536000:
             return 0.00
+        elif float(asset.price) * ( 1 - (timestamp - asset.create_time) / (asset.life * 31536000)) > float(asset.price):
+                return round(float(asset.price),2)
         else:
             return round(float(asset.price) * ( 1 - (timestamp - asset.create_time) / (asset.life * 31536000)),2)
     
@@ -134,44 +136,57 @@ class AsViewSet(viewsets.ViewSet):
                 totalnetvalue += self.price_count(item,utils_time.get_timestamp() - int(utils_time.get_timestamp()) % 86400)
         return Response({"code":0,"info":{"totalnetvalue":round(totalnetvalue,2)}})
     
+    #根据日志计算价值
+    def price_log(self,day,item):
+        create_time = item.expire_time
+        if day < item.time:
+            return float(item.price)
+        if create_time - day < item.life * 31536000:
+            if float(item.price) * (1 - (create_time - day) / (item.life * 31536000)) < float(item.price):
+                return float(item.price) * (1 - (create_time - day) / (item.life * 31536000))
+            else:
+                return float(item.price)
+        else:
+            return 0.0
+    
     #近30天内资产净值
     @Check
     @action(detail=False,methods=['get'],url_path="nvcurve")
     def nvcureve(self,req:Request):
         valuelist = []
         deletelogs = []
+        addlogs = []
         today = int(utils_time.get_timestamp()) - int(utils_time.get_timestamp()) % 86400
         dep = Department.objects.filter(id=req.user.department).first()
         deps = self.get_departs(dep,[dep])
         deps = [i.id for i in deps]
-        assets = list(self.preprocess(req.user))
+        assets = self.preprocess(req.user)
         for i in range(30):
-            value = 0.0
-            deletevalue = 0.0
             day = today - i * 86400
-            #根据资产日志还原当天的资产列表
-            addlog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=1,time__gte=day+86400,time__lte=day+2 * 86400).all())
-            removelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=7,time__gte=day+86400,time__lte=day+2 * 86400).all())
-            deletelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type__in=[8,9],time__gte=day+86400,time__lte=day+2 * 86400).all())
-            for i in addlog:
-                if i.asset in assets:
-                    assets.remove(i.asset)
-            for i in removelog:
-                assets.append(i.asset)
-            for item in deletelog:
-                deletelogs.append(item)
-            for item in deletelogs:
-                if item.expire_time > day:
-                    deletelogs.remove(item)
-                else:
-                    deletevalue += item.price * (1 - (day - item.expire_time) / (item.life * 31536000))
+            basicvalue = 0.0
             for item in assets:
                 if item.type:
-                    value += 1.00 * item.number * self.price_count(item,day)
+                    basicvalue += 1.00 * item.number * self.price_count(item,day)
                 else:
-                    value += self.price_count(item,day)
-            value += deletevalue
-            if value < 0: value = 0
+                    basicvalue += self.price_count(item,day)
+            deletevalue = 0.0
+            addvalue = 0.0
+            #添加资产，对应应当减少价值
+            addlog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=1,time__gte=day+86400,time__lte=day+2 * 86400).all())
+            for item in addlog:
+                addlogs.append(item)
+            #移出，改变数量和删除，对应应当增加价值
+            removelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=7,time__gte=day+86400,time__lte=day+2 * 86400).all())
+            for item in removelog:
+                deletelogs.append(item)
+            deletelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type__in=[8,9],time__gte=day+86400,time__lte=day+2 * 86400).all())
+            for item in deletelog:
+                deletelogs.append(item)
+            for item in addlogs:
+                deletevalue += self.price_log(day,item)
+            for item in deletelogs:
+                addvalue += self.price_log(day,item)
+            value = basicvalue + addvalue - deletevalue
             valuelist.append({"date":int(day),"netvalue":round(value,2)})
         return Response({"code":0,"info":reversed(valuelist)})
     

@@ -3,9 +3,10 @@ from utils import utils_time
 from django.contrib.auth.hashers import make_password, check_password
 from django.http import HttpRequest, HttpResponse
 from django.contrib.sessions.models import Session
-from pending.models import Pending
+from pending.models import Pending,EPMessage
 from user.models import User
-from logs.models import Logs
+from logs.models import Logs,AssetLog
+from asset.models import Asset
 from department.models import Entity,Department
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
@@ -131,6 +132,15 @@ class UserViewSet(viewsets.ViewSet):
             req._request.session["id"] = user.id
             # cyh
             Logs(entity=user.entity,content="用户"+user.name+"登录",type=1).save()
+            if user.identity == 3 or user.identity == 4:
+                ent = Entity.objects.filter(id=user.entity).first()
+                dep = Department.objects.filter(id=user.department).first()
+                clearasset = Asset.objects.filter(entity=ent,department=dep).all()
+                for asset in clearasset:
+                    if asset.is_expire():
+                        EPMessage(user=dep.admin,type=2,content="资产%s因过期自动清退" % asset.name).save()
+                        AssetLog(type=8,entity=ent.id,department=dep.id,number=asset.number if asset.type else 1,price=asset.price * asset.number,expire_time=asset.create_time,life=asset.life).save()
+                        asset.delete()
             return Response({"code":0,"name":name,"entity":user.entity,"department":user.department,"identity":user.identity,"funclist":user.lockedapp})
     
     #用户登出

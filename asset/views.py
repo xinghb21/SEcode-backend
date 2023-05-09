@@ -232,6 +232,7 @@ class asset(viewsets.ViewSet):
                                     category=category, 
                                     type=tp, 
                                     name=name, 
+                                    number=1,
                                     belonging=belonging, 
                                     price=price, 
                                     life=life, 
@@ -244,7 +245,7 @@ class asset(viewsets.ViewSet):
                 
         for a in toadd:
             a.save()
-            AssetLog(asset=a,type=1,entity=req.user.entity,department=req.user.department,number=a.number if a.type else 1).save()
+            AssetLog(asset=a,type=1,entity=req.user.entity,department=req.user.department,number=a.number,price=a.price*a.number,expire_time=a.create_time,life=a.life).save()
         return Response({"code": 0, "detail": "success"})
     # cyh
     # 批量删除资产
@@ -285,7 +286,7 @@ class asset(viewsets.ViewSet):
             elif item.type == 7:
                 returnlist.append({"type":3,"content": "用户%s向外部门用户%s转移,数量:%d" % (item.src.name,item.dest.name,item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
             elif item.type == 9:
-                returnlist.append({"type":6,"content": "资产数量更改为%d" % (item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
+                returnlist.append({"type":6,"content": "资产闲置数量更改为%d" % (item.number),"time":item.time,"id":item.id,"asset":item.asset.name if item.asset != None else "已删除资产"})
             else: continue
         return returnlist
 
@@ -480,5 +481,5 @@ def fulldetail(req:HttpRequest,id:any):
         if log.type == 8:
             content += "资产被手动删除" + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
         if log.type == 9:
-            content += "资产数量更改为%d" % (log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
+            content += "资产闲置数量更改为%d" % (log.number) + ",时间:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(log.time)) + '<br/>'
     return HttpResponse(content)
