@@ -10,6 +10,7 @@ coverage
 pyyaml==6.0
 djangorestframework~=3.13.1
 requests
+pandas
 
 uwsgi
 
