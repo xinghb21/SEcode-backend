@@ -167,7 +167,7 @@ class asynctask(viewsets.ViewSet):
     def getalivetasks(self, req:Request):
         if req.user.identity != 2 and req.user.identity != 3:
             raise Failure("您没有权限进行此操作")
-        tasks = Async_import_export_task.objects.filter(user=req.user, status=2).order_by("-create_time")
+        tasks = Async_import_export_task.objects.filter(user=req.user, status__in=[0,1,2,3]).order_by("-create_time")
         return Response({
             "code": 0,
             "info": [task.respond() for task in tasks]
