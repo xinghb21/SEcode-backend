@@ -212,7 +212,7 @@ class EpViewSet(viewsets.ViewSet):
                         #转移者
                         AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,expire_time=asset.create_time,number=assetdict[assetname],price=asset.price * assetdict[assetname],src=staff,dest=destuser,life=asset.life).save()
                         #接收者
-                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,expire_time=newasset.create_time,number=assetdict[assetname],price=newasset.price * assetdict[assetname],dest=staff,life=newasset.life).save()
+                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,expire_time=newasset.create_time,number=assetdict[assetname],price=newasset.price * assetdict[assetname],dest=destuser,life=newasset.life).save()
                     #同部门
                     else:
                         use = json.loads(asset.usage)
@@ -241,7 +241,7 @@ class EpViewSet(viewsets.ViewSet):
                         #转移者
                         AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,number=1,expire_time=asset.create_time,life=newasset.life,price=newasset.price,src=staff,dest=destuser).save()
                         #接受者
-                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,expire_time=newasset.create_time,number=1,price=newasset.price,dest=staff,life=newasset.life).save()
+                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,expire_time=newasset.create_time,number=1,price=newasset.price,dest=destuser,life=newasset.life).save()
                     #同部门
                     else:
                         asset.belonging = destuser
@@ -342,7 +342,7 @@ class EpViewSet(viewsets.ViewSet):
                         #转移者
                         AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,number=assetdict[assetname],src=fromadmin,dest=thisadmin,expire_time=asset.create_time,life=newasset.life,price=newasset.price*assetdict[assetname]).save()
                         #接收者
-                        AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=assetdict[assetname],src=thisadmin,life=newasset.life,price=newasset.price*assetdict[assetname]).save()
+                        AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=assetdict[assetname],dest=thisadmin,life=newasset.life,price=newasset.price*assetdict[assetname]).save()
                     else:
                         newasset = Asset(entity=entity,department=thisdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,belonging=thisadmin,status=0,create_time=asset.create_time)
                         newasset.save()
