@@ -12,6 +12,7 @@ djangorestframework~=3.13.1
 requests
 pandas
 oss2
+openpyxl
 
 uwsgi
 
