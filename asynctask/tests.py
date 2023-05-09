@@ -22,16 +22,29 @@ class asyncTest(TestCase):
         }
         return self.client.post("/user/login", data=payload, content_type="application/json")
     
-    # def test_newtask(self):
-    #     self.login("bob", "bob")
-    #     resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
-    #     # print(resp.content)
-    #     self.assertEqual(resp.status_code, 200)
-    #     self.assertEqual(resp.json()["code"], 0)
+    def test_newtask(self):
+        self.login("bob", "bob")
+        resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
+        # print(resp.content)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["code"], 0)
         
     def test_getprocess(self):
         self.login("bob", "bob")
         resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
         resp = self.client.post("/async/getprocess", data={"taskid":1}, content_type="application/json")
-        print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
+        
+    def test_restart(self):
+        self.login("bob", "bob")
+        resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
+        resp = self.client.post("/async/restarttask?test=1", data={"taskid":1}, content_type="application/json")
+        # print(resp.co)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["code"], 0)
+    
+    def test_getsuccess(self):
+        self.login("alice", "alice")
+        resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
+        resp = self.client.post("/async/getsuccess", content_type="application/json")
+        print(resp.json())

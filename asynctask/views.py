@@ -73,7 +73,7 @@ class asynctask(viewsets.ViewSet):
         return Response(
             {
                 "code": 0,
-                "process": task.serialize()
+                "process": task.process,
             }
         )
     @Check

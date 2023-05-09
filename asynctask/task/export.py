@@ -60,7 +60,6 @@ class Export(Process):
         self.task.status = 1
         self.task.finish_time = datetime.datetime.now().timestamp()
         self.task.save()
-        print(self.task.serialize())
 
 class AssetExport(Export):
     def __init__(self, taskid, test):
@@ -132,7 +131,6 @@ class TaskExport(Export):
                          datetime.datetime.fromtimestamp(task.finish_time).strftime("%Y-%m-%d %H:%M:%S"), \
                          task.process, \
                          ]
-            print(task.serialize())
             cnt += 1
             if cnt == 100:
                 process = int(i/total*100)
