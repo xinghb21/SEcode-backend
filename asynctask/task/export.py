@@ -4,6 +4,7 @@ from asset.models import Asset
 import pandas as pd
 from pandas import DataFrame
 import os
+import json
 from asset.models import gettype
 import datetime
 
@@ -12,27 +13,55 @@ from utils.exceptions import Failure
 
 from asynctask.task.oss import get_bucket
 
-class AssetExport(Process):
-    def __init__(self, user:User):
+class Export(Process):
+    def __init__(self):
         super().__init__()
-        self.user = user
         
-    def run(self):
+    def get_basic(self):
         task = Async_import_export_task.objects.filter(pid=self.pid).first()
         if not task:
             raise Failure("任务不存在")
         task.status = 2
         task.process_time = datetime.datetime.now().timestamp()
         task.save()
+        self.task = task
         if not os.path.exists("./tmp"+self.pid+"/"):
             os.mkdir("./tmp"+self.pid+"/")
         if not os.path.exists("./tmp/"+self.pid+"/tmp.xlsx"):
             os.mknod("./tmp/"+self.pid+"/tmp.xlsx")
         path = "./tmp/"+self.pid+"/tmp.xlsx"
-        df = pd.read_excel("./tmp/"+self.pid+"/tmp.xlsx")  
-        total = Asset.objects.count()
-        ids = Asset.objects.values_list("id", flat=True)
+        self.path = path
+        self.df = pd.read_excel("./tmp/"+self.pid+"/tmp.xlsx") 
+        ids = json.loads(task.ids) 
+        if not ids:
+            ids = Asset.objects.values_list("id", flat=True)
+            total = Asset.objects.count()
+            task.ids = json.dumps(list(ids))
+            task.save()
+        else:
+            total = len(ids)
+        self.ids = ids
+        self.total = total
+        
+    def finish(self):
+        DataFrame(self.df).to_excel(self.path, sheet_name="Sheet1", index=False, header=True) 
+        bucket = get_bucket()
+        bucket.put_object_from_file(self.path, self.path)
+        os.remove(self.path)
+        os.rmdir("./tmp/"+self.pid+"/")
+        self.task.process = 100
+        self.task.status = 1
+        self.task.finish_time = datetime.datetime.now().timestamp()
+        self.task.save()
+
+class AssetExport(Export):
+    def __init__(self):
+        super().__init__()
+        
+    def run(self):
+        self.get_basic()
         cnt = 0
+        df = self.df
         df['上级资产名称'] = None
         df['部门'] = None
         df['业务实体'] = None
@@ -44,6 +73,8 @@ class AssetExport(Process):
         df['资产使用年限'] = None
         df['资产创建时间'] = None
         df['描述'] = None
+        ids = self.ids
+        total = self.total
         for i in range(total):
             asset = Asset.objects.filter(id=ids[i]).first()
             df.loc[i] = [asset.parent.name if asset.parent else "", \
@@ -61,14 +92,44 @@ class AssetExport(Process):
             cnt += 1
             if cnt == 100:
                 process = int(i/total*100)
-                task.process = process
+                self.task.process = process
                 cnt = 0
-                task.save()
-        DataFrame(df).to_excel(path, sheet_name="Sheet1", index=False, header=True) 
-        bucket = get_bucket()
-        bucket.put_object_from_file(path, path)
-        task.process = 100
-        task.status = 1
-        task.finish_time = datetime.datetime.now().timestamp()
-        task.save()
-            
+                self.task.save()
+        self.finish()
+        
+class TaskExport(Export):
+    def __init__(self):
+        super().__init__()
+        
+    def run(self):
+        self.get_basic()
+        cnt = 0
+        df = self.df
+        df['任务名称'] = None
+        df['任务发起人'] = None
+        df['任务创建时间'] = None
+        df['任务状态'] = None
+        df['任务处理时间'] = None
+        df['任务完成时间'] = None
+        df['任务类型'] = None
+        df['处理进度'] = None
+        ids = self.ids
+        total = self.total
+        for i in range(total):
+            task = Async_import_export_task.objects.filter(id=ids[i]).first()
+            df.loc[i] = [task.name, \
+                         task.user.username if task.user else "", \
+                         datetime.datetime.fromtimestamp(task.create_time).strftime("%Y-%m-%d %H:%M:%S"), \
+                         task.status, \
+                         datetime.datetime.fromtimestamp(task.process_time).strftime("%Y-%m-%d %H:%M:%S"), \
+                         datetime.datetime.fromtimestamp(task.finish_time).strftime("%Y-%m-%d %H:%M:%S"), \
+                         task.type, \
+                         task.process, \
+                         ]
+            cnt += 1
+            if cnt == 100:
+                process = int(i/total*100)
+                self.task.process = process
+                cnt = 0
+                self.task.save()
+        self.finish()

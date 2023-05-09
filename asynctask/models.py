@@ -23,12 +23,12 @@ class Async_import_export_task(models.Model):
     status = models.SmallIntegerField(default=3)
     
     # 处理时间
-    process_time = models.FloatField(default=get_timestamp)
+    process_time = models.FloatField(default=0)
     
     # 完成时间
-    finish_time = models.FloatField(default=get_timestamp)
+    finish_time = models.FloatField(default=0)
     
-    # 异步任务的类型,0:导入,1:导出
+    # 异步任务的类型,0:资产导出,1:异步任务导出
     type = models.SmallIntegerField(default=0)
     
     # 文件路径
@@ -39,6 +39,9 @@ class Async_import_export_task(models.Model):
     
     # 处理进度 0-100
     process = models.IntegerField(default=0)
+    
+    # 要导出的内容
+    ids = models.CharField(max_length=255, blank=True, null=True, default=None)
     
     def serialize(self):
         try:
