@@ -22,6 +22,12 @@ class asyncTest(TestCase):
         }
         return self.client.post("/user/login", data=payload, content_type="application/json")
     
+    def logout(self, name):
+        payload = {
+            "name": name
+        }
+        return self.client.post("/user/logout", data=payload, content_type="application/json")
+    
     def test_newtask(self):
         self.login("bob", "bob")
         resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
@@ -46,5 +52,32 @@ class asyncTest(TestCase):
     def test_getsuccess(self):
         self.login("alice", "alice")
         resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
-        resp = self.client.post("/async/getsuccess", content_type="application/json")
+        resp = self.client.post("/async/getsuccess?test=1", content_type="application/json")
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        
+    def test_getfailed(self):
+        self.login("alice", "alice")
+        resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
+        resp = self.client.post("/async/getfailed?test=1", content_type="application/json")
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        
+    def test_esgetall(self):
+        self.login("bob", "bob")
+        resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
+        self.logout("bob")
+        
+        self.login("alice", "alice")
+        resp = self.client.post("/async/getfailed?test=1", content_type="application/json")
+        # self.logout()
+        # print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        
+    def test_getalive(self):
+        self.login("bob", "bob")
+        resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
+        resp = self.client.post("/async/getalivetasks?test=1", content_type="application/json")
         print(resp.json())
+        self.assertEqual(resp.json()["code"], 0)
+        

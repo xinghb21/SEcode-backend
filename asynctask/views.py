@@ -33,9 +33,10 @@ class asynctask(viewsets.ViewSet):
         if req.user.identity != 3:
             raise Failure("您没有权限进行此操作")
         # 获取该资产管理员已有的任务，只保留最新的两条任务
-        oldtasks = Async_import_export_task.objects.filter(user=req.user).order_by("create_time")
+        oldtasks = Async_import_export_task.objects.filter(user=req.user).order_by("-create_time")
         if len(oldtasks) >= 2:
-            oldtasks[2:].delete()
+            for i in range(2, len(oldtasks)):
+                oldtasks[i].delete()
         et = Entity.objects.filter(id=req.user.entity).first()
         if not et:
             raise Failure("登录用户所在的业务实体不存在")
@@ -114,6 +115,7 @@ class asynctask(viewsets.ViewSet):
         )
     
     def gettask(self, req:Request, ids):
+        # print(json.dumps(list(ids)))
         test = False
         if req.query_params.get("test"):
             test = True

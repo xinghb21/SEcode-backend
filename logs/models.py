@@ -68,9 +68,9 @@ class accessTimeOutLogs(models.Model):
     
     re_ip = models.CharField(max_length=32, verbose_name='请求IP')
     
-    re_content = models.TextField(verbose_name="请求参数")
+    re_content = models.TextField(null=True, verbose_name="请求参数")
     
-    rp_content = models.TextField(verbose_name="响应内容")
+    rp_content = models.TextField(null=True, verbose_name="响应内容")
     
     access_time = models.FloatField(verbose_name="耗时/ms")
     class Meta:
