@@ -4,7 +4,18 @@ from user.models import User
 from utils.utils_time import get_timestamp
 from utils.exceptions import Failure
 
-# Create your models here.
+    
+def status(status:int):
+    if status == 0:
+        return "失败"
+    elif status == 1:
+        return "成功完成"
+    elif status == 2:
+        return "进行中"
+    elif status == 3:
+        return "未开始"
+    elif status == 4:
+        return "已隐藏"
 
 class Async_import_export_task(models.Model):
     id = models.AutoField(primary_key=True)

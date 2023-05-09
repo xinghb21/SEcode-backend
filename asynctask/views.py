@@ -74,6 +74,9 @@ class asynctask(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['post'], url_path="restarttask") 
     def restart(self, req:Request):
+        test = False
+        if req.query_params.get("test"):
+            test = True
         id = req.data.get("taskid")
         if not id:
             raise ParamErr("id不能为空")
@@ -83,9 +86,9 @@ class asynctask(viewsets.ViewSet):
         tp = task.type
         db.close_old_connections()
         if tp == 0:
-            p = AssetExport(task.id)
+            p = AssetExport(task.id, test)
         elif tp == 1:
-            p = TaskExport(task.id)
+            p = TaskExport(task.id, test)
         task.status = 3
         task.process = 0
         task.save()
@@ -114,7 +117,7 @@ class asynctask(viewsets.ViewSet):
             raise Failure("登录用户所在的业务实体不存在")
         now = datetime.datetime.now()
         filepath = now.strftime("%Y/%m/%d/%H:%M:%S/") + "异步任务导出.xlsx"
-        task = Async_import_export_task(name="导出异步任务", entity=et, user=req.user, type=1, file_path=filepath, ids=json.dumps(ids))
+        task = Async_import_export_task(name="导出异步任务", entity=et, user=req.user, type=1, file_path=filepath, ids=json.dumps(list(ids)))
         task.save()
         db.close_old_connections()
         p = TaskExport(task.id, test)

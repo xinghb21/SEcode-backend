@@ -6,6 +6,7 @@ from pandas import DataFrame
 import os
 import json
 from asset.models import gettype
+from asynctask.models import status
 import datetime
 
 from asynctask.models import Async_import_export_task
@@ -118,21 +119,20 @@ class TaskExport(Export):
         df['任务状态'] = None
         df['任务处理时间'] = None
         df['任务完成时间'] = None
-        df['任务类型'] = None
         df['处理进度'] = None
         ids = self.ids
         total = self.total
         for i in range(total):
             task = Async_import_export_task.objects.filter(id=ids[i]).first()
             df.loc[i] = [task.name, \
-                         task.user.username if task.user else "", \
+                         task.user.name if task.user else "", \
                          datetime.datetime.fromtimestamp(task.create_time).strftime("%Y-%m-%d %H:%M:%S"), \
-                         task.status, \
+                         status(task.status), \
                          datetime.datetime.fromtimestamp(task.process_time).strftime("%Y-%m-%d %H:%M:%S"), \
                          datetime.datetime.fromtimestamp(task.finish_time).strftime("%Y-%m-%d %H:%M:%S"), \
-                         task.type, \
                          task.process, \
                          ]
+            print(task.serialize())
             cnt += 1
             if cnt == 100:
                 process = int(i/total*100)
