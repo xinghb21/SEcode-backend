@@ -17,6 +17,7 @@ from rest_framework import viewsets
 
 from asynctask.models import Async_import_export_task
 from asynctask.task.export import AssetExport, TaskExport
+from asynctask.task.oss import get_bucket
 
 
 class asynctask(viewsets.ViewSet):
@@ -166,7 +167,11 @@ class asynctask(viewsets.ViewSet):
         et = Entity.objects.filter(id=req.user.entity).first()
         if not et:
             raise Failure("登录用户所在的业务实体不存在")
-        Async_import_export_task.objects.filter(entity=et, finish_time__lt=get_timestamp()-3*24*60*60).delete()
+        oldtasks = Async_import_export_task.objects.filter(entity=et, finish_time__lt=get_timestamp()-3*24*60*60)
+        bucket = get_bucket()
+        for task in oldtasks:
+            bucket.delete_object(task.file_path)
+            task.delete()
         tasks = Async_import_export_task.objects.filter(entity=et).order_by("-create_time")
         return Response({
             "code": 0,
