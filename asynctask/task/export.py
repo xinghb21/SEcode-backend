@@ -11,6 +11,7 @@ import datetime
 
 from asynctask.models import Async_import_export_task
 from utils.exceptions import Failure
+from department.models import Entity, Department
 
 from asynctask.task.oss import get_bucket
 
@@ -39,15 +40,15 @@ class Export(Process):
         self.df = pd.read_excel("./tmp/"+str(self.pid)+"/tmp.xlsx") 
         ids = self.task.ids
         if not ids:
-            ids = Asset.objects.values_list("id", flat=True)
-            total = Asset.objects.count()
+            et = Entity.objects.filter(id=self.task.user.entity).first()
+            dep = Department.objects.filter(id=self.task.user.department).first()
+            ids = Asset.objects.filter(entity=et, department=dep).values_list("id", flat=True)
             self.task.ids = json.dumps(list(ids))
             self.task.save()
         else:
             ids = json.loads(ids)
-            total = len(ids)
         self.ids = ids
-        self.total = total
+        self.total = len(ids)
         
     def finish(self):
         DataFrame(self.df).to_excel(self.path, sheet_name="Sheet1", index=False, header=True) 
