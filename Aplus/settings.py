@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'pending',
     'logs',
     'feishu',
+    'asynctask',
     'rest_framework',
     'corsheaders',
     'django.contrib.admin',

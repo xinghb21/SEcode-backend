@@ -6,6 +6,12 @@ from user.models import User
 
 import json
 
+def gettype(type):
+    if type:
+        return "数量型"
+    else:
+        return "条目型"
+
 # Create your models here.
 class Asset(models.Model):
     
@@ -44,7 +50,7 @@ class Asset(models.Model):
     belonging = models.ForeignKey('user.User', null=True, on_delete=models.CASCADE, related_name="belonging")
     
     #资产原价值
-    price = models.DecimalField(max_digits=10,decimal_places=2)
+    price = models.DecimalField(max_digits=10,decimal_places=2,default=1000.00)
     
     #资产使用年限
     life = models.IntegerField(default=0)
