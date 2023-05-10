@@ -786,8 +786,9 @@ class EpViewSet(viewsets.ViewSet):
                         asset.usage = json.dumps(use)
                 #报废
                 else:
+                    AssetLog(entity=ent.id,department=dep.id,asset=asset,type=5,dest=staff,number=number).save()
                     if asset.price:
-                        AssetLog(type=8,entity=req.user.entity,asset=asset,department=req.user.department,number=number,price=asset.price * number,expire_time=asset.create_time,life=asset.life).save()
+                        AssetLog(type=10,entity=req.user.entity,asset=asset,department=req.user.department,number=number,price=asset.price * number,expire_time=asset.create_time,life=asset.life,src=staff).save()
                     if asset.number_expire != None:
                         asset.number_expire += number
                     else:
@@ -799,21 +800,21 @@ class EpViewSet(viewsets.ViewSet):
                     AssetLog(entity=ent.id,department=dep.id,asset=asset,type=5,dest=staff,number=1).save()
                     asset.status = 1
                 else:
-                    AssetLog(type=8,entity=req.user.entity,asset=asset,department=req.user.department,number=1,price=asset.price,expire_time=asset.create_time,life=asset.life).save()
-                    asset.status = 4
+                    AssetLog(type=10,entity=req.user.entity,asset=asset,department=req.user.department,number=1,price=asset.price,expire_time=asset.create_time,life=asset.life,src=staff).save()
                     asset.expire = True
             asset.save()
             if int(item["state"]) == 1:
                 useasset.append(item["name"])
             else:
                 brokenasset.append(item["name"])
-        content = "维保已完成。<br/>"
+        content = "维保已完成。"
         if useasset:
-            content += "返还资产:" + str(useasset).replace('[','').replace(']','') + "<br/>"
+            content += "返还资产:" + str(useasset).replace('[','').replace(']','') + " "
         if brokenasset:
-            content += "报废资产:" + str(brokenasset).replace('[','').replace(']','') + "<br/>"
+            content += "报废资产:" + str(brokenasset).replace('[','').replace(']','') + " "
         Message(user=staff.id,pending=pending.id,type=3,content=content).save()
-        pending.delete()
+        pending.result = 3
+        pending.save()
         return Response({"code":0,"info":"ok"})
     
     #更新告警信息列表
