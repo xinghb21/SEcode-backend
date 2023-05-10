@@ -150,14 +150,20 @@ class asynctask(viewsets.ViewSet):
     def getsuccess(self, req:Request):
         if req.user.identity != 2:
             raise Failure("您没有权限进行此操作")
-        return self.gettask(req, Async_import_export_task.objects.filter(status=1).values_list("id", flat=True))
+        et = Entity.objects.filter(id=req.user.entity).first()
+        if not et:
+            raise Failure("登录用户所在的业务实体不存在")
+        return self.gettask(req, Async_import_export_task.objects.filter(entity=et, status=1).values_list("id", flat=True))
             
     @Check
     @action(detail=False, methods=['post'], url_path="getfailed")
     def getfailed(self, req:Request):
         if req.user.identity != 2:
             raise Failure("您没有权限进行此操作")
-        return self.gettask(req, Async_import_export_task.objects.filter(status=0).values_list("id", flat=True))
+        et = Entity.objects.filter(id=req.user.entity).first()
+        if not et:
+            raise Failure("登录用户所在的业务实体不存在")
+        return self.gettask(req, Async_import_export_task.objects.filter(entity=et, status=0).values_list("id", flat=True))
     
     @Check
     @action(detail=False, methods=['get'], url_path="esgetalltask")
