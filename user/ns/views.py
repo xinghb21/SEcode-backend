@@ -142,7 +142,7 @@ class NsViewSet(viewsets.ViewSet):
             raise Failure("用户不属于任何业务实体")
         if not dep:
             raise Failure("用户不属于任何部门")
-        pendings = Pending.objects.filter(entity=ent.id,department=dep.id,initiator=user.id).all()
+        pendings = Pending.objects.filter(entity=ent.id,department=dep.id,initiator=user.id).order_by("-review_time").order_by("-request_time").all()
         returnlist = [{"id":item.id,"reason":item.description,"status":item.result,"message":item.reply,"type":item.type} for item in pendings]
         return Response({"code":0,"info":returnlist})
 
@@ -303,8 +303,16 @@ class NsViewSet(viewsets.ViewSet):
         returnlist = []
         for item in assets:
             assetname = list(item.keys())[0]
-            asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).exclude(status=4).first()
-            returnlist.append({"id":asset.id,"assetname":assetname,"assetcount":item[assetname]})
+            if pending.type != 2:
+                asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).exclude(status=4).first()
+            else:
+                touser = User.objects.filter(id=pending.destination).first()
+                todep = Department.objects.filter(id=touser.department).first()
+                asset = Asset.objects.filter(department=todep,entity=ent,name=assetname).exclude(status=4).first()
+            if not asset:
+                returnlist.append({"id":"已删除","assetname":assetname,"assetcount":item[assetname]})
+            else:
+                returnlist.append({"id":asset.id,"assetname":assetname,"assetcount":item[assetname]})
         return Response({"code":0,"info":returnlist,"user":dest.name}) if dest else Response({"code":0,"info":returnlist,"user":""})
     
     #查看所有处于闲置状态的资产
@@ -318,7 +326,7 @@ class NsViewSet(viewsets.ViewSet):
             raise Failure("用户不属于任何业务实体")
         if not dep:
             raise Failure("用户不属于任何部门")
-        assets_num = Asset.objects.filter(entity=ent,department=dep,type=True).exclude(number_idle=0,status=4).all()
+        assets_num = Asset.objects.filter(entity=ent,department=dep,type=True).exclude(number_idle=0).exclude(status=4).all()
         assets_item = Asset.objects.filter(entity=ent,department=dep,type=False,status=0).exclude(status=4).all()
         returnlist = []
         for asset in assets_num:
@@ -360,11 +368,13 @@ class NsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=["get"], url_path="hasmessage")
     def hasmessage(self,req:Request):
         user = req.user
-        msg = Message.objects.filter(user=user.id,read=False).first()
-        if msg:
-            return Response({"code":0,"info":True})
-        else:
-            return Response({"code":0,"info":False})
+        msgs = Message.objects.filter(user=user.id,read=False).all()
+        if msgs:
+            for msg in msgs:
+                pending = Pending.objects.filter(id=msg.pending).first()
+                if pending:
+                    return Response({"code":0,"info":True})
+        return Response({"code":0,"info":False})
     
     #员工信息已读,不设置报错信息
     @Check

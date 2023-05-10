@@ -786,6 +786,7 @@ class EpViewSet(viewsets.ViewSet):
                         asset.usage = json.dumps(use)
                 #报废
                 else:
+                    AssetLog(entity=ent.id,department=dep.id,asset=asset,type=5,dest=staff,number=number).save()
                     if asset.price:
                         AssetLog(type=8,entity=req.user.entity,asset=asset,department=req.user.department,number=number,price=asset.price * number,expire_time=asset.create_time,life=asset.life).save()
                     if asset.number_expire != None:
@@ -800,7 +801,6 @@ class EpViewSet(viewsets.ViewSet):
                     asset.status = 1
                 else:
                     AssetLog(type=8,entity=req.user.entity,asset=asset,department=req.user.department,number=1,price=asset.price,expire_time=asset.create_time,life=asset.life).save()
-                    asset.status = 4
                     asset.expire = True
             asset.save()
             if int(item["state"]) == 1:

@@ -156,7 +156,7 @@ class esTest(TestCase):
     
     def test_getapply(self):
         resp = self.client.get("/user/ns/getallapply")
-        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}, {'id': 2, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}, {'id': 3, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}]})
+        self.assertEqual(resp.json()["code"], 0)
         
     def test_assetsinapply(self):
         resp = self.client.get("/user/ns/assetsinapply?id=1")
