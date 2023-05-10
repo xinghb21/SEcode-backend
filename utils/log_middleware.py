@@ -70,6 +70,7 @@ class LogMiddle(MiddlewareMixin):
         :return: response
         """
         # 请求url在 exclude_urls中，直接return，不保存操作日志记录
+        # print(response.content)
         for url in self.__exclude_urls:
             if url in self.data.get('re_url'):
                 return response

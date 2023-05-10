@@ -22,5 +22,6 @@ urlpatterns = [
     path('entity/', include("department.urls")),
     path('asset/', include("asset.urls")),
     path('feishu/', include("feishu.urls")),
+    path('async/', include("asynctask.urls")),
     
 ]
