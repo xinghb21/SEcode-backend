@@ -43,14 +43,12 @@ class Export(Process):
             et = Entity.objects.filter(id=self.task.user.entity).first()
             dep = Department.objects.filter(id=self.task.user.department).first()
             ids = Asset.objects.filter(entity=et, department=dep).values_list("id", flat=True)
-            total = Asset.objects.count()
             self.task.ids = json.dumps(list(ids))
             self.task.save()
         else:
             ids = json.loads(ids)
-            total = len(ids)
         self.ids = ids
-        self.total = total
+        self.total = len(ids)
         
     def finish(self):
         DataFrame(self.df).to_excel(self.path, sheet_name="Sheet1", index=False, header=True) 
