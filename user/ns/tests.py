@@ -36,9 +36,9 @@ class esTest(TestCase):
         resp = self.addassetclass("yuanshen", 1)
         resp = self.addassetclass("yuanshen2",0)
         # print(resp.json())
-        resp = self.addasset("hutao", "yuanshen", 100)
-        resp = self.addasset("hutao2", "yuanshen2", 1)
-        resp = self.addasset("hutao3", "yuanshen2", 1)
+        resp = self.addasset("hutao", "yuanshen", 100,True)
+        resp = self.addasset("hutao2", "yuanshen2", 1,False)
+        resp = self.addasset("hutao3", "yuanshen2", 1,False)
         # print(resp.json())
         self.logout("ep")
         self.login("ep2","ep2")
@@ -65,9 +65,9 @@ class esTest(TestCase):
     def addassetclass(self, name, type):
         return self.client.post("/asset/assetclass", {"name": name, "type": type})
     
-    def addasset(self, name, cate, number):
+    def addasset(self, name, cate, number,img=False):
         return self.client.post("/asset/post", [{"name": name, "category": cate,
-                                                "life": 10, "number": number, "price": 10000,
+                                                "life": 10, "number": number, "price": 10000,"hasimage":img,
                                                 }], content_type="application/json")
     
     def reply(self,id,status,reply="success"):
@@ -119,7 +119,7 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["detail"], "资产hutao3未处于闲置状态")
         resp = self.client.get("/user/ns/possess")
         print(resp.json()["assets"])
-        self.assertEqual(resp.json()["assets"], [{'id': 3, 'name': 'hutao3', 'type': 0, 'state': {'1': 1}}, {'id': 1, 'name': 'hutao', 'type': 1, 'state': {'1': 50}}])
+        self.assertEqual(resp.json()["assets"], [{'id': 3, 'name': 'hutao3', 'type': 0, 'state': {'1': 1},'haspic':False}, {'id': 1, 'name': 'hutao', 'type': 1, 'state': {'1': 50},'haspic':True}])
     
     def test_exchange_and_reply(self):
         assets1,assets2 = self.preprocess()

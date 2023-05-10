@@ -58,8 +58,14 @@ class Asset(models.Model):
     #资产的创建时间
     create_time = models.FloatField(default=utils_time.get_timestamp)
     
+    #资产价值更新时间
+    renew_time =  models.FloatField(default=utils_time.get_timestamp,null=True)
+
     #资产的说明和描述
     description = models.TextField(default="")
+    
+    #html格式补充说明
+    additionalinfo = models.TextField(default="")
     
     #自定义的资产类型，以字符串存储，格式类似于json，实际处理需要解析
     additional = models.TextField(default="{}")
@@ -68,13 +74,13 @@ class Asset(models.Model):
     # 资产使用者
     user = models.ForeignKey("user.User",null=True ,on_delete=models.SET_NULL, related_name="user")
     
-    #资产的状态，枚举类型，0闲置，1在使用，2维保，3清退，4删除 , 5处理中
+    #资产的状态，枚举类型，0闲置，1在使用，2维保，3清退，4转移或清退变空(区分于删除), 5处理中
     status = models.IntegerField(choices=AsserStatus.choices, default=AsserStatus.IDLE)
     # -----------------------------------
     
     # ----------数量型资产使用-------------
     # 资产数量
-    number = models.IntegerField(null=True)
+    number = models.IntegerField(null=True,default=1)
     
     # 闲置数量
     number_idle = models.IntegerField(null=True)
@@ -88,13 +94,15 @@ class Asset(models.Model):
     # 待处理情况，是一个可序列化的字符串，记录了谁是发起人，待处理多少
     process = models.TextField(null=False, default="[]")
     
-    # 清退数量
+    # 报废数量
     number_expire = models.IntegerField(null=False, default=0)
     
-    # 是否报废
+    # 是否完全报废
     expire = models.BooleanField(null=False, default=False)
     # ---------数量型资产使用----------------
     
+    #有无图片
+    haspic = models.BooleanField(default=False)
 
     class Meta:
         db_table = "Asset"
@@ -102,18 +110,21 @@ class Asset(models.Model):
     def serialize(self):
         ret = {
                 "id":self.id,
-                "parent":self.parent.name if self.parent else None,
+                "parent":self.parent.name if self.parent else "暂无上级资产",
                 "department":self.department.name,
                 "entity": self.entity.name,
-                "category": self.category.name,
+                "category": self.category.name if self.category else "暂未确认类别",
                 "type": self.type,
                 "name":self.name,
-                "belonging":self.belonging.name,
-                "price":self.price,
+                "belonging":self.belonging.name if self.belonging else "暂无挂账人",
+                "price":float(self.price),
+                "new_price":round(float(self.price) * (1 - (utils_time.get_timestamp() - self.create_time) / (self.life * 31536000)),2) if float(self.price) * (1 - (utils_time.get_timestamp() - self.create_time) / (self.life * 31536000)) < float(self.price) else float(self.price),
                 "life":self.life,
                 "create_time":self.create_time,
                 "description":self.description,
+                "additionalinfo":self.additionalinfo,
                 "additional": json.loads(self.additional),
+                "haspic":self.haspic
             }
         if self.type:
             ret["number"] = self.number
@@ -127,8 +138,12 @@ class Asset(models.Model):
         else:
             ret["user"] = self.user.name if self.user else None
             ret["status"] = self.status
+            ret["number"] = 1
+            ret["number_idle"] = 0 if self.status else 1
             return ret
-            
+    
+    def is_expire(self):
+        return utils_time.get_timestamp() - self.create_time > self.life * 31536000
 
     def __str__(self) -> str:
         return self.name
@@ -147,4 +162,19 @@ class AssetClass(models.Model):
     
     #资产类型，False为条目型，True为数量型
     type = models.BooleanField(null=False, default=False)
+
+#告警策略
+class Alert(models.Model):
+    id = models.BigAutoField(primary_key=True)
     
+    entity = models.ForeignKey('department.Entity', null=True, on_delete=models.CASCADE, verbose_name="所属业务实体")
+    
+    department = models.ForeignKey('department.Department', null=True, on_delete=models.CASCADE, verbose_name="所属部门")
+    
+    asset = models.ForeignKey('Asset', null=True, on_delete=models.CASCADE)
+    
+    #0按年限告警，1按数量告警
+    type = models.IntegerField(default=0)
+    
+    #具体数值
+    number = models.FloatField(default=0)

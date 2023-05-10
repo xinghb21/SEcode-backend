@@ -92,5 +92,12 @@ def require(body, key, tp="string", err_msg=None):
             raise ParamErr(err_msg)
         return val
 
+    elif tp == "boolean":
+        try:
+            val = bool(val)
+            return val
+        except:
+            raise ParamErr(err_msg)
+
     else:
         raise Failure(f"Type `{tp}` not implemented.")

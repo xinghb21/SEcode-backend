@@ -39,15 +39,15 @@ class NsViewSet(viewsets.ViewSet):
         user = User.objects.filter(name=name).first()
         ent = Entity.objects.filter(id=user.entity).first()
         dep = Department.objects.filter(id=user.department).first()
-        asset_item = Asset.objects.filter(entity=ent,department=dep,type=False,user=user).all()
-        asset_num_all = Asset.objects.filter(entity=ent,department=dep,type=True).all()
-        return_list = [{"id":i.id,"name":i.name,"type":0,"state":{str(i.status):1}} for i in asset_item]
+        asset_item = Asset.objects.filter(entity=ent,department=dep,type=False,user=user).exclude(status=4).all()
+        asset_num_all = Asset.objects.filter(entity=ent,department=dep,type=True).exclude(status=4).all()
+        return_list = [{"id":i.id,"name":i.name,"type":0,"state":{str(i.status):1},"haspic":i.haspic} for i in asset_item]
         for i in asset_num_all:
             statedict = {}
             users = json.loads(i.usage)
             maintains = json.loads(i.maintain)
             process = json.loads(i.process)
-            return_dict = {"id":i.id,"name":i.name,"type":1,"state":statedict}
+            return_dict = {"id":i.id,"name":i.name,"type":1,"state":statedict,"haspic":i.haspic}
             belong = False
             for dict in users:
                 if user.name in list(dict.keys())[0]:
@@ -77,7 +77,7 @@ class NsViewSet(viewsets.ViewSet):
             id = assetdict["id"]
             name = assetdict["assetname"]
             number = assetdict["assetnumber"]
-            asset = Asset.objects.filter(id=id).first()
+            asset = Asset.objects.filter(id=id).exclude(status=4).first()
             if not asset or asset.name != name:
                 raise Failure("资产信息错误")
             if asset.type:
@@ -101,7 +101,7 @@ class NsViewSet(viewsets.ViewSet):
         for assetdict in assets:
             id = assetdict["id"]
             number = assetdict["assetnumber"]
-            asset = Asset.objects.filter(id=id).first()
+            asset = Asset.objects.filter(id=id).exclude(status=4).first()
             #数量型
             if asset.type:
                 using = json.loads(asset.usage)
@@ -157,7 +157,7 @@ class NsViewSet(viewsets.ViewSet):
         reason = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
         assetdict = {}
         for item in assets:
-            asset = Asset.objects.filter(entity=ent,department=dep,name=item["assetname"]).first()
+            asset = Asset.objects.filter(entity=ent,department=dep,name=item["assetname"]).exclude(status=4).first()
             if not asset:
                 raise Failure("资产%s不存在" % item["assetname"])
             if asset.id != item["id"]:
@@ -175,7 +175,7 @@ class NsViewSet(viewsets.ViewSet):
                 assetdict.update({item["assetname"]:1})
         #更新资产状态
         for key in assetdict:
-            asset = Asset.objects.filter(entity=ent,department=dep,name=key).first()
+            asset = Asset.objects.filter(entity=ent,department=dep,name=key).exclude(status=4).first()
             #数量型
             if asset.type:
                 asset.number_idle -= assetdict[key]
@@ -234,7 +234,7 @@ class NsViewSet(viewsets.ViewSet):
         if fromdep != todep:
             for asset in assetlist:
                 assetname = list(asset.keys())[0]
-                sameasset = Asset.objects.filter(entity=ent,department=todep,name=assetname).first()
+                sameasset = Asset.objects.filter(entity=ent,department=todep,name=assetname).exclude(status=4).first()
                 if sameasset:
                     raise Failure("资产%s在目标用户所在部门存在同名资产" % assetname)
         self.asset_in_process(assets,req.user.name)
@@ -277,7 +277,9 @@ class NsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=['get'],url_path="possess")
     def possess(self,req:Request):
         list = self.staffassets(req.user.name)
-        return Response({"code":0,"assets":list})
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        return Response({"code":0,"assets":list,"entity":ent.name,"department":dep.name})
 
     #获取申请中涉及的的资产
     @Check
@@ -301,7 +303,7 @@ class NsViewSet(viewsets.ViewSet):
         returnlist = []
         for item in assets:
             assetname = list(item.keys())[0]
-            asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).first()
+            asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).exclude(status=4).first()
             returnlist.append({"id":asset.id,"assetname":assetname,"assetcount":item[assetname]})
         return Response({"code":0,"info":returnlist,"user":dest.name}) if dest else Response({"code":0,"info":returnlist,"user":""})
     
@@ -316,8 +318,8 @@ class NsViewSet(viewsets.ViewSet):
             raise Failure("用户不属于任何业务实体")
         if not dep:
             raise Failure("用户不属于任何部门")
-        assets_num = Asset.objects.filter(entity=ent,department=dep,type=True).exclude(number_idle=0).all()
-        assets_item = Asset.objects.filter(entity=ent,department=dep,type=False,status=0).all()
+        assets_num = Asset.objects.filter(entity=ent,department=dep,type=True).exclude(number_idle=0,status=4).all()
+        assets_item = Asset.objects.filter(entity=ent,department=dep,type=False,status=0).exclude(status=4).all()
         returnlist = []
         for asset in assets_num:
             returnlist.append({"id":asset.id,"name":asset.name,"type":1,"count":asset.number_idle})
@@ -383,7 +385,7 @@ class NsViewSet(viewsets.ViewSet):
         label = require(req.data, "label", "string" , err_msg="Error type of [label]")
         dep = Department.objects.filter(id=req.user.department).first()
         ent = Entity.objects.filter(id=req.user.entity).first()
-        asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
+        asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first()
         assetclass = AssetClass.objects.filter(entity=ent,department=dep,name=label).first()
         if not asset:
             raise Failure("资产不存在")
