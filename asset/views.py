@@ -408,7 +408,7 @@ def getdetail(req:Request):
     return Response(ret)
 
 #资产全视图，标签二维码显示，不需要登录
-@CheckRequire
+@api_view(['GET'])
 def fulldetail(req:Request,id:any):
     asset = Asset.objects.filter(id=int(id)).exclude(status=4).first()
     if not asset:
