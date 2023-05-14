@@ -69,7 +69,7 @@ class Message(models.Model):
     #关联申请id
     pending = models.BigIntegerField(default=0)
     
-    #1为领用，2为转移，3为维保，4为退库，5为被转移，6资产告警，7资产折旧
+    #1为领用，2为转移，3为维保，4为退库，5为被转移，6资产告警，7资产折旧，8维保完成
     type = models.BigIntegerField(default=0)
     
     #信息内容

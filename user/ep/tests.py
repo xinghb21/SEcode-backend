@@ -123,6 +123,7 @@ class epTest(TestCase):
         resp = self.client.post("/user/ep/reapply", 
                          {"id":1,"status":0,"reason":"success"}
                          ,content_type="application/json")
+        print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.post("/user/ep/reapply", 
                          {"id":3,"status":0,"reason":"success"}

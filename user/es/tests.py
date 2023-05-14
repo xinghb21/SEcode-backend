@@ -283,6 +283,7 @@ class esTest(TestCase):
         }
         self.assertJSONEqual(resp.content,std)
         resp = self.client.post("/user/es/changeidentity", {"name":"tochange2","new":4,"department":"dep2","entity":"et1"}, content_type="application/json")
+        print(resp.json())
         self.assertEqual(User.objects.filter(name="tochange2").first().identity, 4)
         resp = self.client.get("/user/es/getlogs?page=1")
         self.assertEqual(resp.json()["code"], 0)
