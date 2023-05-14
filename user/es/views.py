@@ -1,6 +1,7 @@
 # cyh
 import json
 import re
+import time
 
 from django.contrib.auth.hashers import make_password
 
@@ -513,6 +514,18 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=['get'])
     def getlogs(self,req:Request):
         page = int(req.query_params["page"])
-        logs = list(Logs.objects.filter(entity=req.user.entity).all().order_by("-time"))
+        if "from" in req.query_params.keys():
+            fromtime = req.query_params["from"]
+            fromtime = time.strptime(fromtime, "%Y-%m-%d")
+            fromtime = time.mktime(fromtime)
+        else:
+            fromtime = 0
+        if "to" in req.query_params.keys():
+            totime = req.query_params["to"]
+            totime = time.strptime(totime, "%Y-%m-%d")
+            totime = time.mktime(totime)
+        else:
+            totime = get_timestamp()
+        logs = list(Logs.objects.filter(entity=req.user.entity,time__lte=totime,time__gte=fromtime).all().order_by("-time"))
         return_list = logs[10 * page - 10:10 * page:]
         return Response({"code": 0,"info": [{"id":item.id,"type":item.type,"content":item.content,"time":item.time} for item in return_list],"count":len(logs)})
