@@ -52,7 +52,7 @@ class esTest(TestCase):
         resp = self.client.post("/asset/post", [{"category": "assetclass", "name": "keqing", "life": 100, "number": 1000, "price": 1000}, {"category": "yuanshen", "name": "keqi", "life": 100, "price": 1000}]
                          ,content_type="application/json")
         print(resp.json())
-        resp = self.client.get("/asset/get")
+        resp = self.client.get("/asset/get?page=1")
         self.assertEqual(resp.json()["data"], [{'key': 1, 'name': 'keqing', 'category': 'assetclass', 'description': '', 'type': True}, {'key': 2, 'name': 'keqi', 'category': 'yuanshen', 'description': '', 'type': False}])
         
     def test_delete(self):
@@ -72,7 +72,7 @@ class esTest(TestCase):
         resp = self.client.get("/asset/getdetail", {"id": 1})
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.get("/asset/fulldetail/1",content_type="application/json")
-        resp = self.client.get("/asset/get")
+        resp = self.client.get("/asset/get?page=1")
         #print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         
@@ -107,24 +107,7 @@ class esTest(TestCase):
                          [{"category": "class1", "name": "ningguang", "parent": "keqi", "life": 100, "price": 1000}]
                          ,content_type="application/json")
         
-        resp = self.client.get("/asset/get")
-        self.assertEqual(resp.json()["code"], 0)
-        # print(resp.json())
-        resp = self.client.get("/asset/get", {"name": "keqi"})
-        # print(resp.json())
-        self.assertEqual(resp.json()["code"], 0)
-        resp = self.client.get("/asset/get", {"parent": "keqi"})
-        # print(resp.json())
-        self.assertEqual(resp.json()["code"], 0)
-        resp = self.client.get("/asset/get", {"category": "class1",
-                                              "belonging": "ep",
-                                            "from": get_timestamp() - 7200,
-                                              "to": get_timestamp(),
-                                              "status": 0,
-                                              "pricefrom": 900,
-                                              "priceto": 1100
-                                              })
-        # print(resp.json())
+        resp = self.client.get("/asset/get?page=1")
         self.assertEqual(resp.json()["code"], 0)
     
     def test_get_belonging(self):

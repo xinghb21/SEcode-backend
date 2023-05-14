@@ -320,6 +320,7 @@ class NsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path="getassets")
     def getassets(self,req:Request):
         user = req.user
+        page = int(req.query_params["page"])
         ent = Entity.objects.filter(id=user.entity).first()
         dep = Department.objects.filter(id=user.department).first()
         if not ent :
@@ -333,6 +334,7 @@ class NsViewSet(viewsets.ViewSet):
             returnlist.append({"id":asset.id,"name":asset.name,"type":1,"count":asset.number_idle})
         for asset in assets_item:
             returnlist.append({"id":asset.id,"name":asset.name,"type":0,"count":1})
+        returnlist = returnlist[10 * page - 10:10 * page:]
         return Response({"code":0,"info":returnlist})
     
     #删除已经被处理的申请

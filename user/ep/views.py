@@ -465,6 +465,7 @@ class EpViewSet(viewsets.ViewSet):
     def queryasset(self,req:Request):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
+        page = self.getparse(req.data,"page","int")
         parent = self.getparse(req.data,"parent","string")
         assetclass = self.getparse(req.data,"assetclass","string")
         name = self.getparse(req.data,"name","string")
@@ -563,6 +564,7 @@ class EpViewSet(viewsets.ViewSet):
                             flag = True
                 if not flag:
                     return_list.remove(item)
+        return_list = return_list[10 * page - 10:10 * page:]
         return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name if item.category != None else "尚未确定具体类别","type":item.type}for item in return_list]})
         
     #防止父结构出现自环

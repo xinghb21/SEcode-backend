@@ -251,13 +251,13 @@ class epTest(TestCase):
         asset2 = Asset.objects.create(name="asset2",entity=et,parent=asset1,department=dep,category=class1,type=False,price=10,status=1,user=ns2)
         asset3 = Asset.objects.create(name="asset3",entity=et,department=dep,category=class2,type=True,price=100,number=100,number_idle=50,usage=json.dumps([{"ns1":25}]),maintain=json.dumps([{"ns2":25}]))
         asset4 = Asset.objects.create(name="asset4",entity=et,department=dep,belonging=ns1,category=class1,type=False,price=10,status=3,user=ns1,additional=json.dumps({"color":"red"}))
-        resp = self.client.post("/user/ep/queryasset",{"parent":"asset1","priceto":50,"status":1,"user":"ns2"},content_type="application/json")
+        resp = self.client.post("/user/ep/queryasset",{"page":1,"parent":"asset1","priceto":50,"status":1,"user":"ns2"},content_type="application/json")
         self.assertEqual(resp.json()["data"],[{'name': 'asset2', 'key': 2, 'description': '', 'assetclass': 'class1', 'type': False}])
-        resp = self.client.post("/user/ep/queryasset",{"id":1,"to":114515,"custom":"size","status":-1},content_type="application/json")
+        resp = self.client.post("/user/ep/queryasset",{"page":1,"id":1,"to":114515,"custom":"size","status":-1},content_type="application/json")
         self.assertEqual(resp.json()["data"],[{'name': 'asset1', 'key': 1, 'description': '', 'assetclass': 'class1', 'type': False}])
-        resp = self.client.post("/user/ep/queryasset",{"pricefrom":50,"user":"ns1","status":5,"name":"asset3","from":114514},content_type="application/json")
+        resp = self.client.post("/user/ep/queryasset",{"page":1,"pricefrom":50,"user":"ns1","status":5,"name":"asset3","from":114514},content_type="application/json")
         self.assertEqual(resp.json()["data"],[{'name': 'asset3', 'key': 3, 'description': '', 'assetclass': 'class2', 'type': True}])
-        resp = self.client.post("/user/ep/queryasset",{"custom":"color","content":"red","status":3,"belonging":"ns1"},content_type="application/json")
+        resp = self.client.post("/user/ep/queryasset",{"page":1,"custom":"color","content":"red","status":3,"belonging":"ns1"},content_type="application/json")
         self.assertEqual(resp.json()["data"],[{'name': 'asset4', 'key': 4, 'description': '', 'assetclass': 'class1', 'type': False}])
     
     def test_modify(self):
