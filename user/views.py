@@ -170,8 +170,19 @@ class UserViewSet(viewsets.ViewSet):
         if not user.apps:
             return Response({"code":0,"info":[]})
         applist = json.loads(user.apps)["data"]
-        print(applist)
         return Response({"code":0,"info":applist})
+    
+    #2023.5.14   hyx
+    #用户头像更新
+    @Check
+    @action(detail=False, methods=['post'])
+    def changehead(self,req:Request):
+        if "id" not in req._request.session:
+            raise Failure("用户未登录")
+        user = User.objects.filter(id=req._request.session.get("id")).first()
+        user.head = True
+        user.save()
+        return Response({"code":0,"info":"success"})
 
 #进入用户界面
 @Check
@@ -192,7 +203,8 @@ def home(req:Request,username:any):
             "identity":user.identity,
             "username":username,
             "entity":entname,
-            "department":departname
+            "department":departname,
+            "head":user.head
         }
         return Response(return_data)
     else:
