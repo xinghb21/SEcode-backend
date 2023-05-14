@@ -102,8 +102,7 @@ class epTest(TestCase):
         pending2 = Pending.objects.create(entity=1,department=1,initiator=4,description="I want these",
                                           asset=json.dumps([{"asset1":100,"asset2":1}]))
         resp = self.client.get("/user/ep/getallapply")
-        print(resp.json())
-        self.assertEqual(resp.json()["info"],  [{'id': 1, 'name': 'ns1', 'oper': 0, 'reason': 'I want this'},{'id': 2, 'name': 'ns2', 'oper': 0, 'reason': 'I want these'}])
+        self.assertEqual(resp.json()["info"],  [{'id': 2, 'name': 'ns2', 'reason': 'I want these', 'oper': 0}, {'id': 1, 'name': 'ns1', 'reason': 'I want this', 'oper': 0}])
         
     def test_reply_pendings(self):
         et = Entity.objects.filter(id=1).first()

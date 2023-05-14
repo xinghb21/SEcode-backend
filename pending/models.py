@@ -103,7 +103,7 @@ class EPMessage(models.Model):
     #对应资产
     asset = models.ForeignKey('asset.Asset', null=True, on_delete=models.CASCADE)
     
-    #类型，0时间告警，1数量告警，2自动清退
+    #类型，0时间告警，1数量告警，2自动清退，3资产调拨成功，4资产调拨失败
     type = models.IntegerField()
     
     #信息

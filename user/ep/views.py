@@ -38,7 +38,7 @@ class EpViewSet(viewsets.ViewSet):
     def getallapply(self,req:Request):
         dep = req.user.department
         ent = req.user.entity
-        pendings = Pending.objects.filter(entity=ent,department=dep,result=0).all()
+        pendings = Pending.objects.filter(entity=ent,department=dep,result=0).all().order_by("-request_time")
         returnList = []
         for item in pendings:
             user = User.objects.filter(id=item.initiator).first()
@@ -139,7 +139,10 @@ class EpViewSet(viewsets.ViewSet):
         pen.save()
         #给员工发送消息
         msg = self.create_message(status,id,ptype,reply)
-        Message.objects.create(user=pen.initiator,content=msg,type=ptype,pending=id)
+        if ptype != 6:
+            Message.objects.create(user=pen.initiator,content=msg,type=ptype,pending=id)
+        else:
+            EPMessage.objects.create(user=pen.initiator,content=msg,type=ptype)
         #更新资产信息
         #资产领用，与其他三类差异较大
         if ptype == 1:
@@ -300,6 +303,24 @@ class EpViewSet(viewsets.ViewSet):
                     asset.user = None
                     asset.belonging = admin
                     AssetLog(asset=asset,type=6,entity=staff.entity,department=staff.department,number=1,src=staff).save()
+                asset.save()
+        #仅拒绝调拨
+        if ptype == 6:
+            admin = User.objects.filter(id=pen.initiator).first()
+            fromdep = Department.objects.filter(id=admin.department).first()
+            print(assetlist)
+            for assetdict in assetlist:
+                #待办单条资产
+                assetname = list(assetdict.keys())[0]
+                asset = Asset.objects.filter(entity=ent,department=fromdep,name=assetname).exclude(status=4).first()
+                number = assetdict[assetname]
+                #数量型
+                if asset.type:
+                    self.leave_buffer(asset,admin,{asset.name:number},asset.name)
+                    asset.number_idle += number
+                #条目型
+                else:
+                    asset.status = 0
                 asset.save()
         # cyh
         # 通知员工审批结果,审批人的回复
@@ -666,26 +687,7 @@ class EpViewSet(viewsets.ViewSet):
         pen.review_time = utils_time.get_timestamp()
         pen.reply = reply
         pen.save()
-        #给员工发送消息
-        msg = self.create_message(status,id,pen.type,reply)
-        Message.objects.create(user=fromadmin.id,content=msg,type=2,pending=pen.id)
-        #拒绝
-        if status == 1:
-            for assetdict in assetlist:
-                #待办单条资产
-                asset = Asset.objects.filter(entity=ent,department=fromdep,id=assetdict["id"]).exclude(status=4).first()
-                assetclass = AssetClass.objects.filter(entity=ent,department=dep,name=assetdict["label"]).first()
-                number = assetdict["number"]
-                #数量型
-                if asset.type:
-                    self.leave_buffer(asset,fromadmin,{asset.name:number},asset.name)
-                    asset.number_idle += number
-                #条目型
-                else:
-                    asset.status = 0
-                asset.save()
-            return Response({"code":0,"detail":"ok"})
-        else:
+        if status == 0:
             for assetdict in assetlist:
                 #待办单条资产
                 asset = Asset.objects.filter(entity=ent,department=fromdep,id=assetdict["id"]).exclude(status=4).first()
@@ -857,7 +859,7 @@ class EpViewSet(viewsets.ViewSet):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         self.update_alert(ent,dep,req.user.id)
-        msgs = EPMessage.objects.filter(user=req.user.id).all()
+        msgs = EPMessage.objects.filter(user=req.user.id).all().order_by("-time")
         return_list = [{"key":item.id,"type":1 if item.type == 2 else 0,"message":item.content}for item in msgs]
         return Response({"code":0,"info":return_list})
     
@@ -882,7 +884,7 @@ class EpViewSet(viewsets.ViewSet):
         msg = EPMessage.objects.filter(id=id).first()
         if not msg:
             raise Failure("消息不存在")
-        if msg.type != 2:
-            raise Failure("消息不是资产折旧")
+        if msg.type == 0 or msg.type == 1:
+            raise Failure("不可删除告警信息")
         msg.delete()
         return Response({"code":0,"info":"success"})
