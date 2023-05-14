@@ -209,6 +209,8 @@ class epTest(TestCase):
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.get("/asset/history?id=2&page=1")
         self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.get("/asset/queryhis?page=1&type=3&assetname=asset1&timefrom=0&timeto=1145141919810")
+        self.assertEqual(resp.json()["code"], 0)
 
     def test_assets_in_apply(self):
         et = Entity.objects.filter(id=1).first()
