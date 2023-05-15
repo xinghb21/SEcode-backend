@@ -1,6 +1,7 @@
 # cyh
 import json
 import re
+import time
 
 from django.contrib.auth.hashers import make_password
 
@@ -538,6 +539,18 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=['get'])
     def getlogs(self,req:Request):
         page = int(req.query_params["page"])
+        if "from" in req.query_params.keys():
+            fromtime = req.query_params["from"]
+            fromtime = time.strptime(fromtime, "%Y-%m-%d")
+            fromtime = time.mktime(fromtime)
+        else:
+            fromtime = 0
+        if "to" in req.query_params.keys():
+            totime = req.query_params["to"]
+            totime = time.strptime(totime, "%Y-%m-%d")
+            totime = time.mktime(totime)
+        else:
+            totime = get_timestamp()
         type = int(req.query_params["type"])
         alllogs = Logs.objects.filter(entity=req.user.entity).all()
         if len(alllogs) > 1000:
@@ -545,8 +558,8 @@ class EsViewSet(viewsets.ViewSet):
             for i in delete_logs:
                 i.delete()
         if type == 1 or type == 2 or type == 3:
-            logs = list(Logs.objects.filter(entity=req.user.entity,type=type).all().order_by("-time"))
+            logs = list(Logs.objects.filter(entity=req.user.entity,type=type,time__lte=totime,time__gte=fromtime).all().order_by("-time"))
         else:
-            logs = list(Logs.objects.filter(entity=req.user.entity).all().order_by("-time"))
+            logs = list(Logs.objects.filter(entity=req.user.entity,time__lte=totime,time__gte=fromtime).all().order_by("-time"))
         return_list = logs[10 * page - 10:10 * page:]
         return Response({"code": 0,"info": [{"id":item.id,"type":item.type,"content":item.content,"time":item.time} for item in return_list],"count":len(logs)})
