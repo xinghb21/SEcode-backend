@@ -212,10 +212,28 @@ class asynctask(viewsets.ViewSet):
     def getalivetasks(self, req:Request):
         if req.user.identity != 2 and req.user.identity != 3:
             raise Failure("您没有权限进行此操作")
-        tasks = Async_import_export_task.objects.filter(user=req.user, status__in=[0,1,2,3]).order_by("-create_time")
+        if "page" in req.query_params.keys():
+            page = int(req.query_params["page"])
+        else:
+            page = 1
+        if "from" in req.query_params.keys():
+            fromtime = req.query_params["from"]
+            fromtime = time.strptime(fromtime, "%Y-%m-%d")
+            fromtime = time.mktime(fromtime)
+        else:
+            fromtime = 0
+        if "to" in req.query_params.keys():
+            totime = req.query_params["to"]
+            totime = time.strptime(totime, "%Y-%m-%d")
+            totime = time.mktime(totime)
+        else:
+            totime = get_timestamp()
+        tasks = Async_import_export_task.objects.filter(user=req.user, status__in=[0,1,2,3],create_time__lte=totime,create_time__gte=fromtime).order_by("-create_time")
+        return_list = tasks[10 * page - 10:10 * page:]
         return Response({
             "code": 0,
-            "info": [task.respond() for task in tasks]
+            "info": [task.respond() for task in return_list],
+            "count":len(tasks),
         })
     
         
