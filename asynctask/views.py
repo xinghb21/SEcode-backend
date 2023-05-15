@@ -1,6 +1,7 @@
 # cyh
 import json
 import datetime
+import time
 
 from department.models import Entity
 
@@ -178,10 +179,32 @@ class asynctask(viewsets.ViewSet):
         for task in oldtasks:
             bucket.delete_object(task.file_path)
             task.delete()
-        tasks = Async_import_export_task.objects.filter(entity=et).order_by("-create_time")
+        if "page" in req.query_params.keys():
+            page = int(req.query_params["page"])
+        else:
+            page = 1
+        if "from" in req.query_params.keys():
+            fromtime = req.query_params["from"]
+            fromtime = time.strptime(fromtime, "%Y-%m-%d")
+            fromtime = time.mktime(fromtime)
+        else:
+            fromtime = 0
+        if "to" in req.query_params.keys():
+            totime = req.query_params["to"]
+            totime = time.strptime(totime, "%Y-%m-%d")
+            totime = time.mktime(totime)
+        else:
+            totime = get_timestamp()
+        if "person" in req.query_params.keys():
+            person = req.query_params["person"]
+        else:
+            person = ""
+        tasks = list(Async_import_export_task.objects.filter(entity=et,create_time__lte=totime,create_time__gte=fromtime,user__name__contains=person).order_by("-create_time"))
+        return_list = tasks[10 * page - 10:10 * page:]
         return Response({
             "code": 0,
-            "info": [task.respond() for task in tasks]
+            "info": [task.respond() for task in return_list],
+            "count":len(tasks),
         })
         
     @Check
