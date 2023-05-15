@@ -39,6 +39,9 @@ class User(models.Model):
     
     #用户有头像
     head = models.BooleanField(default=False)
+    
+    #用户用有资产种类数
+    hasasset = models.IntegerField(default=0)
 
     class Meta:
         db_table = "User"

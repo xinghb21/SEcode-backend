@@ -182,8 +182,10 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.get("/user/ns/hasmessage",content_type="application/json")
         self.assertEqual(resp.json()["info"],True)
-        resp = self.client.post("/user/ns/read",{"id":1},content_type="application/json")
+        resp = self.client.post("/user/ns/read",{"id":2},content_type="application/json")
         self.assertEqual(resp.json()["code"],0)
+        resp = self.client.delete("/user/ns/deletemsg?id=2",content_type="application/json")
+        self.assertEqual(resp.json()["code"], 0)
         
     def test_setcat(self):
         resp = self.setcat("hutao114514","yuanshen")

@@ -93,7 +93,7 @@ class UserViewSet(viewsets.ViewSet):
             if dep:
                 dep.admin=user.id
                 dep.save()
-        Logs(entity = user.entity,content="创建用户"+user.name,type=1).save()
+        Logs(entity = user.entity,content="创建用户"+user.name,type=3).save()
         return Response({"code":0,"username":name})
 
     #删除用户
@@ -104,7 +104,7 @@ class UserViewSet(viewsets.ViewSet):
         thisuser = User.objects.filter(name=name).first()
         if thisuser:
             name = thisuser.name
-            Logs(entity = thisuser.entity,content="删除用户"+thisuser.name,type=1).save()
+            Logs(entity = thisuser.entity,content="删除用户"+thisuser.name,type=3).save()
             thisuser.delete()
             return Response({"code":0,"username":name})
         else:

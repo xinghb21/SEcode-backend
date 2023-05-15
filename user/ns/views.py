@@ -320,6 +320,7 @@ class NsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path="getassets")
     def getassets(self,req:Request):
         user = req.user
+        page = int(req.query_params["page"])
         ent = Entity.objects.filter(id=user.entity).first()
         dep = Department.objects.filter(id=user.department).first()
         if not ent :
@@ -333,6 +334,7 @@ class NsViewSet(viewsets.ViewSet):
             returnlist.append({"id":asset.id,"name":asset.name,"type":1,"count":asset.number_idle})
         for asset in assets_item:
             returnlist.append({"id":asset.id,"name":asset.name,"type":0,"count":1})
+        returnlist = returnlist[10 * page - 10:10 * page:]
         return Response({"code":0,"info":returnlist})
     
     #删除已经被处理的申请
@@ -354,14 +356,31 @@ class NsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=["get"], url_path="getmessage")
     def getmessage(self,req:Request):
         user = req.user
-        msgs = Message.objects.filter(user=user.id,read=False).order_by('-time')
+        msgsnr = Message.objects.filter(user=user.id,read=False).order_by('-time').all()
+        msgsr = Message.objects.filter(user=user.id,read=True).order_by('-time').all()
         msglist = []
-        for msg in msgs:
+        for msg in msgsnr:
             pending = Pending.objects.filter(id=msg.pending).first()
             if pending:
                 assets = [{"assetname":list(item.keys())[0],"number":item[list(item.keys())[0]]} for item in json.loads(pending.asset)]
-                msglist.append({"id":msg.id,"type":msg.type,"status":pending.result,"message":msg.content,"info":assets})
+                msglist.append({"id":msg.id,"type":msg.type,"status":pending.result,"message":msg.content,"info":assets,"read":False})
+        for msg in msgsr:
+            pending = Pending.objects.filter(id=msg.pending).first()
+            if pending:
+                assets = [{"assetname":list(item.keys())[0],"number":item[list(item.keys())[0]]} for item in json.loads(pending.asset)]
+                msglist.append({"id":msg.id,"type":msg.type,"status":pending.result,"message":msg.content,"info":assets,"read":True})
         return Response({"code":0,"info":msglist})
+    
+    #删除信息
+    @Check
+    @action(detail=False,methods=["delete"], url_path="deletemsg")
+    def deletemsg(self,req:Request):
+        id = int(req.query_params["id"])
+        msg = Message.objects.filter(id=id,user=req.user.id).first()
+        if not msg:
+            raise Failure("消息不存在")
+        msg.delete()
+        return Response({"code":0,"info":"ok"})
     
     #员工是否存在未读信息
     @Check
