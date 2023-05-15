@@ -38,7 +38,7 @@ class EpViewSet(viewsets.ViewSet):
     def getallapply(self,req:Request):
         dep = req.user.department
         ent = req.user.entity
-        pendings = Pending.objects.filter(entity=ent,department=dep,result=0).all()
+        pendings = Pending.objects.filter(entity=ent,department=dep,result=0).all().order_by("-request_time")
         returnList = []
         for item in pendings:
             user = User.objects.filter(id=item.initiator).first()
@@ -139,7 +139,10 @@ class EpViewSet(viewsets.ViewSet):
         pen.save()
         #给员工发送消息
         msg = self.create_message(status,id,ptype,reply)
-        Message.objects.create(user=pen.initiator,content=msg,type=ptype,pending=id)
+        if ptype != 6:
+            Message.objects.create(user=pen.initiator,content=msg,type=ptype,pending=id)
+        else:
+            EPMessage.objects.create(user=pen.initiator,content=msg,type=status + 3)
         #更新资产信息
         #资产领用，与其他三类差异较大
         if ptype == 1:
@@ -157,6 +160,8 @@ class EpViewSet(viewsets.ViewSet):
                         use = json.loads(asset.usage)
                         if not use:
                             asset.usage = json.dumps([{staff.name:assetdict[assetname]}])
+                            staff.hasasset = staff.hasasset + 1
+                            staff.save()
                         else:
                             needupdate = True
                             for term in use:
@@ -165,6 +170,8 @@ class EpViewSet(viewsets.ViewSet):
                                     needupdate = False
                                     break
                             if needupdate:
+                                staff.hasasset = staff.hasasset + 1
+                                staff.save()
                                 use.append({staff.name:assetdict[assetname]})
                             asset.usage = json.dumps(use)
                         AssetLog(asset=asset,entity=staff.entity,department=staff.department,type=2,expire_time=asset.create_time,number=assetdict[assetname],dest=staff).save()
@@ -179,6 +186,8 @@ class EpViewSet(viewsets.ViewSet):
                         asset.user = staff
                         asset.belonging = staff
                         AssetLog(asset=asset,entity=staff.entity,department=staff.department,type=2,number=1,expire_time=asset.create_time,dest=staff).save()
+                        staff.hasasset = staff.hasasset + 1
+                        staff.save()
                     else:
                         asset.status = 0
                 asset.save()
@@ -196,9 +205,17 @@ class EpViewSet(viewsets.ViewSet):
                 asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first()
                 #数量型
                 if asset.type:
+                    pro = json.loads(asset.process)
+                    for i in pro:
+                        if list(i.keys())[0] == staff.name and i[staff.name] == assetdict[assetname]:
+                            staff.hasasset = staff.hasasset - 1
+                            staff.save()
+                            break
                     self.leave_buffer(asset,staff,assetdict,assetname)
                     #跨部门
                     if destdep != depart:
+                        destuser.hasasset = destuser.hasasset + 1
+                        destuser.save()
                         asset.number -= assetdict[assetname]
                         if asset.number == 0:
                             asset.status = 4
@@ -222,6 +239,8 @@ class EpViewSet(viewsets.ViewSet):
                                     needupdate = False
                                     break
                             if needupdate:
+                                destuser.hasasset = destuser.hasasset + 1
+                                destuser.save()
                                 use.append({destuser.name:assetdict[assetname]})
                             asset.usage = json.dumps(use)
                         AssetLog(asset=asset,type=3,entity=destuser.entity,department=destuser.department,number=assetdict[assetname],src=staff,dest=destuser).save()
@@ -229,6 +248,10 @@ class EpViewSet(viewsets.ViewSet):
                 #条目型
                 else:
                     #跨部门
+                    staff.hasasset = staff.hasasset - 1
+                    staff.save()
+                    destuser.hasasset = destuser.hasasset + 1
+                    destuser.save()
                     if destdep != depart:
                         newasset = Asset(entity=entity,department=destdep,type=0,name=assetname,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,belonging=destuser,user=destuser,status=1,create_time=asset.create_time)
                         newasset.save()
@@ -292,14 +315,40 @@ class EpViewSet(viewsets.ViewSet):
                 #待办单条资产
                 asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first()
                 if asset.type:
+                    pro = json.loads(asset.process)
+                    for i in pro:
+                        if list(i.keys())[0] == staff.name and i[staff.name] == assetdict[assetname]:
+                            staff.hasasset = staff.hasasset - 1
+                            staff.save()
+                            break
                     self.leave_buffer(asset,staff,assetdict,assetname)
                     asset.number_idle += assetdict[assetname]
                     AssetLog(asset=asset,type=6,entity=staff.entity,department=staff.department,number=assetdict[assetname],src=staff).save()
                 else:
+                    staff.hasasset = staff.hasasset - 1
+                    staff.save()
                     asset.status = 0
                     asset.user = None
                     asset.belonging = admin
                     AssetLog(asset=asset,type=6,entity=staff.entity,department=staff.department,number=1,src=staff).save()
+                asset.save()
+        #仅拒绝调拨
+        if ptype == 6:
+            admin = User.objects.filter(id=pen.initiator).first()
+            fromdep = Department.objects.filter(id=admin.department).first()
+            print(assetlist)
+            for assetdict in assetlist:
+                #待办单条资产
+                assetname = list(assetdict.keys())[0]
+                asset = Asset.objects.filter(entity=ent,department=fromdep,name=assetname).exclude(status=4).first()
+                number = assetdict[assetname]
+                #数量型
+                if asset.type:
+                    self.leave_buffer(asset,admin,{asset.name:number},asset.name)
+                    asset.number_idle += number
+                #条目型
+                else:
+                    asset.status = 0
                 asset.save()
         # cyh
         # 通知员工审批结果,审批人的回复
@@ -416,6 +465,7 @@ class EpViewSet(viewsets.ViewSet):
     def queryasset(self,req:Request):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
+        page = self.getparse(req.data,"page","int")
         parent = self.getparse(req.data,"parent","string")
         assetclass = self.getparse(req.data,"assetclass","string")
         name = self.getparse(req.data,"name","string")
@@ -514,6 +564,7 @@ class EpViewSet(viewsets.ViewSet):
                             flag = True
                 if not flag:
                     return_list.remove(item)
+        return_list = return_list[10 * page - 10:10 * page:]
         return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name if item.category != None else "尚未确定具体类别","type":item.type}for item in return_list]})
         
     #防止父结构出现自环
@@ -666,26 +717,7 @@ class EpViewSet(viewsets.ViewSet):
         pen.review_time = utils_time.get_timestamp()
         pen.reply = reply
         pen.save()
-        #给员工发送消息
-        msg = self.create_message(status,id,pen.type,reply)
-        Message.objects.create(user=fromadmin.id,content=msg,type=2,pending=pen.id)
-        #拒绝
-        if status == 1:
-            for assetdict in assetlist:
-                #待办单条资产
-                asset = Asset.objects.filter(entity=ent,department=fromdep,id=assetdict["id"]).exclude(status=4).first()
-                assetclass = AssetClass.objects.filter(entity=ent,department=dep,name=assetdict["label"]).first()
-                number = assetdict["number"]
-                #数量型
-                if asset.type:
-                    self.leave_buffer(asset,fromadmin,{asset.name:number},asset.name)
-                    asset.number_idle += number
-                #条目型
-                else:
-                    asset.status = 0
-                asset.save()
-            return Response({"code":0,"detail":"ok"})
-        else:
+        if status == 0:
             for assetdict in assetlist:
                 #待办单条资产
                 asset = Asset.objects.filter(entity=ent,department=fromdep,id=assetdict["id"]).exclude(status=4).first()
@@ -786,8 +818,16 @@ class EpViewSet(viewsets.ViewSet):
                         asset.usage = json.dumps(use)
                 #报废
                 else:
-                    if asset.price:
-                        AssetLog(type=8,entity=req.user.entity,asset=asset,department=req.user.department,number=number,price=asset.price * number,expire_time=asset.create_time,life=asset.life).save()
+                    use = json.loads(asset.usage)
+                    donothave = True
+                    for i in use:
+                        if list(i.keys())[0] == staff.name:
+                            donothave = False
+                            break
+                    if donothave:
+                        staff.hasasset = staff.hasasset - 1
+                        staff.save()
+                    AssetLog(type=10,entity=req.user.entity,asset=asset,department=req.user.department,number=number,price=asset.price * number,expire_time=asset.create_time,life=asset.life,src=staff).save()
                     if asset.number_expire != None:
                         asset.number_expire += number
                     else:
@@ -799,21 +839,23 @@ class EpViewSet(viewsets.ViewSet):
                     AssetLog(entity=ent.id,department=dep.id,asset=asset,type=5,dest=staff,number=1).save()
                     asset.status = 1
                 else:
-                    AssetLog(type=8,entity=req.user.entity,asset=asset,department=req.user.department,number=1,price=asset.price,expire_time=asset.create_time,life=asset.life).save()
-                    asset.status = 4
+                    staff.hasasset = staff.hasasset - 1
+                    staff.save()
+                    AssetLog(type=10,entity=req.user.entity,asset=asset,department=req.user.department,number=1,price=asset.price,expire_time=asset.create_time,life=asset.life,src=staff).save()
                     asset.expire = True
             asset.save()
             if int(item["state"]) == 1:
                 useasset.append(item["name"])
             else:
                 brokenasset.append(item["name"])
-        content = "维保已完成。<br/>"
+        content = "维保已完成。"
         if useasset:
-            content += "返还资产:" + str(useasset).replace('[','').replace(']','') + "<br/>"
+            content += "返还资产:" + str(useasset).replace('[','').replace(']','') + " "
         if brokenasset:
-            content += "报废资产:" + str(brokenasset).replace('[','').replace(']','') + "<br/>"
-        Message(user=staff.id,pending=pending.id,type=3,content=content).save()
-        pending.delete()
+            content += "报废资产:" + str(brokenasset).replace('[','').replace(']','') + " "
+        Message(user=staff.id,pending=pending.id,type=7,content=content).save()
+        pending.result = 3
+        pending.save()
         return Response({"code":0,"info":"ok"})
     
     #更新告警信息列表
@@ -856,8 +898,8 @@ class EpViewSet(viewsets.ViewSet):
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         self.update_alert(ent,dep,req.user.id)
-        msgs = EPMessage.objects.filter(user=req.user.id).all()
-        return_list = [{"key":item.id,"type":1 if item.type == 2 else 0,"message":item.content}for item in msgs]
+        msgs = EPMessage.objects.filter(user=req.user.id).all().order_by("-time")
+        return_list = [{"key":item.id,"type":0 if item.type == 0 or item.type == 1 else item.type - 1,"message":item.content}for item in msgs]
         return Response({"code":0,"info":return_list})
     
     #是否有消息通知
@@ -881,7 +923,7 @@ class EpViewSet(viewsets.ViewSet):
         msg = EPMessage.objects.filter(id=id).first()
         if not msg:
             raise Failure("消息不存在")
-        if msg.type != 2:
-            raise Failure("消息不是资产折旧")
+        if msg.type == 0 or msg.type == 1:
+            raise Failure("不可删除告警信息")
         msg.delete()
         return Response({"code":0,"info":"success"})

@@ -142,7 +142,7 @@ class NsViewSet(viewsets.ViewSet):
             raise Failure("用户不属于任何业务实体")
         if not dep:
             raise Failure("用户不属于任何部门")
-        pendings = Pending.objects.filter(entity=ent.id,department=dep.id,initiator=user.id).all()
+        pendings = Pending.objects.filter(entity=ent.id,department=dep.id,initiator=user.id).order_by("-review_time").order_by("-request_time").all()
         returnlist = [{"id":item.id,"reason":item.description,"status":item.result,"message":item.reply,"type":item.type} for item in pendings]
         return Response({"code":0,"info":returnlist})
 
@@ -303,8 +303,16 @@ class NsViewSet(viewsets.ViewSet):
         returnlist = []
         for item in assets:
             assetname = list(item.keys())[0]
-            asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).exclude(status=4).first()
-            returnlist.append({"id":asset.id,"assetname":assetname,"assetcount":item[assetname]})
+            if pending.type != 2:
+                asset = Asset.objects.filter(department=dep,entity=ent,name=assetname).exclude(status=4).first()
+            else:
+                touser = User.objects.filter(id=pending.destination).first()
+                todep = Department.objects.filter(id=touser.department).first()
+                asset = Asset.objects.filter(department=todep,entity=ent,name=assetname).exclude(status=4).first()
+            if not asset:
+                returnlist.append({"id":"已删除","assetname":assetname,"assetcount":item[assetname]})
+            else:
+                returnlist.append({"id":asset.id,"assetname":assetname,"assetcount":item[assetname]})
         return Response({"code":0,"info":returnlist,"user":dest.name}) if dest else Response({"code":0,"info":returnlist,"user":""})
     
     #查看所有处于闲置状态的资产
@@ -312,19 +320,21 @@ class NsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path="getassets")
     def getassets(self,req:Request):
         user = req.user
+        page = int(req.query_params["page"])
         ent = Entity.objects.filter(id=user.entity).first()
         dep = Department.objects.filter(id=user.department).first()
         if not ent :
             raise Failure("用户不属于任何业务实体")
         if not dep:
             raise Failure("用户不属于任何部门")
-        assets_num = Asset.objects.filter(entity=ent,department=dep,type=True).exclude(number_idle=0,status=4).all()
+        assets_num = Asset.objects.filter(entity=ent,department=dep,type=True).exclude(number_idle=0).exclude(status=4).all()
         assets_item = Asset.objects.filter(entity=ent,department=dep,type=False,status=0).exclude(status=4).all()
         returnlist = []
         for asset in assets_num:
             returnlist.append({"id":asset.id,"name":asset.name,"type":1,"count":asset.number_idle})
         for asset in assets_item:
             returnlist.append({"id":asset.id,"name":asset.name,"type":0,"count":1})
+        returnlist = returnlist[10 * page - 10:10 * page:]
         return Response({"code":0,"info":returnlist})
     
     #删除已经被处理的申请
@@ -346,25 +356,44 @@ class NsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=["get"], url_path="getmessage")
     def getmessage(self,req:Request):
         user = req.user
-        msgs = Message.objects.filter(user=user.id,read=False).order_by('-time')
+        msgsnr = Message.objects.filter(user=user.id,read=False).order_by('-time').all()
+        msgsr = Message.objects.filter(user=user.id,read=True).order_by('-time').all()
         msglist = []
-        for msg in msgs:
+        for msg in msgsnr:
             pending = Pending.objects.filter(id=msg.pending).first()
             if pending:
                 assets = [{"assetname":list(item.keys())[0],"number":item[list(item.keys())[0]]} for item in json.loads(pending.asset)]
-                msglist.append({"id":msg.id,"type":msg.type,"status":pending.result,"message":msg.content,"info":assets})
+                msglist.append({"id":msg.id,"type":msg.type,"status":pending.result,"message":msg.content,"info":assets,"read":False})
+        for msg in msgsr:
+            pending = Pending.objects.filter(id=msg.pending).first()
+            if pending:
+                assets = [{"assetname":list(item.keys())[0],"number":item[list(item.keys())[0]]} for item in json.loads(pending.asset)]
+                msglist.append({"id":msg.id,"type":msg.type,"status":pending.result,"message":msg.content,"info":assets,"read":True})
         return Response({"code":0,"info":msglist})
+    
+    #删除信息
+    @Check
+    @action(detail=False,methods=["delete"], url_path="deletemsg")
+    def deletemsg(self,req:Request):
+        id = int(req.query_params["id"])
+        msg = Message.objects.filter(id=id,user=req.user.id).first()
+        if not msg:
+            raise Failure("消息不存在")
+        msg.delete()
+        return Response({"code":0,"info":"ok"})
     
     #员工是否存在未读信息
     @Check
     @action(detail=False,methods=["get"], url_path="hasmessage")
     def hasmessage(self,req:Request):
         user = req.user
-        msg = Message.objects.filter(user=user.id,read=False).first()
-        if msg:
-            return Response({"code":0,"info":True})
-        else:
-            return Response({"code":0,"info":False})
+        msgs = Message.objects.filter(user=user.id,read=False).all()
+        if msgs:
+            for msg in msgs:
+                pending = Pending.objects.filter(id=msg.pending).first()
+                if pending:
+                    return Response({"code":0,"info":True})
+        return Response({"code":0,"info":False})
     
     #员工信息已读,不设置报错信息
     @Check

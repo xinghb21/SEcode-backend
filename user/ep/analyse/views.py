@@ -179,7 +179,7 @@ class AsViewSet(viewsets.ViewSet):
             removelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=7,time__gte=day+86400,time__lte=day+2 * 86400).all())
             for item in removelog:
                 deletelogs.append(item)
-            deletelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type__in=[8,9],time__gte=day+86400,time__lte=day+2 * 86400).all())
+            deletelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type__in=[8,9,10],time__gte=day+86400,time__lte=day+2 * 86400).all())
             for item in deletelog:
                 deletelogs.append(item)
             for item in addlogs:
