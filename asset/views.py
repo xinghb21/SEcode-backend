@@ -125,9 +125,11 @@ class asset(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=["get"], url_path="get")
     def get_by_condition(self, req:Request):
+        page = int(req.query_params["page"])
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        asset = Asset.objects.filter(entity=et, department=dep).exclude(status=4).all()
+        asset = list(Asset.objects.filter(entity=et, department=dep).exclude(status=4).all())
+        asset = asset[10 * page - 10:10 * page:]
         ret = {
             "code": 0,
             "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name if ast.category != None else "尚未确定具体类别", "description": ast.description, "type": ast.type} for ast in asset] 
@@ -314,6 +316,44 @@ class asset(viewsets.ViewSet):
         dep = Department.objects.filter(id=req.user.department).first()
         asset = Asset.objects.filter(entity=ent,department=dep).exclude(status=4).all()
         logs = list(AssetLog.objects.filter(asset__in=list(asset)).all().order_by("-time"))
+        count = len(logs)
+        pagelogs = logs[10 * page - 10:10 * page:]
+        returnlist = self.process_history(pagelogs)
+        return Response({"code": 0, "info": returnlist,"count":count})
+    
+    #条件查询历史
+    @Check
+    @action(detail=False,methods=['get'],url_path="queryhis")
+    def queryhis(self,req:Request):
+        page = int(req.query_params["page"])
+        ent = Entity.objects.filter(id=req.user.entity).first()
+        dep = Department.objects.filter(id=req.user.department).first()
+        asset = Asset.objects.filter(entity=ent,department=dep).exclude(status=4).all()
+        logs = AssetLog.objects.filter(asset__in=list(asset)).all().order_by("-time")
+        if "type" in req.query_params.keys() and req.query_params["type"] != "":
+            type = int(req.query_params["type"])
+            if type == 1:
+                logs = logs.filter(type=1).all()
+            elif type == 2:
+                logs = logs.filter(type=2).all()
+            elif type == 3:
+                logs = logs.filter(type__in=[3,7]).all()
+            elif type == 4:
+                logs = logs.filter(type__in=[4,5,10]).all()
+            elif type == 5:
+                logs = logs.filter(type=6).all()
+            else:
+                logs = logs.filter(type=9).all()
+        if "assetname" in req.query_params.keys() and req.query_params["assetname"] != "":
+            assetname = req.query_params["assetname"]
+            asset = asset.filter(name=assetname).first()
+            logs = logs.filter(asset=asset).all()
+        if "timefrom" in req.query_params.keys() and req.query_params["timefrom"] != "":
+            timefrom = float(req.query_params["timefrom"])
+            logs = logs.filter(time__gte=timefrom).all()
+        if "timeto" in req.query_params.keys() and req.query_params["timeto"] != "":
+            timeto = float(req.query_params["timeto"])
+            logs = logs.filter(time__lte=timeto).all()
         count = len(logs)
         pagelogs = logs[10 * page - 10:10 * page:]
         returnlist = self.process_history(pagelogs)

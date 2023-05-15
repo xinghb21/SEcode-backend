@@ -36,6 +36,12 @@ class User(models.Model):
     
     #用户的额外应用，json格式字符串
     apps = models.TextField(default="{\"data\":[]}")
+    
+    #用户有头像
+    head = models.BooleanField(default=False)
+    
+    #用户用有资产种类数
+    hasasset = models.IntegerField(default=0)
 
     class Meta:
         db_table = "User"
@@ -51,7 +57,8 @@ class User(models.Model):
                 "identity":self.identity,
                 "lockedapp":self.lockedapp,
                 "locked":self.locked,
-                "apps":json.loads(self.apps)
+                "apps":json.loads(self.apps),
+                "head":self.head
             }
         except Exception as e:
             raise Failure("对User", self.name, "的json序列化失败: ", e)

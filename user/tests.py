@@ -129,9 +129,15 @@ class userTest(TestCase):
             "entity":"entity",
             "funclist":"000000000",
             "identity":4,
-            "username":"bob"
+            "username":"bob",
+            "head":False
         }
         self.assertJSONEqual(resp.content,std)
+        resp = self.client.post("/user/changehead")
+        self.assertEqual(resp.json()["code"],0)
+        resp = self.client.get("/user/home/bob")
+        self.assertEqual(resp.json()["head"],True)
+        
         
     def test_get_apps(self):
         bob = User.objects.create(name="bob",password=make_password("bob"),identity=3,department=1,entity=1,apps=json.dumps({"data":[{"name":"百度","urlvalue":"https://www.baidu.com"},{"name":"网络学堂","urlvalue":"https://learning.edu.cn"}]}))

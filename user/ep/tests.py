@@ -102,8 +102,7 @@ class epTest(TestCase):
         pending2 = Pending.objects.create(entity=1,department=1,initiator=4,description="I want these",
                                           asset=json.dumps([{"asset1":100,"asset2":1}]))
         resp = self.client.get("/user/ep/getallapply")
-        print(resp.json())
-        self.assertEqual(resp.json()["info"],  [{'id': 1, 'name': 'ns1', 'oper': 0, 'reason': 'I want this'},{'id': 2, 'name': 'ns2', 'oper': 0, 'reason': 'I want these'}])
+        self.assertEqual(resp.json()["info"],  [{'id': 2, 'name': 'ns2', 'reason': 'I want these', 'oper': 0}, {'id': 1, 'name': 'ns1', 'reason': 'I want this', 'oper': 0}])
         
     def test_reply_pendings(self):
         et = Entity.objects.filter(id=1).first()
@@ -124,6 +123,7 @@ class epTest(TestCase):
         resp = self.client.post("/user/ep/reapply", 
                          {"id":1,"status":0,"reason":"success"}
                          ,content_type="application/json")
+        print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.post("/user/ep/reapply", 
                          {"id":3,"status":0,"reason":"success"}
@@ -209,6 +209,8 @@ class epTest(TestCase):
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.get("/asset/history?id=2&page=1")
         self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.get("/asset/queryhis?page=1&type=3&assetname=asset1&timefrom=0&timeto=1145141919810")
+        self.assertEqual(resp.json()["code"], 0)
 
     def test_assets_in_apply(self):
         et = Entity.objects.filter(id=1).first()
@@ -249,13 +251,13 @@ class epTest(TestCase):
         asset2 = Asset.objects.create(name="asset2",entity=et,parent=asset1,department=dep,category=class1,type=False,price=10,status=1,user=ns2)
         asset3 = Asset.objects.create(name="asset3",entity=et,department=dep,category=class2,type=True,price=100,number=100,number_idle=50,usage=json.dumps([{"ns1":25}]),maintain=json.dumps([{"ns2":25}]))
         asset4 = Asset.objects.create(name="asset4",entity=et,department=dep,belonging=ns1,category=class1,type=False,price=10,status=3,user=ns1,additional=json.dumps({"color":"red"}))
-        resp = self.client.post("/user/ep/queryasset",{"parent":"asset1","priceto":50,"status":1,"user":"ns2"},content_type="application/json")
+        resp = self.client.post("/user/ep/queryasset",{"page":1,"parent":"asset1","priceto":50,"status":1,"user":"ns2"},content_type="application/json")
         self.assertEqual(resp.json()["data"],[{'name': 'asset2', 'key': 2, 'description': '', 'assetclass': 'class1', 'type': False}])
-        resp = self.client.post("/user/ep/queryasset",{"id":1,"to":114515,"custom":"size","status":-1},content_type="application/json")
+        resp = self.client.post("/user/ep/queryasset",{"page":1,"id":1,"to":114515,"custom":"size","status":-1},content_type="application/json")
         self.assertEqual(resp.json()["data"],[{'name': 'asset1', 'key': 1, 'description': '', 'assetclass': 'class1', 'type': False}])
-        resp = self.client.post("/user/ep/queryasset",{"pricefrom":50,"user":"ns1","status":5,"name":"asset3","from":114514},content_type="application/json")
+        resp = self.client.post("/user/ep/queryasset",{"page":1,"pricefrom":50,"user":"ns1","status":5,"name":"asset3","from":114514},content_type="application/json")
         self.assertEqual(resp.json()["data"],[{'name': 'asset3', 'key': 3, 'description': '', 'assetclass': 'class2', 'type': True}])
-        resp = self.client.post("/user/ep/queryasset",{"custom":"color","content":"red","status":3,"belonging":"ns1"},content_type="application/json")
+        resp = self.client.post("/user/ep/queryasset",{"page":1,"custom":"color","content":"red","status":3,"belonging":"ns1"},content_type="application/json")
         self.assertEqual(resp.json()["data"],[{'name': 'asset4', 'key': 4, 'description': '', 'assetclass': 'class1', 'type': False}])
     
     def test_modify(self):

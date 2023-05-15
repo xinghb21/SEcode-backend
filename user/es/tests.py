@@ -108,13 +108,13 @@ class esTest(TestCase):
     def test_lock(self):
         resp = self.client.post("/user/es/lock", data={"name": "op1"}, content_type="application/json")
         self.assertEqual(resp.json()["code"], 0)
-        resp = self.client.get("/user/es/getlogs?page=1")
+        resp = self.client.get("/user/es/getlogs?page=1&type=0")
         self.assertEqual(resp.json()["code"], 0)
         
     def test_unlock(self):
         resp = self.client.post("/user/es/unlock", {"name": "op1"}, content_type="application/json")
         self.assertEqual(resp.json()["code"], 0)
-        resp = self.client.get("/user/es/getlogs?page=1")
+        resp = self.client.get("/user/es/getlogs?page=1&type=1")
         self.assertEqual(resp.json()["code"], 0)
         
     def test_apps(self):
@@ -152,7 +152,7 @@ class esTest(TestCase):
             "detail":"上属部门不存在"
         }
         self.assertJSONEqual(resp.content,std)
-        resp = self.client.get("/user/es/getlogs?page=1")
+        resp = self.client.get("/user/es/getlogs?page=1&type=2")
         self.assertEqual(resp.json()["code"], 0)
     
     def test_create_and_check_departs(self):
@@ -175,7 +175,7 @@ class esTest(TestCase):
             "info": {"et1":{"dep1": "$", "dep2": {"dep4": "$"}, "dep3": "$"}}
         }
         self.assertJSONEqual(resp.content,std)
-        resp = self.client.get("/user/es/getlogs?page=1")
+        resp = self.client.get("/user/es/getlogs?page=1&type=3")
         self.assertEqual(resp.json()["code"], 0)
     
     def test_delete_departs(self):
@@ -192,7 +192,7 @@ class esTest(TestCase):
             "name":"dep1"
         }
         self.assertJSONEqual(resp.content,std)
-        resp = self.client.get("/user/es/getlogs?page=1")
+        resp = self.client.get("/user/es/getlogs?page=1&type=4")
         self.assertEqual(resp.json()["code"], 0)
     
     def test_rename_departs(self):
@@ -215,7 +215,7 @@ class esTest(TestCase):
             "newname":"dep4"
         }
         self.assertJSONEqual(resp.content,std)
-        resp = self.client.get("/user/es/getlogs?page=1")
+        resp = self.client.get("/user/es/getlogs?page=1&type=0")
         self.assertEqual(resp.json()["code"], 0)
         
     def test_check_staffs(self):
@@ -243,7 +243,7 @@ class esTest(TestCase):
         user2 = User.objects.filter(name="todelete2").first()
         self.assertEqual(user, None)
         self.assertEqual(user2, None)
-        resp = self.client.get("/user/es/getlogs?page=1")
+        resp = self.client.get("/user/es/getlogs?page=1&type=0")
         self.assertEqual(resp.json()["code"], 0)
     
     def test_delete_dep(self):
@@ -253,7 +253,7 @@ class esTest(TestCase):
         # print(Department.objects.filter(name="dep3"))
         self.client.delete("/user/es/deletealldeparts", ["dep3", "dep4"], content_type="application/json")
         self.assertEqual(Department.objects.filter(name="dep3").first(), None) 
-        resp = self.client.get("/user/es/getlogs?page=1")
+        resp = self.client.get("/user/es/getlogs?page=1&type=0")
         self.assertEqual(resp.json()["code"], 0)
         
     def test_searchuser(self):
@@ -283,7 +283,8 @@ class esTest(TestCase):
         }
         self.assertJSONEqual(resp.content,std)
         resp = self.client.post("/user/es/changeidentity", {"name":"tochange2","new":4,"department":"dep2","entity":"et1"}, content_type="application/json")
+        print(resp.json())
         self.assertEqual(User.objects.filter(name="tochange2").first().identity, 4)
-        resp = self.client.get("/user/es/getlogs?page=1")
+        resp = self.client.get("/user/es/getlogs?page=1&type=0")
         self.assertEqual(resp.json()["code"], 0)
         
