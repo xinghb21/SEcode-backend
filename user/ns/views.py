@@ -276,9 +276,7 @@ class NsViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False,methods=['get'],url_path="possess")
     def possess(self,req:Request):
-        page = int(req.query_params["page"])
         list = self.staffassets(req.user.name)
-        list = list[10*page-10:10*page:]
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         return Response({"code":0,"assets":list,"entity":ent.name,"department":dep.name})
