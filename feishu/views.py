@@ -107,7 +107,8 @@ class feishu(viewsets.ViewSet):
                                   name=userinfo['name'],
                                   openid=userinfo['open_id'],
                                   unionid=union_id,
-                                  userid=userinfo["user_id"])
+                                  userid=userinfo["user_id"],
+                                  mobile=userinfo["mobile"])
             # 在当前会话中保存该飞书用户
             req._request.session['feishu_id'] = feishu.id
             return Response({
@@ -127,8 +128,7 @@ class feishu(viewsets.ViewSet):
             "code": 0,
             "detail": "success",
         })
-
-    # 通过授权码判断该飞书用户是否已经绑定了帐号
+        
     @Check
     @action(detail=False, methods=['get'], url_path="isbound")
     def check_is_bound(self, req:Request):
@@ -208,12 +208,35 @@ class feishu(viewsets.ViewSet):
     def bind(self, req: Request):
         pass
         
-    
     # 解除绑定
     @Check
     @action(detail=False, methods=['delete'], url_path="unbind")
     def unbind(self, req: Request):
         pass
+    
+    # 已登录的用户获得自己的飞书信息
+    @Check
+    @action(detail=False, methods=['get'], url_path="getfeishuinfo", authentication_classes=[LoginAuthentication])
+    def feishuinfo(self, req: Request):
+        fs = Feishu.objects.filter(user=req.user).first()
+        if not fs:
+            return Response({
+                "code": 0,
+                "info":{
+                    "name": "",
+                    "mobile": "",
+                    "isbound": False,
+                },
+            })
+        else:
+            return Response({
+                "code": 0,
+                "info":{
+                    "name": fs.name,
+                    "mobile": fs.mobile,
+                    "isbound": True,
+                },
+            })
         
         
         
