@@ -117,7 +117,7 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["detail"], "资产hutao闲置数量不足")
         resp = self.apply("hutao3", 1,3,"yuanshen2")
         self.assertEqual(resp.json()["detail"], "资产hutao3未处于闲置状态")
-        resp = self.client.get("/user/ns/possess")
+        resp = self.client.get("/user/ns/possess?page=1")
         print(resp.json()["assets"])
         self.assertEqual(resp.json()["assets"], [{'id': 3, 'name': 'hutao3', 'type': 0, 'state': {'1': 1},'haspic':False}, {'id': 1, 'name': 'hutao', 'type': 1, 'state': {'1': 50},'haspic':True}])
     

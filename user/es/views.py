@@ -51,6 +51,7 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path="checkall")
     def check_all(self, req:Request):
         et = req.user.entity
+        page = int(req.query_params["page"])
         users = User.objects.filter(entity=et).exclude(identity=2)
         ret = []
         for user in users:
@@ -66,6 +67,7 @@ class EsViewSet(viewsets.ViewSet):
             tmp["department"] = dep
             if(user.identity != 2):
                 ret.append(tmp)
+        ret = ret[10 * page - 10:10 * page:]
         ret_with_code = {
             "code": 0,
             "data": ret
@@ -354,16 +356,17 @@ class EsViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False,methods=['GET'])
     def staffs(self,req:Request):
+        page = int(req.query_params["page"])
+        depname = req.query_params["department"]
         if req.user.identity != 2:
             raise Failure("此用户无权查看部门员工")
         ent = Entity.objects.filter(admin=req.user.id).first()
         if not ent:
             raise Failure("业务实体不存在")
-        deps = Department.objects.filter(entity=ent.id).all()
-        info = {}
-        for dep in deps:
-            staffs = User.objects.filter(entity=ent.id,department=dep.id,identity=4).all()
-            info.update({dep.name:[staff.name for staff in staffs]})
+        dep = Department.objects.filter(entity=ent.id,name=depname).first()
+        staffs = list(User.objects.filter(entity=ent.id,department=dep.id,identity__in=[3,4]).order_by("id").order_by("identity").all())
+        staffs = staffs[10*page-10:10*page:]
+        info = [{"id":staff.id,"username":staff.name,"number":staff.identity} for staff in staffs]
         ret = {
             "code" : 0,
             "info" : info
@@ -385,6 +388,7 @@ class EsViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['post'])
     def searchuser(self, req:Request):
+        page = int(req.query_params["page"])
         users = User.objects.filter(entity=req.user.entity)
         if "username" in req.data.keys() and req.data["username"] != "":
             name = require(req.data, "username", err_msg="Error type of [username]")
@@ -411,6 +415,7 @@ class EsViewSet(viewsets.ViewSet):
             tmp["department"] = dep
             if(user.identity != 2):
                 ret.append(tmp)
+        ret = ret[10 * page - 10:10 * page:]
         return Response({
                 "code": 0,
                 "data": ret
