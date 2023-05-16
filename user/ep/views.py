@@ -46,6 +46,18 @@ class EpViewSet(viewsets.ViewSet):
             returnList.append({"id":item.id,"name":username,"reason":item.description,"oper":item.type})
         return Response({"code":0,"info":returnList})
     
+    # 获取指定的审批项目
+    @Check
+    @action(detail=False, methods=['get'], url_path="getoneapply")
+    def getoneapply(self,req:Request):
+        if "id" not in req.query_params.keys():
+            raise ParamErr("参数错误")
+        id = req.query_params['id']
+        item = Pending.objects.filter(id=id).first()
+        user = User.objects.filter(id=item.initiator).first()
+        username = user.name if user else ""
+        return Response({"code":0,"info":{"key":item.id,"name":username,"reason":item.description,"oper":item.type}})
+    
     #对于转移、维保、退库的拒绝
     def reject(self,assetlist,username):
         user = User.objects.filter(name=username).first()
