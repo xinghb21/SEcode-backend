@@ -42,11 +42,11 @@ class Department(models.Model):
     #部门的资产管理员id
     admin = models.BigIntegerField(default=0)
     
-    #用户自定义的资产标签项目，只有资产管理员可以使用,以逗号隔开
-    label = models.TextField(default="")
+    #用户自定义的资产标签项目的list
+    label = models.TextField(default="[]")
     
     #所有自定义资产属性的list
-    attributes = models.TextField(default="")
+    attributes = models.TextField(default="[]")
 
     class Meta:
         db_table = "Department"

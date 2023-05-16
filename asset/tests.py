@@ -82,7 +82,8 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["info"], ['attribute1'])
     
     def test_create_and_get_label(self):
-        self.client.post("/asset/setlabel", {"label": "[\"a\",\"b\"]"})
+        labels = ["a","b"]
+        resp = self.client.post("/asset/setlabel",data = {"label": labels}, content_type="application/json")
         resp = self.client.get("/asset/usedlabel")
         self.assertEqual(resp.json()["info"], ['a','b'])
         
