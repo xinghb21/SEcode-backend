@@ -75,8 +75,8 @@ class newApproval(Process):
                       "open_id": fs_ep.openid,
                       "title": "@i18n@2",
                       "links": {
-                          "pc_link": "https://applink.feishu.cn/client/mini_program/open?appId=cli_a4b17e84d0f8900e&mode=sidebar-semi&path=pages%2Findex%3Fpenid%3D"+str(pen.id),
-                          "mobile_link": "https://applink.feishu.cn/client/mini_program/open?appId=cli_a4b17e84d0f8900e&mode=sidebar-semi&path=pages%2Findex%3Fpenid%3D"+str(pen.id), 
+                          "pc_link": "https://frontend-feature-aplus.app.secoder.net/feishu/approval?penid%3D"+str(pen.id),
+                          "mobile_link":"https://frontend-feature-aplus.app.secoder.net/feishu/approval?penid%3D"+str(pen.id),
                       },
                     "status": "PENDING",
                     "create_time": now,
