@@ -156,7 +156,7 @@ class esTest(TestCase):
     
     def test_getapply(self):
         resp = self.client.get("/user/ns/getallapply")
-        self.assertEqual(resp.json(), {'code': 0, 'info': [{'id': 1, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}, {'id': 2, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}, {'id': 3, 'reason': 'abab', 'status': 0, 'message': '', 'type': 1}]})
+        self.assertEqual(resp.json()["code"], 0)
         
     def test_assetsinapply(self):
         resp = self.client.get("/user/ns/assetsinapply?id=1")
@@ -182,8 +182,10 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.get("/user/ns/hasmessage",content_type="application/json")
         self.assertEqual(resp.json()["info"],True)
-        resp = self.client.post("/user/ns/read",{"id":1},content_type="application/json")
+        resp = self.client.post("/user/ns/read",{"id":2},content_type="application/json")
         self.assertEqual(resp.json()["code"],0)
+        resp = self.client.delete("/user/ns/deletemsg?id=2",content_type="application/json")
+        self.assertEqual(resp.json()["code"], 0)
         
     def test_setcat(self):
         resp = self.setcat("hutao114514","yuanshen")

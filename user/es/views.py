@@ -9,6 +9,7 @@ from user.models import User
 from department.models import Department,Entity
 from asset.models import Asset
 from logs.models import Logs
+from pending.models import Pending
 from utils.utils_request import BAD_METHOD, request_failed, request_success, return_field
 from utils.utils_require import MAX_CHAR_LENGTH, CheckRequire, require
 from utils.utils_time import get_timestamp
@@ -127,11 +128,30 @@ class EsViewSet(viewsets.ViewSet):
         
         return Response(ret)
     
+    #能否转移或改变职务
+    def havetask(self,user):
+        ent = Entity.objects.filter(id=user.entity).first()
+        dep = Department.objects.filter(id=user.department).first()
+        if user.identity == 3:
+            pendings = Pending.objects.filter(entity=ent.id,department=dep.id,result=0).all()
+            maintain = Pending.objects.filter(entity=ent.id,department=dep.id,type=3).exclude(result=3).all()
+            if pendings or maintain:
+                return False
+        if user.identity == 4:
+            if user.hasasset > 0:
+                return False
+        return True
+    
     # 更改员工的部门
     @Check
     @action(detail=False, methods=['post'])
     def alter(self, req:Request):
         user = self.get_target_user(req)
+        if not self.havetask(user):
+            if user.identity == 3:
+                raise Failure("此管理员存在未完成待办项")
+            else:
+                raise Failure("此员工名下仍有资产")
         new_name = require(req.data, "department", "string", "Missing or error type of [department]")
         if not new_name:
             raise Failure("新部门名称不能为空")
@@ -411,6 +431,11 @@ class EsViewSet(viewsets.ViewSet):
         user = User.objects.filter(department= dep.id, entity=entity.id, name=name).first()
         if not user:
             raise Failure("该用户不存在")
+        if not self.havetask(user):
+            if user.identity == 3:
+                raise Failure("此管理员存在未完成待办项")
+            else:
+                raise Failure("此员工名下仍有资产")
         if new_id == 3:
             if dep.admin != 0:
                 raise Failure("该部门下已经有资产管理员")
@@ -526,6 +551,15 @@ class EsViewSet(viewsets.ViewSet):
             totime = time.mktime(totime)
         else:
             totime = get_timestamp()
-        logs = list(Logs.objects.filter(entity=req.user.entity,time__lte=totime,time__gte=fromtime).all().order_by("-time"))
+        type = int(req.query_params["type"])
+        alllogs = Logs.objects.filter(entity=req.user.entity).all()
+        if len(alllogs) > 1000:
+            delete_logs = alllogs[1000:len(alllogs):]
+            for i in delete_logs:
+                i.delete()
+        if type == 1 or type == 2 or type == 3:
+            logs = list(Logs.objects.filter(entity=req.user.entity,type=type,time__lte=totime,time__gte=fromtime).all().order_by("-time"))
+        else:
+            logs = list(Logs.objects.filter(entity=req.user.entity,time__lte=totime,time__gte=fromtime).all().order_by("-time"))
         return_list = logs[10 * page - 10:10 * page:]
         return Response({"code": 0,"info": [{"id":item.id,"type":item.type,"content":item.content,"time":item.time} for item in return_list],"count":len(logs)})
