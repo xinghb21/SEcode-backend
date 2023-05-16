@@ -68,10 +68,12 @@ class EsViewSet(viewsets.ViewSet):
             tmp["department"] = dep
             if(user.identity != 2):
                 ret.append(tmp)
+        count = len(ret)
         ret = ret[10 * page - 10:10 * page:]
         ret_with_code = {
             "code": 0,
-            "data": ret
+            "data": ret,
+            "count":count
         }
         return Response(ret_with_code)
     
@@ -366,11 +368,13 @@ class EsViewSet(viewsets.ViewSet):
             raise Failure("业务实体不存在")
         dep = Department.objects.filter(entity=ent.id,name=depname).first()
         staffs = list(User.objects.filter(entity=ent.id,department=dep.id,identity__in=[3,4]).order_by("id").order_by("identity").all())
+        count = len(staffs)
         staffs = staffs[10*page-10:10*page:]
         info = [{"id":staff.id,"username":staff.name,"number":staff.identity} for staff in staffs]
         ret = {
             "code" : 0,
-            "info" : info
+            "info" : info,
+            "count":count
         }
         return Response(ret)
 
@@ -416,10 +420,12 @@ class EsViewSet(viewsets.ViewSet):
             tmp["department"] = dep
             if(user.identity != 2):
                 ret.append(tmp)
+        count = len(ret)
         ret = ret[10 * page - 10:10 * page:]
         return Response({
                 "code": 0,
-                "data": ret
+                "data": ret,
+                "count":count
             })
         
     @Check

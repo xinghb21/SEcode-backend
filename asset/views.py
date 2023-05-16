@@ -114,10 +114,12 @@ class asset(viewsets.ViewSet):
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         asset = list(Asset.objects.filter(entity=et, department=dep).exclude(status=4).all())
+        count = len(asset)
         asset = asset[10 * page - 10:10 * page:]
         ret = {
             "code": 0,
-            "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name if ast.category != None else "尚未确定具体类别", "description": ast.description, "type": ast.type} for ast in asset] 
+            "data": [{"key": ast.id, "name": ast.name, "category": ast.category.name if ast.category != None else "尚未确定具体类别", "description": ast.description, "type": ast.type} for ast in asset],
+            "count":count
         }
         return Response(ret)
                
