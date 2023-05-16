@@ -564,8 +564,9 @@ class EpViewSet(viewsets.ViewSet):
                             flag = True
                 if not flag:
                     return_list.remove(item)
+        count = len(return_list)
         return_list = return_list[10 * page - 10:10 * page:]
-        return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name if item.category != None else "尚未确定具体类别","type":item.type}for item in return_list]})
+        return Response({"code":0,"data":[{"name":item.name,"key":item.id,"description":item.description,"assetclass":item.category.name if item.category != None else "尚未确定具体类别","type":item.type}for item in return_list],"count":count})
         
     #防止父结构出现自环
     def validparent(self,asset,name):
