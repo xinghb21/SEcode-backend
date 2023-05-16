@@ -37,6 +37,8 @@ class AwViewSet(viewsets.ViewSet):
         assetname = require(req.data, "assetname", "string" , err_msg="Error type of [assetname]")
         warning = require(req.data, "warning", "int" , err_msg="Error type of [warning]")
         condition = require(req.data, "condition", "float" , err_msg="Error type of [condition]")
+        if warning == 1:
+            condition = int(condition)
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).first()
@@ -87,6 +89,8 @@ class AwViewSet(viewsets.ViewSet):
         aware = Alert.objects.filter(entity=ent,department=dep,id=id).first()
         if not aware:
             raise Failure("告警策略不存在")
+        if aware.type == 1:
+            newcondition = int(newcondition)
         aware.number = newcondition
         aware.save()
         return Response({"code":0,"info":"success"})
