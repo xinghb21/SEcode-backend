@@ -40,22 +40,16 @@ class asset(viewsets.ViewSet):
             "department": Department.objects.filter(id=req.user.department).first().name,
         })
     
+    #添加属性
     @Check
     @action(detail=False, methods=["post"], url_path="createattributes")
     def createattributes(self,req:Request):
         name = require(req.data,"name","string",err_msg="Missing or error type of [name]")
-        if not name or " " in name:
-            raise Failure("属性名不可为空或有空格")
         dep = Department.objects.filter(id=req.user.department).first()
-        attributes = dep.attributes
-        if not attributes:
-            attributes = name
-        else:
-            attri = dep.attributes.split(',')
-            if name in attri:
-                raise Failure("该属性已存在")
-            attributes += "," + name
-        dep.attributes = attributes
+        attributes = json.loads(dep.attributes)
+        if name not in attributes:
+                attributes.append(name)
+        dep.attributes = json.dumps(attributes)
         dep.save()
         return Response({"code":0,"detail":"创建成功"})
     
@@ -63,10 +57,9 @@ class asset(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=["post"], url_path="setlabel")
     def setlabel(self,req:Request):
-        label = require(req.data,"label","string",err_msg="Missing or error type of [label]")
+        label = require(req.data,"label","list",err_msg="Missing or error type of [label]")
         dep = Department.objects.filter(id=req.user.department).first()
-        labels = label[1:len(label) - 1:1].replace('"','').replace('\'','').replace(' ','')
-        dep.label = labels
+        dep.label = json.dumps(label)
         dep.save()
         return Response({"code":0,"detail":"ok"})
     
@@ -75,22 +68,14 @@ class asset(viewsets.ViewSet):
     @action(detail=False,methods=["get"],url_path="usedlabel")
     def usedlabel(self,req:Request):
         dep = Department.objects.filter(id=req.user.department).first()
-        if not dep.label:
-            return Response({"code":0,"info":[]})
-        else:
-            info = dep.label.split(',')
-            return Response({"code":0,"info":info})
+        return Response({"code":0,"info":json.loads(dep.label)})
     
     #获取当前部门所有额外属性
     @Check
     @action(detail=False,methods=["get"],url_path="attributes")
     def attributes(self,req:Request):
         dep = Department.objects.filter(id=req.user.department).first()
-        if not dep.attributes:
-            return Response({"code":0,"info":[]})
-        else:
-            info = dep.attributes.split(',')
-            return Response({"code":0,"info":info})
+        return Response({"code":0,"info":json.loads(dep.attributes)})
     
     #递归构造类别树存储
     def classtree(self,ent,dep,parent):

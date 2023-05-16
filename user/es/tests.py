@@ -220,15 +220,15 @@ class esTest(TestCase):
         
     def test_check_staffs(self):
         self.login("es", "es")
-        resp = self.client.get("/user/es/staffs")
+        resp = self.client.get("/user/es/staffs?page=1&department=dep1")
         std={
             "code":0,
-            "info": {"dep1": ["op1","op2"], "dep2": []}
+            "info": [{'id': 6, 'username': 'ep', 'number': 3}, {'id': 1, 'username': 'op1', 'number': 4}, {'id': 2, 'username': 'op2', 'number': 4}]
         }
         self.assertJSONEqual(resp.content,std)
     
     def test_check_all(self):
-        resp = self.client.get("/user/es/checkall")
+        resp = self.client.get("/user/es/checkall?page=1")
         self.assertEqual(resp.json()["data"][0], {'id': 1, 'name': 'op1', 'identity': 4, 'lockedapp': '000000001', 'locked': False, 'entity': 'et1', 'department': 'dep1'})
         
     def test_batch_delete(self):
@@ -257,13 +257,13 @@ class esTest(TestCase):
         self.assertEqual(resp.json()["code"], 0)
         
     def test_searchuser(self):
-        resp = self.client.post("/user/es/searchuser", {"username": "op1", "department": "dep1"})
+        resp = self.client.post("/user/es/searchuser?page=1", {"username": "op1", "department": "dep1"})
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
-        resp = self.client.post("/user/es/searchuser", {"department": "dep1"})
+        resp = self.client.post("/user/es/searchuser?page=1", {"department": "dep1"})
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
-        resp = self.client.post("/user/es/searchuser", {"identity": 4})
+        resp = self.client.post("/user/es/searchuser?page=1", {"identity": 4})
         # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         
