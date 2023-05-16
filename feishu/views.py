@@ -204,15 +204,33 @@ class feishu(viewsets.ViewSet):
         
     # 绑定飞书帐号
     @Check
-    @action(detail=False, methods=['post'], url_path="bind")
+    @action(detail=False, methods=['post'], url_path="bind", authentication_classes=[LoginAuthentication])
     def bind(self, req: Request):
-        pass
+        self.process_code(req)
+        fs_id = req._request.session["feishu_id"]
+        fs = Feishu.objects.filter(id=fs_id).first()
+        fs.user = req.user
+        fs.save()
+        return Response({
+            "code": 0,
+            "detail": "success",
+        })
         
     # 解除绑定
     @Check
-    @action(detail=False, methods=['delete'], url_path="unbind")
+    @action(detail=False, methods=['delete'], url_path="unbind", authentication_classes=[LoginAuthentication])
     def unbind(self, req: Request):
-        pass
+        fs = Feishu.objects.filter(user=req.user).first()
+        if not fs:
+            return Response({
+                "code": 0,
+                "detail": "success",
+            })
+        fs.delete()
+        return Response({
+            "code": 0,
+            "detail": "success",
+        })
     
     # 已登录的用户获得自己的飞书信息
     @Check
