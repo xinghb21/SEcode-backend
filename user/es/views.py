@@ -364,10 +364,9 @@ class EsViewSet(viewsets.ViewSet):
         if not ent:
             raise Failure("业务实体不存在")
         dep = Department.objects.filter(entity=ent.id,name=depname).first()
-        info = {}
-        staffs = User.objects.filter(entity=ent.id,department=dep.id,identity=4).all()
-        staffs = list(staffs)[10*page-10:10*page:]
-        info.update({dep.name:[staff.name for staff in staffs]})
+        staffs = list(User.objects.filter(entity=ent.id,department=dep.id,identity__in=[3,4]).order_by("id").order_by("identity").all())
+        staffs = staffs[10*page-10:10*page:]
+        info = [{"id":staff.id,"username":staff.name,"number":staff.identity} for staff in staffs]
         ret = {
             "code" : 0,
             "info" : info
