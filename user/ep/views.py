@@ -891,6 +891,9 @@ class EpViewSet(viewsets.ViewSet):
                 else:
                     if old_msg:
                         old_msg.delete()
+            msgs = EPMessage.objects.filter(user=userid,asset=asset,type=item.type).all()
+            if len(msgs) > 1:
+                list(msgs)[1].delete()
     
     #获得所有消息通知
     @Check
