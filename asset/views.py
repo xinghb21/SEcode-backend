@@ -309,8 +309,7 @@ class asset(viewsets.ViewSet):
         page = self.getpage(req.query_params)
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        asset = Asset.objects.filter(entity=ent,department=dep).exclude(status=4).all()
-        logs = list(AssetLog.objects.filter(asset__in=list(asset)).all().order_by("-time"))
+        logs = list(AssetLog.objects.filter(entity=ent.id,department=dep.id).all().order_by("-time"))
         count = len(logs)
         pagelogs = logs[10 * page - 10:10 * page:]
         returnlist = self.process_history(pagelogs)

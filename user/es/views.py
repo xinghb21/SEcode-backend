@@ -415,7 +415,6 @@ class EsViewSet(viewsets.ViewSet):
                 users = users.filter(identity=id)
         ret =[]
         for user in users:
-            tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked", "apps"])
             entity = user.entity
             entity = Entity.objects.filter(id=entity).first().name
             dep = user.department
@@ -423,8 +422,7 @@ class EsViewSet(viewsets.ViewSet):
                 dep = Department.objects.filter(id=dep).first().name
             else:
                 dep = ""
-            tmp["entity"] = entity
-            tmp["department"] = dep
+            tmp = {"entity":entity,"department":dep,"id":user.id,"name":user.name,"identity":user.identity,"lockedapp":user.lockedapp,"locked":user.locked}
             if(user.identity != 2):
                 ret.append(tmp)
         count = len(ret)
@@ -569,7 +567,10 @@ class EsViewSet(viewsets.ViewSet):
             totime = time.mktime(totime)
         else:
             totime = get_timestamp()
-        type = int(req.query_params["type"])
+        if "type" in req.query_params.keys():
+            type = int(req.query_params["type"])
+        else:
+            type = 0
         alllogs = Logs.objects.filter(entity=req.user.entity).all()
         if len(alllogs) > 1000:
             delete_logs = alllogs[1000:len(alllogs):]
