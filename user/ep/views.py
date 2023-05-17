@@ -32,6 +32,14 @@ class EpViewSet(viewsets.ViewSet):
     permission_classes = [GeneralPermission]
     
     allowed_identity = [EP]
+    
+    def getpage(self,body):
+        if "page" in body.keys():
+            page = int(body["page"])
+        else:
+            page = 1
+        return page
+    
     #获取所有未处理的审批项目
     @Check
     @action(detail=False, methods=['get'], url_path="getallapply")
@@ -475,9 +483,9 @@ class EpViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['get','post'], url_path="queryasset")
     def queryasset(self,req:Request):
+        page = self.getpage(req.query_params)
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        page = self.getparse(req.data,"page","int")
         parent = self.getparse(req.data,"parent","string")
         assetclass = self.getparse(req.data,"assetclass","string")
         name = self.getparse(req.data,"name","string")

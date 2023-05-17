@@ -34,6 +34,13 @@ class NsViewSet(viewsets.ViewSet):
     
     allowed_identity = [EN]
     
+    def getpage(self,body):
+        if "page" in body.keys():
+            page = int(body["page"])
+        else:
+            page = 1
+        return page
+    
     #查看员工名下资产列表
     def staffassets(self,name):
         user = User.objects.filter(name=name).first()
@@ -320,7 +327,7 @@ class NsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path="getassets")
     def getassets(self,req:Request):
         user = req.user
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         ent = Entity.objects.filter(id=user.entity).first()
         dep = Department.objects.filter(id=user.department).first()
         if not ent :
