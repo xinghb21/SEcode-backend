@@ -255,6 +255,27 @@ class feishu(viewsets.ViewSet):
                     "isbound": True,
                 },
             })
+            
+    @Check
+    @action(detail=False, methods=['post'], url_path="fslogin")
+    def fslogin(self, req:Request):
+        if "openid" not in req.data.keys():
+            raise ParamErr("Missing or Error type of [openid]")
+        openid = req.data["openid"]
+        fs = Feishu.objects.filter(openid=openid).first()
+        if not fs:
+            raise Failure("飞书用户不存在")
+        user = fs.user
+        if not user:
+            raise Failure("该飞书用户未绑定帐号")
+        if user.locked:
+            raise Failure("该帐号已被系统管理员封禁")
+        req._request.session["id"] = user.id
+        return Response({
+            "code": 0,
+            "detail": "success",
+        })
+        
         
         
         
