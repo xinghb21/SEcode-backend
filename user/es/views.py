@@ -480,7 +480,6 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=["post"])
     def addapp(self,req:Request):
         username = require(req.data, "username", err_msg="Missing or Error type of [username]")
-        # print(req.data['appadded'])
         appadded = require(req.data, "appadded", "list", err_msg="Missing or Error type of [appadded]")
         ent = req.user.entity
         user = User.objects.filter(name=username).first()
@@ -524,8 +523,6 @@ class EsViewSet(viewsets.ViewSet):
             user.apps = json.dumps({"data":[]})
         oldapps = json.loads(user.apps)
         oldlist = oldapps["data"]
-        # print(oldlist)
-        # print(appdeleted)
         for item in appdeleted:
             for i in oldlist:
                 if item == i["name"]:

@@ -117,7 +117,6 @@ class asynctask(viewsets.ViewSet):
         )
     
     def gettask(self, req:Request, ids):
-        # print(json.dumps(list(ids)))
         test = False
         if req.query_params.get("test"):
             test = True

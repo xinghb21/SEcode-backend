@@ -238,7 +238,6 @@ class esTest(TestCase):
         User.objects.create(name="todelete2", password=make_password("yuanshen"),
                                        identity=4, entity=1, department=2)    
         resp = self.client.delete("/user/es/batchdelete", {"names": ["todelete", "todelete2"]}, content_type="application/json")
-        # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         user = User.objects.filter(name="todelete").first()
         user2 = User.objects.filter(name="todelete2").first()
@@ -251,7 +250,6 @@ class esTest(TestCase):
         Department.objects.create(name="dep3", entity=1, parent=0, admin=6)
         Department.objects.create(name="dep4", entity=1, parent=0, admin=6)
         deps = Department.objects.filter(name="dep3")
-        # print(Department.objects.filter(name="dep3"))
         self.client.delete("/user/es/deletealldeparts", ["dep3", "dep4"], content_type="application/json")
         self.assertEqual(Department.objects.filter(name="dep3").first(), None) 
         resp = self.client.get("/user/es/getlogs?page=1&type=0")
@@ -259,13 +257,10 @@ class esTest(TestCase):
         
     def test_searchuser(self):
         resp = self.client.post("/user/es/searchuser?page=1", {"username": "op1", "department": "dep1"})
-        # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.post("/user/es/searchuser?page=1", {"department": "dep1"})
-        # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.post("/user/es/searchuser?page=1", {"identity": 4})
-        # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         
     def test_change_identity(self):
@@ -284,7 +279,6 @@ class esTest(TestCase):
         }
         self.assertJSONEqual(resp.content,std)
         resp = self.client.post("/user/es/changeidentity", {"name":"tochange2","new":4,"department":"dep2","entity":"et1"}, content_type="application/json")
-        print(resp.json())
         self.assertEqual(User.objects.filter(name="tochange2").first().identity, 4)
         resp = self.client.get("/user/es/getlogs?page=1&type=0")
         self.assertEqual(resp.json()["code"], 0)

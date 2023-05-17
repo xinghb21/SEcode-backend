@@ -239,7 +239,6 @@ class NsViewSet(viewsets.ViewSet):
         assets = require(req.data, "exchange", "list" , err_msg="Error type of [exchange]")
         reason = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
         username = require(req.data, "username", "string" , err_msg="Error type of [username]")
-        print(username)
         dest = User.objects.filter(entity=req.user.entity,name=username).first()
         if not dest:
             raise Failure("目标用户不存在")
