@@ -18,6 +18,8 @@ from utils.utils_time import get_timestamp
 
 file = open("config/config.yml", "r", encoding="utf-8")
 env = yaml.load(file, Loader=yaml.SafeLoader)
+if env["frontend"] == "http://localhost:3000":
+    env["frontend"] = "https://frontend-feature-Aplus.app.secoder.net"
 
 # 审批定义标识
 APPROVAL_CODE = "AFBDFE7C-4934-4F7B-98A1-94E13C06453A"
@@ -79,8 +81,8 @@ class newApproval(Process):
                       "open_id": fs_ep.openid,
                       "title": "@i18n@2",
                       "links": {
-                          "pc_link": env["frontend"]+"/feishu/approval?penid%3D"+str(pen.id),
-                          "mobile_link":env["frontend"]+"/feishu/approval?penid%3D"+str(pen.id),
+                          "pc_link": env["frontend"]+"/feishu/approval?id%3D"+str(pen.id)+"&openid="+str(fs_ep.openid),
+                          "mobile_link":env["frontend"]+"/feishu/approval?id%3D"+str(pen.id)+"&openid="+str(fs_ep.openid),
                       },
                     "status": "PENDING",
                     "create_time": now,
