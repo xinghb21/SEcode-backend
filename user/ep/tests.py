@@ -310,8 +310,8 @@ class epTest(TestCase):
         resp = self.replytransfer(replyassets4,3,0,"fail")
         self.assertEqual(resp.json()["detail"], "资产与资产类别类型不符")
         replyassets5 = [{"id":1,"label":"class3","number":30}]
-        resp = self.replytransfer(replyassets5,3,1,"reject")
-        self.assertEqual(resp.json()["code"], 0)
+        resp = self.replytransfer(replyassets5,3,0,"success")
+        self.assertEqual(resp.json()["detail"], "已存在同名资产asset1，请拒绝")
         resp = self.transfer(assets3,"dep114514","transfer")
         self.assertEqual(resp.json()["detail"], "目标部门不存在")
         dep4 = Department.objects.create(name="dep4", entity=1)

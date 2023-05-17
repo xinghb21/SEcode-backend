@@ -31,6 +31,13 @@ class EsViewSet(viewsets.ViewSet):
     
     allowed_identity = [ES]
     
+    def getpage(self,body):
+        if "page" in body.keys():
+            page = int(body["page"])
+        else:
+            page = 1
+        return page
+    
     # 获得被操作的用户
     def get_target_user(self, req:Request):
         if req._request.method == "GET":
@@ -52,7 +59,7 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path="checkall")
     def check_all(self, req:Request):
         et = req.user.entity
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         users = User.objects.filter(entity=et).exclude(identity=2)
         ret = []
         for user in users:
@@ -68,10 +75,12 @@ class EsViewSet(viewsets.ViewSet):
             tmp["department"] = dep
             if(user.identity != 2):
                 ret.append(tmp)
+        count = len(ret)
         ret = ret[10 * page - 10:10 * page:]
         ret_with_code = {
             "code": 0,
-            "data": ret
+            "data": ret,
+            "count":count
         }
         return Response(ret_with_code)
     
@@ -357,7 +366,7 @@ class EsViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False,methods=['GET'])
     def staffs(self,req:Request):
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         depname = req.query_params["department"]
         if req.user.identity != 2:
             raise Failure("此用户无权查看部门员工")
@@ -366,11 +375,13 @@ class EsViewSet(viewsets.ViewSet):
             raise Failure("业务实体不存在")
         dep = Department.objects.filter(entity=ent.id,name=depname).first()
         staffs = list(User.objects.filter(entity=ent.id,department=dep.id,identity__in=[3,4]).order_by("id").order_by("identity").all())
+        count = len(staffs)
         staffs = staffs[10*page-10:10*page:]
         info = [{"id":staff.id,"username":staff.name,"number":staff.identity} for staff in staffs]
         ret = {
             "code" : 0,
-            "info" : info
+            "info" : info,
+            "count":count
         }
         return Response(ret)
 
@@ -389,7 +400,7 @@ class EsViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['post'])
     def searchuser(self, req:Request):
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         users = User.objects.filter(entity=req.user.entity)
         if "username" in req.data.keys() and req.data["username"] != "":
             name = require(req.data, "username", err_msg="Error type of [username]")
@@ -404,7 +415,6 @@ class EsViewSet(viewsets.ViewSet):
                 users = users.filter(identity=id)
         ret =[]
         for user in users:
-            tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked", "apps"])
             entity = user.entity
             entity = Entity.objects.filter(id=entity).first().name
             dep = user.department
@@ -412,14 +422,15 @@ class EsViewSet(viewsets.ViewSet):
                 dep = Department.objects.filter(id=dep).first().name
             else:
                 dep = ""
-            tmp["entity"] = entity
-            tmp["department"] = dep
+            tmp = {"entity":entity,"department":dep,"id":user.id,"name":user.name,"identity":user.identity,"lockedapp":user.lockedapp,"locked":user.locked}
             if(user.identity != 2):
                 ret.append(tmp)
+        count = len(ret)
         ret = ret[10 * page - 10:10 * page:]
         return Response({
                 "code": 0,
-                "data": ret
+                "data": ret,
+                "count":count
             })
         
     @Check
@@ -543,7 +554,7 @@ class EsViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False,methods=['get'])
     def getlogs(self,req:Request):
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         if "from" in req.query_params.keys():
             fromtime = req.query_params["from"]
             fromtime = time.strptime(fromtime, "%Y-%m-%d")
@@ -556,7 +567,10 @@ class EsViewSet(viewsets.ViewSet):
             totime = time.mktime(totime)
         else:
             totime = get_timestamp()
-        type = int(req.query_params["type"])
+        if "type" in req.query_params.keys():
+            type = int(req.query_params["type"])
+        else:
+            type = 0
         alllogs = Logs.objects.filter(entity=req.user.entity).all()
         if len(alllogs) > 1000:
             delete_logs = alllogs[1000:len(alllogs):]

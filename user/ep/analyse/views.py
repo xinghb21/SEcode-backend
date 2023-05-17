@@ -43,7 +43,7 @@ class AsViewSet(viewsets.ViewSet):
         dep = Department.objects.filter(id=user.department).first()
         deplist = [dep]
         self.get_departs(dep,deplist)
-        assets = Asset.objects.filter(entity=ent,department__in=deplist).all()
+        assets = Asset.objects.filter(entity=ent,department__in=deplist).exclude(status=4).all()
         return assets
     
     #资产总数量
@@ -96,11 +96,11 @@ class AsViewSet(viewsets.ViewSet):
             process = json.loads(item.process)
             if item.number - item.number_expire == item.number_idle:
                 free += 1
-            if item.number_idle == 0 and not maint and not process:
+            if item.number_idle == 0 and not maint and not process and item.number != 0:
                 occupy += 1
             elif use:
                 part_occupy += 1
-            if item.number_idle == 0 and not use and not process:
+            if item.number_idle == 0 and not use and not process and item.number != 0:
                 maintain += 1
             elif maint:
                 part_maintain += 1
@@ -139,7 +139,7 @@ class AsViewSet(viewsets.ViewSet):
     #根据日志计算价值
     def price_log(self,day,item):
         create_time = item.expire_time
-        if day < item.time:
+        if day < create_time:
             return float(item.price)
         if create_time - day < item.life * 31536000:
             if float(item.price) * (1 - (create_time - day) / (item.life * 31536000)) < float(item.price):
@@ -174,13 +174,17 @@ class AsViewSet(viewsets.ViewSet):
             #添加资产，对应应当减少价值
             addlog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=1,time__gte=day+86400,time__lte=day+2 * 86400).all())
             for item in addlog:
+                if item.src != None:
+                    if item.src.department in deps:
+                        continue
                 addlogs.append(item)
             #移出，改变数量和删除，对应应当增加价值
-            removelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type=7,time__gte=day+86400,time__lte=day+2 * 86400).all())
-            for item in removelog:
-                deletelogs.append(item)
-            deletelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type__in=[8,9,10],time__gte=day+86400,time__lte=day+2 * 86400).all())
+            deletelog = list(AssetLog.objects.filter(entity=req.user.entity,department__in=deps,type__in=[7,8,9,10],time__gte=day+86400,time__lte=day+2 * 86400).all())
             for item in deletelog:
+                if item.type == 7:
+                    destuser = User.objects.filter(id=item.dest.id).first()
+                    if destuser.department in deps:
+                        continue
                 deletelogs.append(item)
             for item in addlogs:
                 deletevalue += self.price_log(day,item)

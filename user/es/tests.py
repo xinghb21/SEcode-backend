@@ -223,7 +223,8 @@ class esTest(TestCase):
         resp = self.client.get("/user/es/staffs?page=1&department=dep1")
         std={
             "code":0,
-            "info": [{'id': 6, 'username': 'ep', 'number': 3}, {'id': 1, 'username': 'op1', 'number': 4}, {'id': 2, 'username': 'op2', 'number': 4}]
+            "info": [{'id': 6, 'username': 'ep', 'number': 3}, {'id': 1, 'username': 'op1', 'number': 4}, {'id': 2, 'username': 'op2', 'number': 4}],
+            "count":3
         }
         self.assertJSONEqual(resp.content,std)
     

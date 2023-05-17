@@ -58,7 +58,8 @@ class User(models.Model):
                 "lockedapp":self.lockedapp,
                 "locked":self.locked,
                 "apps":json.loads(self.apps),
-                "head":self.head
+                "head":self.head,
+                "hasasset":self.hasasset
             }
         except Exception as e:
             raise Failure("对User", self.name, "的json序列化失败: ", e)
