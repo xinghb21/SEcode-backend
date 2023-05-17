@@ -70,7 +70,10 @@ class epTest(TestCase):
             "reason":reply,
             "asset":assets
         }
-        return self.client.post("/user/ep/setcat",payload,content_type="application/json")
+        if status == 0:
+            return self.client.post("/user/ep/setcat",payload,content_type="application/json")
+        else:
+            return self.client.post("/user/ep/reapply",payload,content_type="application/json")
     
     def preprocess(self):
         resp = self.addassetclass("class1", 1)
@@ -315,6 +318,8 @@ class epTest(TestCase):
         replyassets5 = [{"id":1,"label":"class3","number":30}]
         resp = self.replytransfer(replyassets5,3,0,"success")
         self.assertEqual(resp.json()["detail"], "已存在同名资产asset1，请拒绝")
+        resp = self.replytransfer(replyassets5,3,1,"reject")
+        self.assertEqual(resp.json()["code"], 0)
         resp = self.transfer(assets3,"dep114514","transfer")
         self.assertEqual(resp.json()["detail"], "目标部门不存在")
         dep4 = Department.objects.create(name="dep4", entity=1)
