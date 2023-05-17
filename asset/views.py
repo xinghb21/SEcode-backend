@@ -89,7 +89,6 @@ class asset(viewsets.ViewSet):
     def classtree(self,ent,dep,parent):
         #递归基
         roots = AssetClass.objects.filter(entity=ent,department=dep,parent=parent).all()
-        # print(roots)
         if not roots:
             return "$"
         else:

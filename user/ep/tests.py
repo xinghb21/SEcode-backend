@@ -123,7 +123,6 @@ class epTest(TestCase):
         resp = self.client.post("/user/ep/reapply", 
                          {"id":1,"status":0,"reason":"success"}
                          ,content_type="application/json")
-        print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.post("/user/ep/reapply", 
                          {"id":3,"status":0,"reason":"success"}
@@ -149,6 +148,8 @@ class epTest(TestCase):
                          {"id":4,"status":1,"reason":"no such asset"}
                          ,content_type="application/json")
         self.assertEqual(resp.json()["code"],0)
+        resp = self.client.get("/user/ep/getoneapply?id=1")
+        self.assertEqual(resp.json()["info"],{'key': 1, 'name': 'ep2', 'reason': 'I want this', 'oper': 0})
 
     def test_exchange(self):
         self.preprocess()
@@ -210,6 +211,8 @@ class epTest(TestCase):
         resp = self.client.get("/asset/history?id=2&page=1")
         self.assertEqual(resp.json()["code"], 0)
         resp = self.client.get("/asset/queryhis?page=1&type=3&assetname=asset1&timefrom=0&timeto=1145141919810")
+        self.assertEqual(resp.json()["code"], 0)
+        resp = self.client.get("/user/ep/as/nvcurve")
         self.assertEqual(resp.json()["code"], 0)
 
     def test_assets_in_apply(self):
@@ -320,3 +323,5 @@ class epTest(TestCase):
         assets4 = [{"id":1,"assetname":"asset1","assetnumber":10}]
         resp = self.transfer(assets4,"dep2","transfer")
         self.assertEqual(resp.json()["detail"], "资产asset1在目标用户所在部门存在同名资产")
+        resp = self.client.get("/user/ep/as/nvcurve")
+        self.assertEqual(resp.json()["code"], 0)

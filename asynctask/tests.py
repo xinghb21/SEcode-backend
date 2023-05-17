@@ -31,7 +31,6 @@ class asyncTest(TestCase):
     def test_newtask(self):
         self.login("bob", "bob")
         resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
-        # print(resp.content)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["code"], 0)
         
@@ -45,7 +44,6 @@ class asyncTest(TestCase):
         self.login("bob", "bob")
         resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
         resp = self.client.post("/async/restarttask?test=1", data={"taskid":1}, content_type="application/json")
-        # print(resp.co)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["code"], 0)
     
@@ -53,14 +51,12 @@ class asyncTest(TestCase):
         self.login("alice", "alice")
         resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
         resp = self.client.post("/async/getsuccess?test=1", content_type="application/json")
-        # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         
     def test_getfailed(self):
         self.login("alice", "alice")
         resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
         resp = self.client.post("/async/getfailed?test=1", content_type="application/json")
-        # print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         
     def test_esgetall(self):
@@ -70,14 +66,11 @@ class asyncTest(TestCase):
         
         self.login("alice", "alice")
         resp = self.client.get("/async/esgetalltask?test=1", content_type="application/json")
-        # self.logout()
-        print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         
     def test_getalive(self):
         self.login("bob", "bob")
         resp = self.client.post("/async/newouttask?test=1", content_type="application/json")
         resp = self.client.get("/async/getalivetasks?test=1", content_type="application/json")
-        print(resp.json())
         self.assertEqual(resp.json()["code"], 0)
         
