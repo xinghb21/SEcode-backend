@@ -166,6 +166,25 @@ class asynctask(viewsets.ViewSet):
             raise Failure("登录用户所在的业务实体不存在")
         return self.gettask(req, Async_import_export_task.objects.filter(entity=et, status=0).values_list("id", flat=True))
     
+    def processtask(self,body):
+        if "page" in body.keys():
+            page = int(body["page"])
+        else:
+            page = 1
+        if "from" in body.keys():
+            fromtime = body["from"]
+            fromtime = time.strptime(fromtime, "%Y-%m-%d")
+            fromtime = time.mktime(fromtime)
+        else:
+            fromtime = 0
+        if "to" in body.keys():
+            totime = body["to"]
+            totime = time.strptime(totime, "%Y-%m-%d")
+            totime = time.mktime(totime)
+        else:
+            totime = get_timestamp()
+        return page,fromtime,totime
+    
     @Check
     @action(detail=False, methods=['get'], url_path="esgetalltask")
     def esgetalltask(self, req:Request):
@@ -179,22 +198,7 @@ class asynctask(viewsets.ViewSet):
         for task in oldtasks:
             bucket.delete_object(task.file_path)
             task.delete()
-        if "page" in req.query_params.keys():
-            page = int(req.query_params["page"])
-        else:
-            page = 1
-        if "from" in req.query_params.keys():
-            fromtime = req.query_params["from"]
-            fromtime = time.strptime(fromtime, "%Y-%m-%d")
-            fromtime = time.mktime(fromtime)
-        else:
-            fromtime = 0
-        if "to" in req.query_params.keys():
-            totime = req.query_params["to"]
-            totime = time.strptime(totime, "%Y-%m-%d")
-            totime = time.mktime(totime)
-        else:
-            totime = get_timestamp()
+        page,fromtime,totime = self.processtask(req.query_params)
         if "person" in req.query_params.keys():
             person = req.query_params["person"]
         else:
@@ -212,22 +216,7 @@ class asynctask(viewsets.ViewSet):
     def getalivetasks(self, req:Request):
         if req.user.identity != 2 and req.user.identity != 3:
             raise Failure("您没有权限进行此操作")
-        if "page" in req.query_params.keys():
-            page = int(req.query_params["page"])
-        else:
-            page = 1
-        if "from" in req.query_params.keys():
-            fromtime = req.query_params["from"]
-            fromtime = time.strptime(fromtime, "%Y-%m-%d")
-            fromtime = time.mktime(fromtime)
-        else:
-            fromtime = 0
-        if "to" in req.query_params.keys():
-            totime = req.query_params["to"]
-            totime = time.strptime(totime, "%Y-%m-%d")
-            totime = time.mktime(totime)
-        else:
-            totime = get_timestamp()
+        page,fromtime,totime = self.processtask(req.query_params)
         tasks = Async_import_export_task.objects.filter(user=req.user, status__in=[0,1,2,3],create_time__lte=totime,create_time__gte=fromtime).order_by("-create_time")
         return_list = tasks[10 * page - 10:10 * page:]
         return Response({

@@ -34,6 +34,13 @@ class NsViewSet(viewsets.ViewSet):
     
     allowed_identity = [EN]
     
+    def getpage(self,body):
+        if "page" in body.keys():
+            page = int(body["page"])
+        else:
+            page = 1
+        return page
+    
     #查看员工名下资产列表
     def staffassets(self,name):
         user = User.objects.filter(name=name).first()
@@ -41,6 +48,12 @@ class NsViewSet(viewsets.ViewSet):
         dep = Department.objects.filter(id=user.department).first()
         asset_item = Asset.objects.filter(entity=ent,department=dep,type=False,user=user).exclude(status=4).all()
         asset_num_all = Asset.objects.filter(entity=ent,department=dep,type=True).exclude(status=4).all()
+        waitpending = Pending.objects.filter(type=1,result=0).all()
+        waitingdict = {}
+        for j in waitpending:
+            waitinglist = json.loads(j.asset)
+            for i in waitinglist:
+                waitingdict.update({list(i.keys())[0]:i[list(i.keys())[0]]})
         return_list = [{"id":i.id,"name":i.name,"type":0,"state":{str(i.status):1},"haspic":i.haspic} for i in asset_item]
         for i in asset_num_all:
             statedict = {}
@@ -61,8 +74,13 @@ class NsViewSet(viewsets.ViewSet):
                     break
             for dict in process:
                 if user.name in list(dict.keys())[0]:
-                    belong = True
-                    statedict.update({"5":dict[user.name]})
+                    if i.name in waitingdict:
+                        if waitingdict[i.name] < dict[user.name]:
+                            belong = True
+                            statedict.update({"5":dict[user.name] - waitingdict[i.name]})
+                    else:
+                        belong = True
+                        statedict.update({"5":dict[user.name]})
                     break
             if belong:
                 return_dict.update({"state":statedict})
@@ -221,6 +239,7 @@ class NsViewSet(viewsets.ViewSet):
         assets = require(req.data, "exchange", "list" , err_msg="Error type of [exchange]")
         reason = require(req.data, "reason", "string" , err_msg="Error type of [reason]")
         username = require(req.data, "username", "string" , err_msg="Error type of [username]")
+        print(username)
         dest = User.objects.filter(entity=req.user.entity,name=username).first()
         if not dest:
             raise Failure("目标用户不存在")
@@ -320,7 +339,7 @@ class NsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path="getassets")
     def getassets(self,req:Request):
         user = req.user
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         ent = Entity.objects.filter(id=user.entity).first()
         dep = Department.objects.filter(id=user.department).first()
         if not ent :

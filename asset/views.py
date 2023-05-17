@@ -27,6 +27,14 @@ class asset(viewsets.ViewSet):
     authentication_classes = [LoginAuthentication]
     permission_classes = [GeneralPermission]
     allowed_identity = [EP]
+    
+    def getpage(self,body):
+        if "page" in body.keys():
+            page = int(body["page"])
+        else:
+            page = 1
+        return page
+    
     #hyx
     #创建新属性
     
@@ -110,7 +118,7 @@ class asset(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=["get"], url_path="get")
     def get_by_condition(self, req:Request):
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         et = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         asset = list(Asset.objects.filter(entity=et, department=dep).exclude(status=4).all())
@@ -286,7 +294,7 @@ class asset(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path="history")
     def history(self,req:Request):
         id = int(req.query_params["id"])
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         asset = Asset.objects.filter(id=id).exclude(status=4).first()
         logs = list(AssetLog.objects.filter(asset=asset).all().order_by("-time"))
         count = len(logs)
@@ -298,11 +306,10 @@ class asset(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['get'], url_path="allhistory")
     def allhistory(self,req:Request):
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        asset = Asset.objects.filter(entity=ent,department=dep).exclude(status=4).all()
-        logs = list(AssetLog.objects.filter(asset__in=list(asset)).all().order_by("-time"))
+        logs = list(AssetLog.objects.filter(entity=ent.id,department=dep.id).all().order_by("-time"))
         count = len(logs)
         pagelogs = logs[10 * page - 10:10 * page:]
         returnlist = self.process_history(pagelogs)
@@ -312,7 +319,7 @@ class asset(viewsets.ViewSet):
     @Check
     @action(detail=False,methods=['get'],url_path="queryhis")
     def queryhis(self,req:Request):
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
         asset = Asset.objects.filter(entity=ent,department=dep).exclude(status=4).all()

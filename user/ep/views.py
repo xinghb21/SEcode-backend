@@ -32,6 +32,14 @@ class EpViewSet(viewsets.ViewSet):
     permission_classes = [GeneralPermission]
     
     allowed_identity = [EP]
+    
+    def getpage(self,body):
+        if "page" in body.keys():
+            page = int(body["page"])
+        else:
+            page = 1
+        return page
+    
     #获取所有未处理的审批项目
     @Check
     @action(detail=False, methods=['get'], url_path="getallapply")
@@ -237,7 +245,7 @@ class EpViewSet(viewsets.ViewSet):
                         #转移者
                         AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,expire_time=asset.create_time,number=assetdict[assetname],price=asset.price * assetdict[assetname],src=staff,dest=destuser,life=asset.life).save()
                         #接收者
-                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,expire_time=newasset.create_time,number=assetdict[assetname],price=newasset.price * assetdict[assetname],dest=destuser,life=newasset.life).save()
+                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,expire_time=newasset.create_time,number=assetdict[assetname],price=newasset.price * assetdict[assetname],dest=destuser,src=staff,life=newasset.life).save()
                     #同部门
                     else:
                         use = json.loads(asset.usage)
@@ -272,7 +280,7 @@ class EpViewSet(viewsets.ViewSet):
                         #转移者
                         AssetLog(asset=asset,type=7,entity=staff.entity,department=staff.department,number=1,expire_time=asset.create_time,life=newasset.life,price=newasset.price,src=staff,dest=destuser).save()
                         #接受者
-                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,expire_time=newasset.create_time,number=1,price=newasset.price,dest=destuser,life=newasset.life).save()
+                        AssetLog(asset=newasset,type=1,entity=destuser.entity,department=destuser.department,expire_time=newasset.create_time,number=1,price=newasset.price,dest=destuser,src=staff,life=newasset.life).save()
                     #同部门
                     else:
                         asset.belonging = destuser
@@ -348,7 +356,6 @@ class EpViewSet(viewsets.ViewSet):
         if ptype == 6:
             admin = User.objects.filter(id=pen.initiator).first()
             fromdep = Department.objects.filter(id=admin.department).first()
-            print(assetlist)
             for assetdict in assetlist:
                 #待办单条资产
                 assetname = list(assetdict.keys())[0]
@@ -475,9 +482,9 @@ class EpViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['get','post'], url_path="queryasset")
     def queryasset(self,req:Request):
+        page = self.getpage(req.query_params)
         ent = Entity.objects.filter(id=req.user.entity).first()
         dep = Department.objects.filter(id=req.user.department).first()
-        page = self.getparse(req.data,"page","int")
         parent = self.getparse(req.data,"parent","string")
         assetclass = self.getparse(req.data,"assetclass","string")
         name = self.getparse(req.data,"name","string")
@@ -730,6 +737,8 @@ class EpViewSet(viewsets.ViewSet):
         pen.review_time = utils_time.get_timestamp()
         pen.reply = reply
         pen.save()
+        msg = self.create_message(status,id,6,reply)
+        EPMessage.objects.create(user=pen.initiator,content=msg,type=status + 3)
         if status == 0:
             for assetdict in assetlist:
                 #待办单条资产
@@ -747,7 +756,7 @@ class EpViewSet(viewsets.ViewSet):
                     #转移者
                     AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,number=number,src=fromadmin,dest=thisadmin,expire_time=asset.create_time,life=newasset.life,price=newasset.price*number).save()
                     #接收者
-                    AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=number,dest=thisadmin,life=newasset.life,price=newasset.price*number).save()
+                    AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=number,dest=thisadmin,src=fromadmin,life=newasset.life,price=newasset.price*number).save()
                 else:
                     newasset = Asset(entity=ent,department=dep,type=0,name=asset.name,price=asset.price,life=asset.life,description=asset.description,additionalinfo=asset.additionalinfo,additional=asset.additional,belonging=thisadmin,status=0,create_time=asset.create_time,category=assetclass)
                     newasset.save()
@@ -755,7 +764,7 @@ class EpViewSet(viewsets.ViewSet):
                     #转移者
                     AssetLog(asset=asset,type=7,entity=fromadmin.entity,department=fromadmin.department,expire_time=asset.create_time,number=1,src=fromadmin,dest=thisadmin,life=newasset.life,price=newasset.price).save()
                     #接受者
-                    AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=1,dest=thisadmin,life=newasset.life,price=newasset.price).save()
+                    AssetLog(asset=newasset,type=1,entity=thisadmin.entity,department=thisadmin.department,expire_time=newasset.create_time,number=1,src=fromadmin,dest=thisadmin,life=newasset.life,price=newasset.price).save()
                 asset.save()
         return Response({"code":0,"info":"success"})
     
