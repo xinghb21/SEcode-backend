@@ -145,12 +145,19 @@ class EpViewSet(viewsets.ViewSet):
         assets = json.loads(pen.asset)
         if pen.result:
             raise Failure("此待办已审批完成")
-        #检查所有资产是否都存在
+        #检查所有资产是否都有效
         for assetdict in assets:
             assetname = list(assetdict.keys())[0]
             asset = Asset.objects.filter(entity=ent,department=dep,name=assetname).exclude(status=4).first()
             if not asset and status == 0:
                 raise Failure("请求中包含已失效资产，请拒绝")
+            if ptype == 2 and status == 0:
+                destuser = User.objects.filter(id=pen.destination).first()
+                destdep = Department.objects.filter(id=destuser.department).first()
+                if destdep != depart:
+                    sameasset = Asset.objects.filter(entity=ent,department=destdep.id,name=assetname).exclude(status=4).first()
+                    if sameasset:
+                        raise Failure("目标部门存在同名资产%s，请拒绝" % assetname)
         assetlist = assets
         #更新待办信息
         pen.result = 2 if status else 1
@@ -732,6 +739,9 @@ class EpViewSet(viewsets.ViewSet):
                     raise Failure("资产类别不存在")
                 if asset.type != assetclass.type:
                     raise Failure("资产与资产类别类型不符")
+            sameasset = Asset.objects.filter(entity=ent,department=dep.id,name=asset.name).exclude(status=4).first()
+            if sameasset:
+                raise Failure("已存在同名资产%s，请拒绝" % asset.name)
         #更新待办信息
         pen.result = 2 if status else 1
         pen.review_time = utils_time.get_timestamp()
