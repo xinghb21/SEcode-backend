@@ -1,5 +1,6 @@
 # cyh
 # 飞书审批对接
+import yaml
 from department.models import Department, Entity
 from user.models import User
 from pending.models import Pending
@@ -14,6 +15,9 @@ from feishu.event.event_exception import CatchException
 from feishu.models import Event, Feishu
 
 from utils.utils_time import get_timestamp
+
+file = open("config/config.yml", "r", encoding="utf-8")
+env = yaml.load(file, Loader=yaml.SafeLoader)
 
 # 审批定义标识
 APPROVAL_CODE = "AFBDFE7C-4934-4F7B-98A1-94E13C06453A"
@@ -75,25 +79,14 @@ class newApproval(Process):
                       "open_id": fs_ep.openid,
                       "title": "@i18n@2",
                       "links": {
-                          "pc_link": "https://frontend-feature-aplus.app.secoder.net/feishu/approval?penid%3D"+str(pen.id),
-                          "mobile_link":"https://frontend-feature-aplus.app.secoder.net/feishu/approval?penid%3D"+str(pen.id),
+                          "pc_link": env["frontend"]+"/feishu/approval?penid%3D"+str(pen.id),
+                          "mobile_link":env["frontend"]+"/feishu/approval?penid%3D"+str(pen.id),
                       },
                     "status": "PENDING",
                     "create_time": now,
                     "end_time": 0,
                     "update_time": now,
                     "action_configs": [
-                        {
-                            "action_type": "APPROVE",
-                            "is_need_reason": False,
-                            "is_reason_required": False,
-                            "is_need_attachment": False, 
-                        },{
-                            "action_type": "REJECT",
-                            "is_need_reason": True,
-                            "is_reason_required": True,
-                            "is_need_attachment": False, 
-                        },
                     ],
                     "display_method": "SIDEBAR",
                   }
