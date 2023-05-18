@@ -131,7 +131,7 @@ class AsViewSet(viewsets.ViewSet):
         assets = self.preprocess(req.user)
         for item in assets:
             if item.type:
-                totalnetvalue += 1.00 * item.number * self.price_count(item,utils_time.get_timestamp() - int(utils_time.get_timestamp()) % 86400)
+                totalnetvalue += 1.00 * (item.number - item.number_expire) * self.price_count(item,utils_time.get_timestamp() - int(utils_time.get_timestamp()) % 86400)
             else:
                 totalnetvalue += self.price_count(item,utils_time.get_timestamp() - int(utils_time.get_timestamp()) % 86400)
         return Response({"code":0,"info":{"totalnetvalue":round(totalnetvalue,2)}})
@@ -166,7 +166,7 @@ class AsViewSet(viewsets.ViewSet):
             basicvalue = 0.0
             for item in assets:
                 if item.type:
-                    basicvalue += 1.00 * item.number * self.price_count(item,day)
+                    basicvalue += 1.00 * (item.number - item.number_expire) * self.price_count(item,day)
                 else:
                     basicvalue += self.price_count(item,day)
             deletevalue = 0.0
