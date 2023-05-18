@@ -18,3 +18,4 @@ feishu:
     app_id: "cli_a4b17e84d0f8900e"
     app_secret: "bMrD4Rtx85VS0jiPhPgThdrohZTHR4Jo"
     verification_token: "AOKjmM7RLNEw9pPck9zyNcF7KvshqL4F"
+frontend: "http://localhost:3000"

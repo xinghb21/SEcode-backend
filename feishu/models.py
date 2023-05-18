@@ -25,6 +25,8 @@ class Feishu(models.Model):
     
     name = models.TextField()
     
+    mobile = models.TextField(default="")
+    
     # 用户在企业内的唯一标识
     userid = models.TextField(default="")
     

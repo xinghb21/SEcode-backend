@@ -35,11 +35,9 @@ class esTest(TestCase):
         self.login("ep", "ep")
         resp = self.addassetclass("yuanshen", 1)
         resp = self.addassetclass("yuanshen2",0)
-        # print(resp.json())
         resp = self.addasset("hutao", "yuanshen", 100,True)
         resp = self.addasset("hutao2", "yuanshen2", 1,False)
         resp = self.addasset("hutao3", "yuanshen2", 1,False)
-        # print(resp.json())
         self.logout("ep")
         self.login("ep2","ep2")
         resp = self.addassetclass("ys", 1)
@@ -100,6 +98,8 @@ class esTest(TestCase):
         return assets1,assets2
     
     def test_apply_and_reply(self):
+        resp = self.client.get("/user/ns/getassets?page=1")
+        self.assertEqual(resp.json()["info"], [{'id': 1, 'name': 'hutao', 'type': 1, 'count': 50}])
         p = Pending.objects.filter(initiator=1)
         self.assertNotEqual(p.first(), None)
         self.logout("op1")
@@ -118,7 +118,6 @@ class esTest(TestCase):
         resp = self.apply("hutao3", 1,3,"yuanshen2")
         self.assertEqual(resp.json()["detail"], "资产hutao3未处于闲置状态")
         resp = self.client.get("/user/ns/possess?page=1")
-        print(resp.json()["assets"])
         self.assertEqual(resp.json()["assets"], [{'id': 3, 'name': 'hutao3', 'type': 0, 'state': {'1': 1},'haspic':False}, {'id': 1, 'name': 'hutao', 'type': 1, 'state': {'1': 50},'haspic':True}])
     
     def test_exchange_and_reply(self):

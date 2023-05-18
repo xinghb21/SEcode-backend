@@ -107,7 +107,8 @@ class feishu(viewsets.ViewSet):
                                   name=userinfo['name'],
                                   openid=userinfo['open_id'],
                                   unionid=union_id,
-                                  userid=userinfo["user_id"])
+                                  userid=userinfo["user_id"],
+                                  mobile=userinfo["mobile"])
             # 在当前会话中保存该飞书用户
             req._request.session['feishu_id'] = feishu.id
             return Response({
@@ -127,8 +128,7 @@ class feishu(viewsets.ViewSet):
             "code": 0,
             "detail": "success",
         })
-
-    # 通过授权码判断该飞书用户是否已经绑定了帐号
+        
     @Check
     @action(detail=False, methods=['get'], url_path="isbound")
     def check_is_bound(self, req:Request):
@@ -204,16 +204,78 @@ class feishu(viewsets.ViewSet):
         
     # 绑定飞书帐号
     @Check
-    @action(detail=False, methods=['post'], url_path="bind")
+    @action(detail=False, methods=['post'], url_path="bind", authentication_classes=[LoginAuthentication])
     def bind(self, req: Request):
-        pass
+        self.process_code(req)
+        fs_id = req._request.session["feishu_id"]
+        fs = Feishu.objects.filter(id=fs_id).first()
+        fs.user = req.user
+        fs.save()
+        return Response({
+            "code": 0,
+            "detail": "success",
+        })
         
-    
     # 解除绑定
     @Check
-    @action(detail=False, methods=['delete'], url_path="unbind")
+    @action(detail=False, methods=['delete'], url_path="unbind", authentication_classes=[LoginAuthentication])
     def unbind(self, req: Request):
-        pass
+        fs = Feishu.objects.filter(user=req.user).first()
+        if not fs:
+            return Response({
+                "code": 0,
+                "detail": "success",
+            })
+        fs.delete()
+        return Response({
+            "code": 0,
+            "detail": "success",
+        })
+    
+    # 已登录的用户获得自己的飞书信息
+    @Check
+    @action(detail=False, methods=['get'], url_path="getfeishuinfo", authentication_classes=[LoginAuthentication])
+    def feishuinfo(self, req: Request):
+        fs = Feishu.objects.filter(user=req.user).first()
+        if not fs:
+            return Response({
+                "code": 0,
+                "info":{
+                    "name": "",
+                    "mobile": "",
+                    "isbound": False,
+                },
+            })
+        else:
+            return Response({
+                "code": 0,
+                "info":{
+                    "name": fs.name,
+                    "mobile": fs.mobile,
+                    "isbound": True,
+                },
+            })
+            
+    @Check
+    @action(detail=False, methods=['post'], url_path="fslogin")
+    def fslogin(self, req:Request):
+        if "openid" not in req.data.keys():
+            raise ParamErr("Missing or Error type of [openid]")
+        openid = req.data["openid"]
+        fs = Feishu.objects.filter(openid=openid).first()
+        if not fs:
+            raise Failure("飞书用户不存在")
+        user = fs.user
+        if not user:
+            raise Failure("该飞书用户未绑定帐号")
+        if user.locked:
+            raise Failure("该帐号已被系统管理员封禁")
+        req._request.session["id"] = user.id
+        return Response({
+            "code": 0,
+            "detail": "success",
+        })
+        
         
         
         

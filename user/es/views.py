@@ -1,6 +1,7 @@
 # cyh
 import json
 import re
+import time
 
 from django.contrib.auth.hashers import make_password
 
@@ -30,6 +31,13 @@ class EsViewSet(viewsets.ViewSet):
     
     allowed_identity = [ES]
     
+    def getpage(self,body):
+        if "page" in body.keys():
+            page = int(body["page"])
+        else:
+            page = 1
+        return page
+    
     # 获得被操作的用户
     def get_target_user(self, req:Request):
         if req._request.method == "GET":
@@ -51,7 +59,7 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'], url_path="checkall")
     def check_all(self, req:Request):
         et = req.user.entity
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         users = User.objects.filter(entity=et).exclude(identity=2)
         ret = []
         for user in users:
@@ -358,7 +366,7 @@ class EsViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False,methods=['GET'])
     def staffs(self,req:Request):
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         depname = req.query_params["department"]
         if req.user.identity != 2:
             raise Failure("此用户无权查看部门员工")
@@ -392,7 +400,7 @@ class EsViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False, methods=['post'])
     def searchuser(self, req:Request):
-        page = int(req.query_params["page"])
+        page = self.getpage(req.query_params)
         users = User.objects.filter(entity=req.user.entity)
         if "username" in req.data.keys() and req.data["username"] != "":
             name = require(req.data, "username", err_msg="Error type of [username]")
@@ -407,7 +415,6 @@ class EsViewSet(viewsets.ViewSet):
                 users = users.filter(identity=id)
         ret =[]
         for user in users:
-            tmp = return_field(user.serialize(), ["id", "name","department", "entity","identity", "lockedapp", "locked", "apps"])
             entity = user.entity
             entity = Entity.objects.filter(id=entity).first().name
             dep = user.department
@@ -415,8 +422,7 @@ class EsViewSet(viewsets.ViewSet):
                 dep = Department.objects.filter(id=dep).first().name
             else:
                 dep = ""
-            tmp["entity"] = entity
-            tmp["department"] = dep
+            tmp = {"entity":entity,"department":dep,"id":user.id,"name":user.name,"identity":user.identity,"lockedapp":user.lockedapp,"locked":user.locked}
             if(user.identity != 2):
                 ret.append(tmp)
         count = len(ret)
@@ -474,7 +480,6 @@ class EsViewSet(viewsets.ViewSet):
     @action(detail=False,methods=["post"])
     def addapp(self,req:Request):
         username = require(req.data, "username", err_msg="Missing or Error type of [username]")
-        # print(req.data['appadded'])
         appadded = require(req.data, "appadded", "list", err_msg="Missing or Error type of [appadded]")
         ent = req.user.entity
         user = User.objects.filter(name=username).first()
@@ -518,8 +523,6 @@ class EsViewSet(viewsets.ViewSet):
             user.apps = json.dumps({"data":[]})
         oldapps = json.loads(user.apps)
         oldlist = oldapps["data"]
-        # print(oldlist)
-        # print(appdeleted)
         for item in appdeleted:
             for i in oldlist:
                 if item == i["name"]:
@@ -548,16 +551,31 @@ class EsViewSet(viewsets.ViewSet):
     @Check
     @action(detail=False,methods=['get'])
     def getlogs(self,req:Request):
-        page = int(req.query_params["page"])
-        type = int(req.query_params["type"])
+        page = self.getpage(req.query_params)
+        if "from" in req.query_params.keys():
+            fromtime = req.query_params["from"]
+            fromtime = time.strptime(fromtime, "%Y-%m-%d")
+            fromtime = time.mktime(fromtime)
+        else:
+            fromtime = 0
+        if "to" in req.query_params.keys():
+            totime = req.query_params["to"]
+            totime = time.strptime(totime, "%Y-%m-%d")
+            totime = time.mktime(totime)
+        else:
+            totime = get_timestamp()
+        if "type" in req.query_params.keys():
+            type = int(req.query_params["type"])
+        else:
+            type = 0
         alllogs = Logs.objects.filter(entity=req.user.entity).all()
         if len(alllogs) > 1000:
             delete_logs = alllogs[1000:len(alllogs):]
             for i in delete_logs:
                 i.delete()
         if type == 1 or type == 2 or type == 3:
-            logs = list(Logs.objects.filter(entity=req.user.entity,type=type).all().order_by("-time"))
+            logs = list(Logs.objects.filter(entity=req.user.entity,type=type,time__lte=totime,time__gte=fromtime).all().order_by("-time"))
         else:
-            logs = list(Logs.objects.filter(entity=req.user.entity).all().order_by("-time"))
+            logs = list(Logs.objects.filter(entity=req.user.entity,time__lte=totime,time__gte=fromtime).all().order_by("-time"))
         return_list = logs[10 * page - 10:10 * page:]
         return Response({"code": 0,"info": [{"id":item.id,"type":item.type,"content":item.content,"time":item.time} for item in return_list],"count":len(logs)})

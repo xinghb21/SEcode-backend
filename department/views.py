@@ -94,7 +94,6 @@ def deleteAllEt(req:HttpRequest):
         for name in names:
             ent = Entity.objects.filter(name=name).first()
             if ent:
-                print(ent.name)
                 singleDelete(ent)
             else:
                 return request_failed(-1,"业务实体"+name+"不存在")
@@ -174,7 +173,6 @@ def deleteAllES(req:HttpRequest):
     if req.method == "DELETE":
         names = require(body, "entity", "string", err_msg="Missing or error type of [name]")
         entnames = names[1:len(names)-1:1].replace('\'','').replace('\"','').replace(" ","").split(',')
-        print(entnames)
         for entname in entnames:
             ent = Entity.objects.filter(name=entname).first()
             if not ent:
