@@ -861,7 +861,7 @@ class EpViewSet(viewsets.ViewSet):
                         staff.save()
                     AssetLog(type=10,entity=req.user.entity,asset=asset,department=req.user.department,number=number,price=asset.price * number,expire_time=asset.create_time,life=asset.life,src=staff).save()
                     if asset.number_expire != None:
-                        asset.number_expire += number
+                        asset.number_expire = number + asset.number_expire
                     else:
                         asset.number_expire = number
                     if asset.number_expire == asset.number:
@@ -882,9 +882,21 @@ class EpViewSet(viewsets.ViewSet):
                 brokenasset.append(item["name"])
         content = "维保已完成。"
         if useasset:
-            content += "返还资产:" + str(useasset).replace('[','').replace(']','') + " "
+            content += "返还资产:"
+            for t in range(0,len(useasset)):
+                content += useasset[t]
+                if t != len(useasset) - 1:
+                    content += ","
+                else:
+                    content += ";"
         if brokenasset:
-            content += "报废资产:" + str(brokenasset).replace('[','').replace(']','') + " "
+            content += "报废资产:"
+            for t in range(0,len(brokenasset)):
+                content += brokenasset[t]
+                if t != len(brokenasset) - 1:
+                    content += ","
+                else:
+                    content += ";"
         Message(user=staff.id,pending=pending.id,type=7,content=content).save()
         pending.result = 3
         pending.save()
